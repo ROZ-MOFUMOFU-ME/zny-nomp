@@ -9,7 +9,7 @@
     },
 
     "paymentProcessing": {
-	"minConf": 10,
+	"minConf": 120,
         "enabled": true,
         "paymentMode": "prop",
         "_comment_paymentMode":"prop, pplnt",
@@ -55,7 +55,7 @@
     ],
 
     "p2p": {
-        "enabled": false,
+        "enabled": true,
         "host": "127.0.0.1",
         "port": 19706,
         "disableTransactions": true
