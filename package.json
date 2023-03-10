@@ -1,5 +1,5 @@
 {
-    "name": "zny-nomp",
+    "name": "nomp",
     "version": "0.0.9",
     "description": "BitZeny (yescrypt) stratum mining pool based on NOMP",
     "keywords": [
@@ -12,9 +12,9 @@
         "zny",
         "yescrypt"
     ],
-    "homepage": "https://github.com/ROZ-MOFUMOFU-ME/zny-nomp",
+    "homepage": "https://github.com/chilledgamer1985/nomp",
     "bugs": {
-        "url": "https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/issues"
+        "url": "https://github.com/chilledgamer1985/nomp/issues"
     },
     "license": "MIT",
     "author": "Joshua Yabut",
@@ -32,7 +32,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/ROZ-MOFUMOFU-ME/zny-nomp.git"
+        "url": "https://github.com/chilledgamer1985/nomp.git"
     },
     "dependencies": {
         "async": "^3.2.0",
@@ -50,7 +50,7 @@
         "nonce": "^1.0.4",
         "redis": "^3.1.1",
         "request": "^2.88.2",
-        "stratum-pool": "git+https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git"
+        "stratum-pool": "https://github.com/chilledgamer1985/node-stratum-pool.git"
     },
     "engines": {
         "node": ">=8.11"
