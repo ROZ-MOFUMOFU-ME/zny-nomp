@@ -52,7 +52,7 @@
         "nonce": "^1.0.4",
         "redis": "^3.1.2",
         "axios": "^0.28.1",
-        "stratum-pool": "git+https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#dev"
+        "stratum-pool": "git+https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#stable"
     },
     "engines": {
         "node": ">=8.11"
