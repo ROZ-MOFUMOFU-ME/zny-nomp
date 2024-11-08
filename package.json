@@ -50,7 +50,7 @@
         "nonce": "^1.0.4",
         "redis": "^2.8.0",
         "request": "^2.88.2",
-        "stratum-pool": "git+https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git"
+        "stratum-pool": "git+https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#old"
     },
     "engines": {
         "node": ">=8.11"
