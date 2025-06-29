@@ -16,15 +16,23 @@ import jsonMinify from 'node-json-minify';
 // Set JSON.minify for backward compatibility
 JSON.minify = JSON.minify || jsonMinify;
 
-if (!fs.existsSync('config.json')) {
+// Determine config file name: prefer config.json, else fallback to config_example.json
+const configFileName = fs.existsSync('config.json')
+    ? 'config.json'
+    : fs.existsSync('config_example.json')
+      ? 'config_example.json'
+      : null;
+
+if (!configFileName) {
     console.log(
         'config.json file does not exist. Read the installation/setup instructions.'
     );
     process.exit(0);
 }
 
+// Load portal configuration from determined file
 const portalConfig = JSON.parse(
-    JSON.minify(fs.readFileSync('config.json', { encoding: 'utf8' }))
+    JSON.minify(fs.readFileSync(configFileName, { encoding: 'utf8' }))
 );
 let poolConfigs;
 

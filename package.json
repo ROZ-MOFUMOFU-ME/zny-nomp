@@ -42,7 +42,8 @@
         "lint": "eslint init.js",
         "lint:fix": "eslint init.js --fix",
         "format": "prettier --write .",
-        "format:check": "prettier --check ."
+        "format:check": "prettier --check .",
+        "test": "node init.js"
     },
     "dependencies": {
         "async": "^3.2.6",
