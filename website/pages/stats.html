@@ -140,15 +140,30 @@ d.toString().match(/GMT([+-]\d{4})/)[0].replace('GMT', 'UTC') + ' ' +
                             id="statsHashrate{{=pool}}">{{=it.stats.pools[pool].hashrateString}}</span> (Now)</div>
                     <div><i class="fas fa-gauge-simple-high fa-fw"></i> <span id="statsHashrateAvg{{=pool}}">...</span>
                         (Avg)</div>
-                    <div><i class="fas fa-clock fa-fw"></i>&nbsp;Luck: <span id="statsLuckDays{=pool}}">
+                    <div><i class="fas fa-clock fa-fw"></i>&nbsp;Luck: <span id="statsLuckDays{{=pool}}">
                             {{
                             function getReadableLuckTime(lucktime){
                             var luck = lucktime;
-                            var timeUnits = [ ' Days', ' Hours', ' Minutes' ];
-                            if (luck < 1) { luck=luck * 24; if (luck < 1) { luck=luck * 60; return luck.toFixed(2) +
-                                timeUnits[2]; } else { return luck.toFixed(2) + timeUnits[1]; } } return luck +
-                                timeUnits[0]; } _luckTime=getReadableLuckTime(it.stats.pools[pool].luckDays); }}
-                                {{=_luckTime}}</span>
+                            var timeUnits = [ ' Days', ' Hours', ' Minutes', ' Seconds' ];
+                            if (luck < 1) { 
+                                luck = luck * 24; 
+                                if (luck < 1) { 
+                                    luck = luck * 60; 
+                                    if (luck < 1) {
+                                        luck = luck * 60;
+                                        return luck.toFixed(2) + timeUnits[3];
+                                    } else {
+                                        return luck.toFixed(2) + timeUnits[2]; 
+                                    }
+                                } else { 
+                                    return luck.toFixed(2) + timeUnits[1]; 
+                                } 
+                            } 
+                            return luck + timeUnits[0]; 
+                            } 
+                            _luckTime=getReadableLuckTime(it.stats.pools[pool].luckDays); 
+                            }}
+                            {{=_luckTime}}</span>
                     </div>
                     <div>
                         <i class="fas fa-chart-bar fa-fw"></i> Share: <span id="statsHashPercent{{=pool}}">

@@ -1,9 +1,9 @@
-.pure-g [class *="pure-u"] {
-    font-family: "Noto Sans", sans-serif;
+.pure-g [class*='pure-u'] {
+    font-family: 'Noto Sans', sans-serif;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    font-variation-settings: "wdth" 100;
+    font-variation-settings: 'wdth' 100;
 }
 
 html {
@@ -42,7 +42,7 @@ footer iframe {
     vertical-align: middle;
 }
 
-.home-menu>a.pure-menu-heading {
+.home-menu > a.pure-menu-heading {
     display: flex !important;
     align-items: center;
     justify-content: center;
@@ -180,7 +180,6 @@ option:checked {
 }
 
 @media (max-width: 47.999em) {
-
     .custom-menu {
         text-align: left;
     }

@@ -3,7 +3,7 @@
         padding: 18px 18px 0px 18px;
     }
 
-    #topCharts>div>div>svg {
+    #topCharts > div > div > svg {
         display: block;
         height: 280px;
     }
@@ -26,11 +26,11 @@
         margin: 0 9px;
     }
 
-    #boxesWorkers>div {
+    #boxesWorkers > div {
         display: flex;
     }
 
-    #boxesWorkers>div>div {
+    #boxesWorkers > div > div {
         flex: 1 1 auto;
         margin: 0 9px 18px 9px;
         padding: 10px;
@@ -73,11 +73,11 @@
         text-align: center;
     }
 
-    .boxStatsList>div {
+    .boxStatsList > div {
         padding: 5px 20px;
     }
 
-    .boxStatsList>div>div {
+    .boxStatsList > div > div {
         padding: 3px;
     }
 </style>
@@ -86,33 +86,72 @@
     <div class="chartWrapper">
         <div class="chartLabel">
             <!--<div style="float:left; padding-right: 18px;"><i class="fa fa-users"></i><span id="statsWorkers">...</span></div>-->
-            <div style="float:left; margin-right: 9px;">{{=String(it.stats.address).split(".")[0]}}</div>
-            <div style="float:right; padding-left: 18px;"><small><i class="fas fa-tachometer fa-fw"></i> <span
-                        id="statsHashrateAvg">...</span> (Avg)</small></div>
-            <div style="float:right; padding-left: 18px;"><small><i class="fas fa-tachometer fa-fw"></i> <span
-                        id="statsHashrate">...</span> (Now)</small></div>
-            <div style="float:right; padding-left: 18px;"><small><i class="fas fa-gavel fa-fw"></i> Luck <span
-                        id="statsLuckDays">...</span></small></div>
+            <div style="float: left; margin-right: 9px">
+                {{=String(it.stats.address).split(".")[0]}}
+            </div>
+            <div style="float: right; padding-left: 18px">
+                <small
+                    ><i class="fas fa-tachometer fa-fw"></i>
+                    <span id="statsHashrateAvg">...</span> (Avg)</small
+                >
+            </div>
+            <div style="float: right; padding-left: 18px">
+                <small
+                    ><i class="fas fa-tachometer fa-fw"></i>
+                    <span id="statsHashrate">...</span> (Now)</small
+                >
+            </div>
+            <div style="float: right; padding-left: 18px">
+                <small
+                    ><i class="fas fa-gavel fa-fw"></i> Luck
+                    <span id="statsLuckDays">...</span></small
+                >
+            </div>
         </div>
         <div class="chartHolder"><svg id="workerHashrate"></svg></div>
         <div>
-            <div style="float:right; padding-top: 9px; padding-right: 18px;"><i class="fas fa-chart-bar fa-fw"></i>
-                Shares: <span id="statsTotalShares">...</span></div>
-            <div style="float:left; padding-top: 9px; padding-left: 18px; padding-right: 18px;"><i
-                    class="fas fa-money-bill-alt fa-fw"></i> Immature: <span id="statsTotalImmature">...</span> </div>
-            <div style="float:left; padding-top: 9px; padding-left: 18px; padding-right: 18px;"><i
-                    class="fas fa-money-bill-alt fa-fw"></i> Bal: <span id="statsTotalBal">...</span> </div>
-            <div style="padding-top: 9px; padding-left: 18px;"><i class="fas fa-money-bill-alt fa-fw"></i> Paid: <span
-                    id="statsTotalPaid">...</span> </div>
+            <div style="float: right; padding-top: 9px; padding-right: 18px">
+                <i class="fas fa-chart-bar fa-fw"></i> Shares:
+                <span id="statsTotalShares">...</span>
+            </div>
+            <div
+                style="
+                    float: left;
+                    padding-top: 9px;
+                    padding-left: 18px;
+                    padding-right: 18px;
+                "
+            >
+                <i class="fas fa-money-bill-alt fa-fw"></i> Immature:
+                <span id="statsTotalImmature">...</span>
+            </div>
+            <div
+                style="
+                    float: left;
+                    padding-top: 9px;
+                    padding-left: 18px;
+                    padding-right: 18px;
+                "
+            >
+                <i class="fas fa-money-bill-alt fa-fw"></i> Bal:
+                <span id="statsTotalBal">...</span>
+            </div>
+            <div style="padding-top: 9px; padding-left: 18px">
+                <i class="fas fa-money-bill-alt fa-fw"></i> Paid:
+                <span id="statsTotalPaid">...</span>
+            </div>
         </div>
     </div>
 </div>
 
-<div id="boxesWorkers"> </div>
+<div id="boxesWorkers"></div>
 
 <script>
     var _miner = "{{=String(it.stats.address).split('.')[0]}}";
     var _workerCount = 0;
-    window.statsSource = new EventSource("/api/live_stats");
-    document.querySelector('main').appendChild(document.createElement('script')).src = '/static/miner_stats.js';
+    window.statsSource = new EventSource('/api/live_stats');
+    document
+        .querySelector('main')
+        .appendChild(document.createElement('script')).src =
+        '/static/miner_stats.js';
 </script>

@@ -38,7 +38,7 @@
             "diff": 0.5,
             "tls": false,
             "varDiff": {
-                "minDiff": 0.00,
+                "minDiff": 0.0,
                 "maxDiff": 16,
                 "targetTime": 15,
                 "retargetTime": 60,
@@ -76,5 +76,4 @@
         "checkPassword": true,
         "autoCreateWorker": false
     }
-
 }
