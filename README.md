@@ -596,7 +596,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ROZ-MOFUMOFU-ME/zny-nomp&type=Date)](https://star-history.com/#ROZ-MOFUMOFU-ME/zny-nomp&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ROZ-MOFUMOFU-ME/zny-nomp&type=Date&theme=dark)](https://star-history.com/#ROZ-MOFUMOFU-ME/zny-nomp&Date)
 
 ---
 
