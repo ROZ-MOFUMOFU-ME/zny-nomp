@@ -42,7 +42,7 @@
     },
     "dependencies": {
         "async": "^3.2.6",
-        "axios": "^1.7.9",
+        "axios": "^1.13.5",
         "colors": "^1.4.0",
         "compression": "^1.7.5",
         "dateformat": "^4.6.3",
