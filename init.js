@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import cluster from 'cluster';
 import extend from 'extend';
-import redis from 'redis';
+import { createRedisClient } from './libs/redisUtil.js';
 import PoolLogger from './libs/logUtil.js';
 import CliListener from './libs/cliListener.js';
 import PoolWorker from './libs/poolWorker.js';
@@ -303,7 +303,13 @@ const spawnPoolWorkers = function () {
             delete poolConfigs[coin];
         } else if (!connection) {
             redisConfig = pcfg.redis;
-            connection = redis.createClient(redisConfig.port, redisConfig.host);
+            connection = createRedisClient(redisConfig, function (err) {
+                logger.error(
+                    'PPLNT',
+                    coin,
+                    'Redis error: ' + JSON.stringify(err.message)
+                );
+            });
             connection.on('ready', function () {
                 logger.debug(
                     'PPLNT',

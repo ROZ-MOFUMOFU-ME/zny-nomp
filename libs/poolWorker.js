@@ -1,6 +1,7 @@
 import * as Stratum from 'stratum-pool';
-import redis from 'redis';
 import net from 'net';
+
+import { createRedisClient } from './redisUtil.js';
 
 import MposCompatibility from './mposCompatibility.js';
 import ShareProcessor from './shareProcessor.js';
@@ -17,13 +18,14 @@ export default function (logger) {
 
     var proxySwitch = {};
 
-    var redisClient = redis.createClient(
-        portalConfig.redis.port,
-        portalConfig.redis.host
-    );
-    if (portalConfig.redis.password) {
-        redisClient.auth(portalConfig.redis.password);
-    }
+    var redisClient = createRedisClient(portalConfig.redis, function (err) {
+        logger.error(
+            'Pool',
+            'Redis',
+            'Thread ' + (parseInt(forkId) + 1),
+            'Redis client had an error: ' + JSON.stringify(err.message)
+        );
+    });
     //Handle messages from master process sent via IPC
     process.on('message', function (message) {
         switch (message.type) {
@@ -104,30 +106,25 @@ export default function (logger) {
                     );
                     proxySwitch[switchName].currentPool = newCoin;
 
-                    redisClient.hset(
-                        'proxyState',
-                        algo,
-                        newCoin,
-                        function (error, obj) {
-                            if (error) {
-                                logger.error(
-                                    logSystem,
-                                    logComponent,
-                                    logSubCat,
-                                    'Redis error writing proxy config: ' +
-                                        JSON.stringify(err)
-                                );
-                            } else {
-                                logger.debug(
-                                    logSystem,
-                                    logComponent,
-                                    logSubCat,
-                                    'Last proxy state saved to redis for ' +
-                                        algo
-                                );
-                            }
-                        }
-                    );
+                    redisClient
+                        .hSet('proxyState', algo, newCoin)
+                        .then(function () {
+                            logger.debug(
+                                logSystem,
+                                logComponent,
+                                logSubCat,
+                                'Last proxy state saved to redis for ' + algo
+                            );
+                        })
+                        .catch(function (error) {
+                            logger.error(
+                                logSystem,
+                                logComponent,
+                                logSubCat,
+                                'Redis error writing proxy config: ' +
+                                    JSON.stringify(error.message)
+                            );
+                        });
                 }
                 break;
         }
@@ -348,90 +345,99 @@ export default function (logger) {
             logger.debug(logSystem, logComponent, logSubCat, 'Pool configuration failed: ' + err);
         });*/
 
-        redisClient.hgetall('proxyState', function (error, obj) {
-            if (!error && obj) {
-                proxyState = obj;
-                logger.debug(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    'Last proxy state loaded from redis'
-                );
-            }
+        redisClient
+            .hGetAll('proxyState')
+            .catch(function () {
+                return {};
+            })
+            .then(function (obj) {
+                if (obj && Object.keys(obj).length > 0) {
+                    proxyState = obj;
+                    logger.debug(
+                        logSystem,
+                        logComponent,
+                        logSubCat,
+                        'Last proxy state loaded from redis'
+                    );
+                }
 
-            //
-            // Setup proxySwitch object to control proxy operations from configuration and any restored
-            // state.  Each algorithm has a listening port, current coin name, and an active pool to
-            // which traffic is directed when activated in the config.
-            //
-            // In addition, the proxy config also takes diff and varDiff parmeters the override the
-            // defaults for the standard config of the coin.
-            //
-            Object.keys(portalConfig.switching).forEach(function (switchName) {
-                var algorithm = portalConfig.switching[switchName].algorithm;
+                //
+                // Setup proxySwitch object to control proxy operations from configuration and any restored
+                // state.  Each algorithm has a listening port, current coin name, and an active pool to
+                // which traffic is directed when activated in the config.
+                //
+                // In addition, the proxy config also takes diff and varDiff parmeters the override the
+                // defaults for the standard config of the coin.
+                //
+                Object.keys(portalConfig.switching).forEach(
+                    function (switchName) {
+                        var algorithm =
+                            portalConfig.switching[switchName].algorithm;
 
-                if (!portalConfig.switching[switchName].enabled) return;
+                        if (!portalConfig.switching[switchName].enabled) return;
 
-                var initalPool = proxyState.hasOwnProperty(algorithm)
-                    ? proxyState[algorithm]
-                    : _this.getFirstPoolForAlgorithm(algorithm);
-                proxySwitch[switchName] = {
-                    algorithm: algorithm,
-                    ports: portalConfig.switching[switchName].ports,
-                    currentPool: initalPool,
-                    servers: []
-                };
+                        var initalPool = proxyState.hasOwnProperty(algorithm)
+                            ? proxyState[algorithm]
+                            : _this.getFirstPoolForAlgorithm(algorithm);
+                        proxySwitch[switchName] = {
+                            algorithm: algorithm,
+                            ports: portalConfig.switching[switchName].ports,
+                            currentPool: initalPool,
+                            servers: []
+                        };
 
-                Object.keys(proxySwitch[switchName].ports).forEach(
-                    function (port) {
-                        var f = net
-                            .createServer(function (socket) {
-                                var currentPool =
-                                    proxySwitch[switchName].currentPool;
+                        Object.keys(proxySwitch[switchName].ports).forEach(
+                            function (port) {
+                                var f = net
+                                    .createServer(function (socket) {
+                                        var currentPool =
+                                            proxySwitch[switchName].currentPool;
 
-                                logger.debug(
-                                    logSystem,
-                                    'Connect',
-                                    logSubCat,
-                                    'Connection to ' +
-                                        switchName +
-                                        ' from ' +
-                                        socket.remoteAddress +
-                                        ' on ' +
-                                        port +
-                                        ' routing to ' +
-                                        currentPool
-                                );
+                                        logger.debug(
+                                            logSystem,
+                                            'Connect',
+                                            logSubCat,
+                                            'Connection to ' +
+                                                switchName +
+                                                ' from ' +
+                                                socket.remoteAddress +
+                                                ' on ' +
+                                                port +
+                                                ' routing to ' +
+                                                currentPool
+                                        );
 
-                                if (pools[currentPool])
-                                    pools[currentPool]
-                                        .getStratumServer()
-                                        .handleNewClient(socket);
-                                else
-                                    pools[initalPool]
-                                        .getStratumServer()
-                                        .handleNewClient(socket);
-                            })
-                            .listen(parseInt(port), function () {
-                                logger.debug(
-                                    logSystem,
-                                    logComponent,
-                                    logSubCat,
-                                    'Switching "' +
-                                        switchName +
-                                        '" listening for ' +
-                                        algorithm +
-                                        ' on port ' +
-                                        port +
-                                        ' into ' +
-                                        proxySwitch[switchName].currentPool
-                                );
-                            });
-                        proxySwitch[switchName].servers.push(f);
+                                        if (pools[currentPool])
+                                            pools[currentPool]
+                                                .getStratumServer()
+                                                .handleNewClient(socket);
+                                        else
+                                            pools[initalPool]
+                                                .getStratumServer()
+                                                .handleNewClient(socket);
+                                    })
+                                    .listen(parseInt(port), function () {
+                                        logger.debug(
+                                            logSystem,
+                                            logComponent,
+                                            logSubCat,
+                                            'Switching "' +
+                                                switchName +
+                                                '" listening for ' +
+                                                algorithm +
+                                                ' on port ' +
+                                                port +
+                                                ' into ' +
+                                                proxySwitch[switchName]
+                                                    .currentPool
+                                        );
+                                    });
+                                proxySwitch[switchName].servers.push(f);
+                            }
+                        );
                     }
                 );
             });
-        });
     }
 
     this.getFirstPoolForAlgorithm = function (algorithm) {

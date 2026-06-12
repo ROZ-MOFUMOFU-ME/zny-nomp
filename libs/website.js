@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import async from 'async';
 import watch from 'node-watch';
-import redis from 'redis';
+import { createRedisClient } from './redisUtil.js';
 import dot from 'dot';
 import express from 'express';
 import compress from 'compression';
@@ -134,26 +134,19 @@ export default function (logger) {
         async.waterfall(
             [
                 function (callback) {
-                    var client = redis.createClient(
-                        portalConfig.redis.port,
-                        portalConfig.redis.host
-                    );
-                    if (portalConfig.redis.password) {
-                        client.auth(portalConfig.redis.password);
-                    }
-                    client.hgetall(
-                        'coinVersionBytes',
-                        function (err, coinBytes) {
-                            if (err) {
-                                client.quit();
-                                return callback(
-                                    'Failed grabbing coin version bytes from redis ' +
-                                        JSON.stringify(err)
-                                );
-                            }
+                    var client = createRedisClient(portalConfig.redis);
+                    client
+                        .hGetAll('coinVersionBytes')
+                        .then(function (coinBytes) {
                             callback(null, client, coinBytes || {});
-                        }
-                    );
+                        })
+                        .catch(function (err) {
+                            client.destroy();
+                            callback(
+                                'Failed grabbing coin version bytes from redis ' +
+                                    JSON.stringify(err.message)
+                            );
+                        });
                 },
                 function (client, coinBytes, callback) {
                     var enabledCoins = Object.keys(poolConfigs).map(
@@ -228,22 +221,21 @@ export default function (logger) {
                 },
                 function (client, coinBytes, coinsForRedis, callback) {
                     if (Object.keys(coinsForRedis).length > 0) {
-                        client.hmset(
-                            'coinVersionBytes',
-                            coinsForRedis,
-                            function (err) {
-                                if (err)
-                                    logger.error(
-                                        logSystem,
-                                        'Init',
-                                        'Failed inserting coin byte version into redis ' +
-                                            JSON.stringify(err)
-                                    );
-                                client.quit();
-                            }
-                        );
+                        client
+                            .hSet('coinVersionBytes', coinsForRedis)
+                            .catch(function (err) {
+                                logger.error(
+                                    logSystem,
+                                    'Init',
+                                    'Failed inserting coin byte version into redis ' +
+                                        JSON.stringify(err.message)
+                                );
+                            })
+                            .then(function () {
+                                client.destroy();
+                            });
                     } else {
-                        client.quit();
+                        client.destroy();
                     }
                     callback(null, coinBytes);
                 }

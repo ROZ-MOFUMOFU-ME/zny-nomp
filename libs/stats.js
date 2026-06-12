@@ -1,15 +1,6 @@
-import redis from 'redis';
 import async from 'async';
 import algos from 'stratum-pool/lib/algoProperties.js';
-
-// redis callback Ready check failed bypass trick
-function rediscreateClient(port, host, pass) {
-    var client = redis.createClient(port, host);
-    if (pass) {
-        client.auth(pass);
-    }
-    return client;
-}
+import { createRedisClient } from './redisUtil.js';
 
 /**
  * Sort object properties (only own properties will be sorted).
@@ -73,8 +64,8 @@ export default function (logger, portalConfig, poolConfigs) {
         for (var i = 0; i < redisClients.length; i++) {
             var client = redisClients[i];
             if (
-                client.client.port === redisConfig.port &&
-                client.client.host === redisConfig.host
+                client.port === redisConfig.port &&
+                client.host === redisConfig.host
             ) {
                 client.coins.push(coin);
                 return;
@@ -82,21 +73,25 @@ export default function (logger, portalConfig, poolConfigs) {
         }
         redisClients.push({
             coins: [coin],
-            client: rediscreateClient(
-                redisConfig.port,
-                redisConfig.host,
-                redisConfig.password
-            )
+            host: redisConfig.host,
+            port: redisConfig.port,
+            client: createRedisClient(redisConfig, function (err) {
+                logger.error(
+                    logSystem,
+                    'Redis',
+                    'Stats redis client error: ' + JSON.stringify(err.message)
+                );
+            })
         });
     });
 
     function setupStatsRedis() {
-        redisStats = redis.createClient(
-            portalConfig.redis.port,
-            portalConfig.redis.host
-        );
-        redisStats.on('error', function (err) {
-            redisStats.auth(portalConfig.redis.password);
+        redisStats = createRedisClient(portalConfig.redis, function (err) {
+            logger.error(
+                logSystem,
+                'Historics',
+                'Redis client error: ' + JSON.stringify(err.message)
+            );
         });
     }
 
@@ -154,18 +149,9 @@ export default function (logger, portalConfig, poolConfigs) {
                 portalConfig.website.stats.historicalRetention) |
             0
         ).toString();
-        redisStats.zrangebyscore(
-            ['statHistory', retentionTime, '+inf'],
-            function (err, replies) {
-                if (err) {
-                    logger.error(
-                        logSystem,
-                        'Historics',
-                        'Error when trying to grab historical stats ' +
-                            JSON.stringify(err)
-                    );
-                    return;
-                }
+        redisStats
+            .zRangeByScore('statHistory', retentionTime, '+inf')
+            .then(function (replies) {
                 for (var i = 0; i < replies.length; i++) {
                     _this.statHistory.push(JSON.parse(replies[i]));
                 }
@@ -175,8 +161,15 @@ export default function (logger, portalConfig, poolConfigs) {
                 _this.statHistory.forEach(function (stats) {
                     addStatPoolHistory(stats);
                 });
-            }
-        );
+            })
+            .catch(function (err) {
+                logger.error(
+                    logSystem,
+                    'Historics',
+                    'Error when trying to grab historical stats ' +
+                        JSON.stringify(err.message)
+                );
+            });
     }
 
     function getWorkerStats(address) {
@@ -312,33 +305,24 @@ export default function (logger, portalConfig, poolConfigs) {
             function (pool, pcb) {
                 pindex++;
                 var coin = String(_this.stats.pools[pool.name].name);
-                client.hscan(
-                    coin + ':shares:roundCurrent',
-                    0,
-                    'match',
-                    a + '*',
-                    'count',
-                    1000,
-                    function (error, result) {
-                        if (error) {
-                            pcb(error);
-                            return;
-                        }
-                        var workerName = '';
+                client
+                    .hScan(coin + ':shares:roundCurrent', '0', {
+                        MATCH: a + '*',
+                        COUNT: 1000
+                    })
+                    .then(function (result) {
                         var shares = 0;
-                        for (var i in result[1]) {
-                            if (Math.abs(i % 2) != 1) {
-                                workerName = String(result[1][i]);
-                            } else {
-                                shares += parseFloat(result[1][i]);
-                            }
-                        }
+                        result.entries.forEach(function (entry) {
+                            shares += parseFloat(entry.value);
+                        });
                         if (shares > 0) {
                             totalShares = shares;
                         }
                         pcb();
-                    }
-                );
+                    })
+                    .catch(function (error) {
+                        pcb(error);
+                    });
             },
             function (err) {
                 if (err) {
@@ -371,101 +355,57 @@ export default function (logger, portalConfig, poolConfigs) {
             _this.stats.pools,
             function (pool, pcb) {
                 var coin = String(_this.stats.pools[pool.name].name);
-                // get all immature balances from address
-                client.hscan(
-                    coin + ':immature',
-                    0,
-                    'match',
-                    a + '*',
-                    'count',
-                    10000,
-                    function (error, pends) {
-                        // get all balances from address
-                        client.hscan(
-                            coin + ':balances',
-                            0,
-                            'match',
-                            a + '*',
-                            'count',
-                            10000,
-                            function (error, bals) {
-                                // get all payouts from address
-                                client.hscan(
-                                    coin + ':payouts',
-                                    0,
-                                    'match',
-                                    a + '*',
-                                    'count',
-                                    10000,
-                                    function (error, pays) {
-                                        var workerName = '';
-                                        var balAmount = 0;
-                                        var paidAmount = 0;
-                                        var pendingAmount = 0;
+                var scanOptions = { MATCH: a + '*', COUNT: 10000 };
+                Promise.all([
+                    // immature balances, balances and payouts for address
+                    client.hScan(coin + ':immature', '0', scanOptions),
+                    client.hScan(coin + ':balances', '0', scanOptions),
+                    client.hScan(coin + ':payouts', '0', scanOptions)
+                ])
+                    .then(function (results) {
+                        var pends = results[0].entries;
+                        var bals = results[1].entries;
+                        var pays = results[2].entries;
 
-                                        var workers = {};
+                        var workers = {};
 
-                                        for (var i in pays[1]) {
-                                            if (Math.abs(i % 2) != 1) {
-                                                workerName = String(pays[1][i]);
-                                                workers[workerName] =
-                                                    workers[workerName] || {};
-                                            } else {
-                                                paidAmount = parseFloat(
-                                                    pays[1][i]
-                                                );
-                                                workers[workerName].paid =
-                                                    coinsRound(paidAmount);
-                                                totalPaid += paidAmount;
-                                            }
-                                        }
-                                        for (var b in bals[1]) {
-                                            if (Math.abs(b % 2) != 1) {
-                                                workerName = String(bals[1][b]);
-                                                workers[workerName] =
-                                                    workers[workerName] || {};
-                                            } else {
-                                                balAmount = parseFloat(
-                                                    bals[1][b]
-                                                );
-                                                workers[workerName].balance =
-                                                    coinsRound(balAmount);
-                                                totalHeld += balAmount;
-                                            }
-                                        }
-                                        for (var b in pends[1]) {
-                                            if (Math.abs(b % 2) != 1) {
-                                                workerName = String(
-                                                    pends[1][b]
-                                                );
-                                                workers[workerName] =
-                                                    workers[workerName] || {};
-                                            } else {
-                                                pendingAmount = parseFloat(
-                                                    pends[1][b]
-                                                );
-                                                workers[workerName].immature =
-                                                    coinsRound(pendingAmount);
-                                                totalImmature += pendingAmount;
-                                            }
-                                        }
+                        pays.forEach(function (entry) {
+                            var workerName = String(entry.field);
+                            workers[workerName] = workers[workerName] || {};
+                            var paidAmount = parseFloat(entry.value);
+                            workers[workerName].paid = coinsRound(paidAmount);
+                            totalPaid += paidAmount;
+                        });
+                        bals.forEach(function (entry) {
+                            var workerName = String(entry.field);
+                            workers[workerName] = workers[workerName] || {};
+                            var balAmount = parseFloat(entry.value);
+                            workers[workerName].balance = coinsRound(balAmount);
+                            totalHeld += balAmount;
+                        });
+                        pends.forEach(function (entry) {
+                            var workerName = String(entry.field);
+                            workers[workerName] = workers[workerName] || {};
+                            var pendingAmount = parseFloat(entry.value);
+                            workers[workerName].immature =
+                                coinsRound(pendingAmount);
+                            totalImmature += pendingAmount;
+                        });
 
-                                        for (var w in workers) {
-                                            balances.push({
-                                                worker: String(w),
-                                                balance: workers[w].balance,
-                                                paid: workers[w].paid,
-                                                immature: workers[w].immature
-                                            });
-                                        }
+                        for (var w in workers) {
+                            balances.push({
+                                worker: String(w),
+                                balance: workers[w].balance,
+                                paid: workers[w].paid,
+                                immature: workers[w].immature
+                            });
+                        }
 
-                                        pcb();
-                                    }
-                                );
-                            }
-                        );
-                    }
-                );
+                        pcb();
+                    })
+                    .catch(function (error) {
+                        pcb(error);
+                    });
             },
             function (err) {
                 if (err) {
@@ -499,45 +439,45 @@ export default function (logger, portalConfig, poolConfigs) {
                         portalConfig.website.stats.hashrateWindow) |
                     0
                 ).toString();
-                var redisCommands = [];
+                /* 12 commands per coin; the reply offsets (i + 0 .. i + 11)
+                   below depend on this exact order */
+                var commandsPerCoin = 12;
 
-                var redisCommandTemplates = [
-                    ['zremrangebyscore', ':hashrate', '-inf', '(' + windowTime],
-                    ['zrangebyscore', ':hashrate', windowTime, '+inf'],
-                    ['hgetall', ':stats'],
-                    ['scard', ':blocksPending'],
-                    ['scard', ':blocksConfirmed'],
-                    ['scard', ':blocksKicked'],
-                    ['smembers', ':blocksPending'],
-                    ['smembers', ':blocksConfirmed'],
-                    ['hgetall', ':shares:roundCurrent'],
-                    ['hgetall', ':blocksPendingConfirms'],
-                    ['zrange', ':payments', -100, -1],
-                    ['hgetall', ':shares:timesCurrent']
-                ];
-
-                var commandsPerCoin = redisCommandTemplates.length;
-
-                client.coins.map(function (coin) {
-                    redisCommandTemplates.map(function (t) {
-                        var clonedTemplates = t.slice(0);
-                        clonedTemplates[1] = coin + clonedTemplates[1];
-                        redisCommands.push(clonedTemplates);
-                    });
+                var multi = client.client.multi();
+                client.coins.forEach(function (coin) {
+                    multi
+                        .zRemRangeByScore(
+                            coin + ':hashrate',
+                            '-inf',
+                            '(' + windowTime
+                        )
+                        .zRangeByScore(coin + ':hashrate', windowTime, '+inf')
+                        .hGetAll(coin + ':stats')
+                        .sCard(coin + ':blocksPending')
+                        .sCard(coin + ':blocksConfirmed')
+                        .sCard(coin + ':blocksKicked')
+                        .sMembers(coin + ':blocksPending')
+                        .sMembers(coin + ':blocksConfirmed')
+                        .hGetAll(coin + ':shares:roundCurrent')
+                        .hGetAll(coin + ':blocksPendingConfirms')
+                        .zRange(coin + ':payments', -100, -1)
+                        .hGetAll(coin + ':shares:timesCurrent');
                 });
 
-                client.client
-                    .multi(redisCommands)
-                    .exec(function (err, replies) {
-                        if (err) {
-                            logger.error(
-                                logSystem,
-                                'Global',
-                                'error with getting global stats ' +
-                                    JSON.stringify(err)
-                            );
-                            callback(err);
-                        } else {
+                multi
+                    .exec()
+                    .catch(function (err) {
+                        logger.error(
+                            logSystem,
+                            'Global',
+                            'error with getting global stats ' +
+                                JSON.stringify(err.message)
+                        );
+                        callback(err);
+                        return null;
+                    })
+                    .then(function (replies) {
+                        if (replies) {
                             for (
                                 var i = 0;
                                 i < replies.length;
@@ -947,28 +887,24 @@ export default function (logger, portalConfig, poolConfigs) {
                 }
 
                 redisStats
-                    .multi([
-                        [
-                            'zadd',
-                            'statHistory',
-                            statGatherTime,
-                            _this.statsString
-                        ],
-                        [
-                            'zremrangebyscore',
-                            'statHistory',
-                            '-inf',
-                            '(' + retentionTime
-                        ]
-                    ])
-                    .exec(function (err, replies) {
-                        if (err)
-                            logger.error(
-                                logSystem,
-                                'Historics',
-                                'Error adding stats to historics ' +
-                                    JSON.stringify(err)
-                            );
+                    .multi()
+                    .zAdd('statHistory', {
+                        score: statGatherTime,
+                        value: _this.statsString
+                    })
+                    .zRemRangeByScore(
+                        'statHistory',
+                        '-inf',
+                        '(' + retentionTime
+                    )
+                    .exec()
+                    .catch(function (err) {
+                        logger.error(
+                            logSystem,
+                            'Historics',
+                            'Error adding stats to historics ' +
+                                JSON.stringify(err.message)
+                        );
                     });
                 callback();
             }

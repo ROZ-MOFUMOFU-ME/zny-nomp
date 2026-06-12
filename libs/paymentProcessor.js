@@ -1,6 +1,6 @@
 import fs from 'fs';
 import request from 'axios';
-import redis from 'redis';
+import { createRedisClient, execCommands } from './redisUtil.js';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/lib/util.js';
@@ -145,14 +145,13 @@ function SetupForPool(logger, poolOptions, setupFinished) {
             logger[severity](logSystem, logComponent, message);
         }
     );
-    var redisClient = redis.createClient(
-        poolOptions.redis.port,
-        poolOptions.redis.host
-    );
-    // redis auth if enabled
-    if (poolOptions.redis.password) {
-        redisClient.auth(poolOptions.redis.password);
-    }
+    var redisClient = createRedisClient(poolOptions.redis, function (err) {
+        logger.error(
+            logSystem,
+            logComponent,
+            'Redis client had an error: ' + JSON.stringify(err.message)
+        );
+    });
 
     var magnitude;
     var minPaymentSatoshis;
@@ -554,19 +553,17 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                                     'coinmarketcap',
                                     JSON.stringify(data)
                                 ]);
-                                redisClient
-                                    .multi(marketStatsUpdate)
-                                    .exec(function (err, results) {
-                                        if (err) {
-                                            logger.error(
-                                                logSystem,
-                                                logComponent,
-                                                'Error with redis during call to cacheMarketStats() ' +
-                                                    JSON.stringify(error)
-                                            );
-                                            return;
-                                        }
-                                    });
+                                execCommands(
+                                    redisClient,
+                                    marketStatsUpdate
+                                ).catch(function (err) {
+                                    logger.error(
+                                        logSystem,
+                                        logComponent,
+                                        'Error with redis during call to cacheMarketStats() ' +
+                                            JSON.stringify(err.message)
+                                    );
+                                });
                             }
                         }
                     } else {
@@ -694,19 +691,16 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                     }
                     if (finalRedisCommands.length <= 0) return;
 
-                    redisClient
-                        .multi(finalRedisCommands)
-                        .exec(function (error, results) {
-                            if (error) {
-                                logger.error(
-                                    logSystem,
-                                    logComponent,
-                                    'Error with redis during call to cacheNetworkStats() ' +
-                                        JSON.stringify(error)
-                                );
-                                return;
-                            }
-                        });
+                    execCommands(redisClient, finalRedisCommands).catch(
+                        function (error) {
+                            logger.error(
+                                logSystem,
+                                logComponent,
+                                'Error with redis during call to cacheNetworkStats() ' +
+                                    JSON.stringify(error.message)
+                            );
+                        }
+                    );
                 }
             );
         });
@@ -977,130 +971,96 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                 function (callback) {
                     startRedisTimer();
                     redisClient
-                        .multi([
-                            ['hgetall', coin + ':balances'],
-                            ['smembers', coin + ':blocksPending']
-                        ])
-                        .exec(function (error, results) {
-                            endRedisTimer();
-                            if (error) {
-                                logger.error(
-                                    logSystem,
-                                    logComponent,
-                                    'Could not get blocks from redis ' +
-                                        JSON.stringify(error)
-                                );
-                                callback(true);
-                                return;
-                            }
-                            // build workers object from :balances
-                            var workers = {};
-                            for (var w in results[0]) {
-                                workers[w] = {
-                                    balance: coinsToSatoshies(
-                                        parseFloat(results[0][w])
-                                    )
-                                };
-                            }
-                            // build rounds object from :blocksPending
-                            var rounds = results[1].map(function (r) {
-                                var details = r.split(':');
-                                return {
-                                    blockHash: details[0],
-                                    txHash: details[1],
-                                    height: details[2],
-                                    minedby: details[3],
-                                    time: details[4],
-                                    duplicate: false,
-                                    serialized: r
-                                };
-                            });
-                            /* sort rounds by block hieght to pay in order */
-                            rounds.sort(function (a, b) {
-                                return a.height - b.height;
-                            });
-                            // find duplicate blocks by height
-                            // this can happen when two or more solutions are submitted at the same block height
-                            var duplicateFound = false;
-                            for (var i = 0; i < rounds.length; i++) {
-                                if (
-                                    checkForDuplicateBlockHeight(
-                                        rounds,
-                                        rounds[i].height
-                                    ) === true
-                                ) {
-                                    rounds[i].duplicate = true;
-                                    duplicateFound = true;
+                        .multi()
+                        .hGetAll(coin + ':balances')
+                        .sMembers(coin + ':blocksPending')
+                        .exec()
+                        .then(
+                            function (results) {
+                                endRedisTimer();
+                                // build workers object from :balances
+                                var workers = {};
+                                for (var w in results[0]) {
+                                    workers[w] = {
+                                        balance: coinsToSatoshies(
+                                            parseFloat(results[0][w])
+                                        )
+                                    };
                                 }
-                            }
-                            // handle duplicates if needed
-                            if (duplicateFound) {
-                                var dups = rounds.filter(function (round) {
-                                    return round.duplicate;
+                                // build rounds object from :blocksPending
+                                var rounds = results[1].map(function (r) {
+                                    var details = r.split(':');
+                                    return {
+                                        blockHash: details[0],
+                                        txHash: details[1],
+                                        height: details[2],
+                                        minedby: details[3],
+                                        time: details[4],
+                                        duplicate: false,
+                                        serialized: r
+                                    };
                                 });
-                                logger.warning(
-                                    logSystem,
-                                    logComponent,
-                                    'Duplicate pending blocks found: ' +
-                                        JSON.stringify(dups)
-                                );
-                                // attempt to find the invalid duplicates
-                                var rpcDupCheck = dups.map(function (r) {
-                                    return ['getblock', [r.blockHash]];
+                                /* sort rounds by block hieght to pay in order */
+                                rounds.sort(function (a, b) {
+                                    return a.height - b.height;
                                 });
-                                startRPCTimer();
-                                daemon.batchCmd(
-                                    rpcDupCheck,
-                                    function (error, blocks) {
-                                        endRPCTimer();
-                                        if (error || !blocks) {
-                                            logger.error(
-                                                logSystem,
-                                                logComponent,
-                                                'Error with duplicate block check rpc call getblock ' +
-                                                    JSON.stringify(error)
-                                            );
-                                            return;
-                                        }
-                                        // look for the invalid duplicate block
-                                        var validBlocks = {}; // hashtable for unique look up
-                                        var invalidBlocks = []; // array for redis work
-                                        blocks.forEach(function (block, i) {
-                                            if (block && block.result) {
-                                                // invalid duplicate submit blocks have negative confirmations
-                                                if (
-                                                    block.result
-                                                        .confirmations <= 0
-                                                ) {
-                                                    logger.warning(
-                                                        logSystem,
-                                                        logComponent,
-                                                        'Remove invalid duplicate block ' +
-                                                            block.result
-                                                                .height +
-                                                            ' > ' +
-                                                            block.result.hash
-                                                    );
-                                                    // move from blocksPending to blocksDuplicate...
-                                                    invalidBlocks.push([
-                                                        'smove',
-                                                        coin + ':blocksPending',
-                                                        coin +
-                                                            ':blocksDuplicate',
-                                                        dups[i].serialized
-                                                    ]);
-                                                } else {
-                                                    // block must be valid, make sure it is unique
+                                // find duplicate blocks by height
+                                // this can happen when two or more solutions are submitted at the same block height
+                                var duplicateFound = false;
+                                for (var i = 0; i < rounds.length; i++) {
+                                    if (
+                                        checkForDuplicateBlockHeight(
+                                            rounds,
+                                            rounds[i].height
+                                        ) === true
+                                    ) {
+                                        rounds[i].duplicate = true;
+                                        duplicateFound = true;
+                                    }
+                                }
+                                // handle duplicates if needed
+                                if (duplicateFound) {
+                                    var dups = rounds.filter(function (round) {
+                                        return round.duplicate;
+                                    });
+                                    logger.warning(
+                                        logSystem,
+                                        logComponent,
+                                        'Duplicate pending blocks found: ' +
+                                            JSON.stringify(dups)
+                                    );
+                                    // attempt to find the invalid duplicates
+                                    var rpcDupCheck = dups.map(function (r) {
+                                        return ['getblock', [r.blockHash]];
+                                    });
+                                    startRPCTimer();
+                                    daemon.batchCmd(
+                                        rpcDupCheck,
+                                        function (error, blocks) {
+                                            endRPCTimer();
+                                            if (error || !blocks) {
+                                                logger.error(
+                                                    logSystem,
+                                                    logComponent,
+                                                    'Error with duplicate block check rpc call getblock ' +
+                                                        JSON.stringify(error)
+                                                );
+                                                return;
+                                            }
+                                            // look for the invalid duplicate block
+                                            var validBlocks = {}; // hashtable for unique look up
+                                            var invalidBlocks = []; // array for redis work
+                                            blocks.forEach(function (block, i) {
+                                                if (block && block.result) {
+                                                    // invalid duplicate submit blocks have negative confirmations
                                                     if (
-                                                        validBlocks.hasOwnProperty(
-                                                            dups[i].blockHash
-                                                        )
+                                                        block.result
+                                                            .confirmations <= 0
                                                     ) {
-                                                        // not unique duplicate block
                                                         logger.warning(
                                                             logSystem,
                                                             logComponent,
-                                                            'Remove non-unique duplicate block ' +
+                                                            'Remove invalid duplicate block ' +
                                                                 block.result
                                                                     .height +
                                                                 ' > ' +
@@ -1117,90 +1077,146 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                                                             dups[i].serialized
                                                         ]);
                                                     } else {
-                                                        // keep unique valid block
-                                                        validBlocks[
-                                                            dups[i].blockHash
-                                                        ] = dups[i].serialized;
-                                                        logger.debug(
-                                                            logSystem,
-                                                            logComponent,
-                                                            'Keep valid duplicate block ' +
-                                                                block.result
-                                                                    .height +
-                                                                ' > ' +
-                                                                block.result
-                                                                    .hash
-                                                        );
+                                                        // block must be valid, make sure it is unique
+                                                        if (
+                                                            validBlocks.hasOwnProperty(
+                                                                dups[i]
+                                                                    .blockHash
+                                                            )
+                                                        ) {
+                                                            // not unique duplicate block
+                                                            logger.warning(
+                                                                logSystem,
+                                                                logComponent,
+                                                                'Remove non-unique duplicate block ' +
+                                                                    block.result
+                                                                        .height +
+                                                                    ' > ' +
+                                                                    block.result
+                                                                        .hash
+                                                            );
+                                                            // move from blocksPending to blocksDuplicate...
+                                                            invalidBlocks.push([
+                                                                'smove',
+                                                                coin +
+                                                                    ':blocksPending',
+                                                                coin +
+                                                                    ':blocksDuplicate',
+                                                                dups[i]
+                                                                    .serialized
+                                                            ]);
+                                                        } else {
+                                                            // keep unique valid block
+                                                            validBlocks[
+                                                                dups[
+                                                                    i
+                                                                ].blockHash
+                                                            ] =
+                                                                dups[
+                                                                    i
+                                                                ].serialized;
+                                                            logger.debug(
+                                                                logSystem,
+                                                                logComponent,
+                                                                'Keep valid duplicate block ' +
+                                                                    block.result
+                                                                        .height +
+                                                                    ' > ' +
+                                                                    block.result
+                                                                        .hash
+                                                            );
+                                                        }
                                                     }
+                                                } else if (
+                                                    block &&
+                                                    block.error &&
+                                                    block.error.code === -5
+                                                ) {
+                                                    // Block not found, move to blocksDuplicate
+                                                    logger.warning(
+                                                        logSystem,
+                                                        logComponent,
+                                                        'Remove invalid duplicate block: ' +
+                                                            dups[i].blockHash
+                                                    );
+                                                    invalidBlocks.push([
+                                                        'smove',
+                                                        coin + ':blocksPending',
+                                                        coin +
+                                                            ':blocksDuplicate',
+                                                        dups[i].serialized
+                                                    ]);
                                                 }
-                                            } else if (
-                                                block &&
-                                                block.error &&
-                                                block.error.code === -5
-                                            ) {
-                                                // Block not found, move to blocksDuplicate
-                                                logger.warning(
-                                                    logSystem,
-                                                    logComponent,
-                                                    'Remove invalid duplicate block: ' +
-                                                        dups[i].blockHash
-                                                );
-                                                invalidBlocks.push([
-                                                    'smove',
-                                                    coin + ':blocksPending',
-                                                    coin + ':blocksDuplicate',
-                                                    dups[i].serialized
-                                                ]);
-                                            }
-                                        });
-                                        // filter out all duplicates to prevent double payments
-                                        rounds = rounds.filter(
-                                            function (round) {
-                                                return !round.duplicate;
-                                            }
-                                        );
-                                        // if we detected the invalid duplicates, move them
-                                        if (invalidBlocks.length > 0) {
-                                            // move invalid duplicate blocks in redis
-                                            startRedisTimer();
-                                            redisClient
-                                                .multi(invalidBlocks)
-                                                .exec(function (error, kicked) {
-                                                    endRedisTimer();
-                                                    if (error) {
+                                            });
+                                            // filter out all duplicates to prevent double payments
+                                            rounds = rounds.filter(
+                                                function (round) {
+                                                    return !round.duplicate;
+                                                }
+                                            );
+                                            // if we detected the invalid duplicates, move them
+                                            if (invalidBlocks.length > 0) {
+                                                // move invalid duplicate blocks in redis
+                                                startRedisTimer();
+                                                execCommands(
+                                                    redisClient,
+                                                    invalidBlocks
+                                                ).then(
+                                                    function () {
+                                                        endRedisTimer();
+                                                        // continue payments normally
+                                                        callback(
+                                                            null,
+                                                            workers,
+                                                            rounds
+                                                        );
+                                                    },
+                                                    function (error) {
+                                                        endRedisTimer();
                                                         logger.error(
                                                             logSystem,
                                                             logComponent,
                                                             'Error could not move invalid duplicate blocks in redis ' +
                                                                 JSON.stringify(
-                                                                    error
+                                                                    error.message
                                                                 )
                                                         );
+                                                        // continue payments normally
+                                                        callback(
+                                                            null,
+                                                            workers,
+                                                            rounds
+                                                        );
                                                     }
-                                                    // continue payments normally
-                                                    callback(
-                                                        null,
-                                                        workers,
-                                                        rounds
-                                                    );
-                                                });
-                                        } else {
-                                            // notify pool owner that we are unable to find the invalid duplicate blocks, manual intervention required...
-                                            logger.error(
-                                                logSystem,
-                                                logComponent,
-                                                'Unable to detect invalid duplicate blocks, duplicate block payments on hold.'
-                                            );
-                                            // continue payments normally
-                                            callback(null, workers, rounds);
+                                                );
+                                            } else {
+                                                // notify pool owner that we are unable to find the invalid duplicate blocks, manual intervention required...
+                                                logger.error(
+                                                    logSystem,
+                                                    logComponent,
+                                                    'Unable to detect invalid duplicate blocks, duplicate block payments on hold.'
+                                                );
+                                                // continue payments normally
+                                                callback(null, workers, rounds);
+                                            }
                                         }
-                                    }
+                                    );
+                                } else {
+                                    // no duplicates, continue payments normally
+                                    callback(null, workers, rounds);
+                                }
+                            },
+                            function (error) {
+                                endRedisTimer();
+                                logger.error(
+                                    logSystem,
+                                    logComponent,
+                                    'Could not get blocks from redis ' +
+                                        JSON.stringify(error.message)
                                 );
-                            } else {
-                                // no duplicates, continue payments normally
-                                callback(null, workers, rounds);
+                                callback(true);
                             }
-                        });
+                        );
                 },
 
                 /*
@@ -1377,38 +1393,25 @@ function SetupForPool(logger, poolOptions, setupFinished) {
             */
                 function (workers, rounds, addressAccount, callback) {
                     // pplnt times lookup
-                    var timeLookups = rounds.map(function (r) {
-                        return ['hgetall', coin + ':shares:times' + r.height];
+                    var timesMulti = redisClient.multi();
+                    rounds.forEach(function (r) {
+                        timesMulti.hGetAll(coin + ':shares:times' + r.height);
                     });
                     startRedisTimer();
-                    redisClient
-                        .multi(timeLookups)
-                        .exec(function (error, allWorkerTimes) {
+                    timesMulti.exec().then(
+                        function (allWorkerTimes) {
                             endRedisTimer();
-                            if (error) {
-                                callback(
-                                    'Check finished - redis error with multi get rounds time'
-                                );
-                                return;
-                            }
                             // shares lookup
-                            var shareLookups = rounds.map(function (r) {
-                                return [
-                                    'hgetall',
+                            var sharesMulti = redisClient.multi();
+                            rounds.forEach(function (r) {
+                                sharesMulti.hGetAll(
                                     coin + ':shares:round' + r.height
-                                ];
+                                );
                             });
                             startRedisTimer();
-                            redisClient
-                                .multi(shareLookups)
-                                .exec(function (error, allWorkerShares) {
+                            sharesMulti.exec().then(
+                                function (allWorkerShares) {
                                     endRedisTimer();
-                                    if (error) {
-                                        callback(
-                                            'Check finished - redis error with multi get rounds share'
-                                        );
-                                        return;
-                                    }
 
                                     // error detection
                                     var err = null;
@@ -1520,35 +1523,30 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                                                             round.serialized
                                                         ];
                                                     startRedisTimer();
-                                                    redisClient
-                                                        .multi([
-                                                            noWorkerSharesMoveCommand
-                                                        ])
-                                                        .exec(
-                                                            function (
-                                                                error,
-                                                                moved
-                                                            ) {
-                                                                endRedisTimer();
-                                                                if (error) {
-                                                                    logger.error(
-                                                                        logSystem,
-                                                                        logComponent,
-                                                                        'Error removing no worker shares block: ' +
-                                                                            JSON.stringify(
-                                                                                error
-                                                                            )
-                                                                    );
-                                                                } else {
-                                                                    logger.debug(
-                                                                        logSystem,
-                                                                        logComponent,
-                                                                        'Removed no worker shares block: ' +
-                                                                            round.blockHash
-                                                                    );
-                                                                }
-                                                            }
-                                                        );
+                                                    execCommands(redisClient, [
+                                                        noWorkerSharesMoveCommand
+                                                    ]).then(
+                                                        function () {
+                                                            endRedisTimer();
+                                                            logger.debug(
+                                                                logSystem,
+                                                                logComponent,
+                                                                'Removed no worker shares block: ' +
+                                                                    round.blockHash
+                                                            );
+                                                        },
+                                                        function (error) {
+                                                            endRedisTimer();
+                                                            logger.error(
+                                                                logSystem,
+                                                                logComponent,
+                                                                'Error removing no worker shares block: ' +
+                                                                    JSON.stringify(
+                                                                        error.message
+                                                                    )
+                                                            );
+                                                        }
+                                                    );
                                                     return;
                                                 }
                                                 var workerTimes =
@@ -1945,8 +1943,22 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                                             }
                                         }
                                     ); // end funds check
-                                }); // end share lookup
-                        }); // end time lookup
+                                },
+                                function () {
+                                    endRedisTimer();
+                                    callback(
+                                        'Check finished - redis error with multi get rounds share'
+                                    );
+                                }
+                            ); // end share lookup
+                        },
+                        function () {
+                            endRedisTimer();
+                            callback(
+                                'Check finished - redis error with multi get rounds time'
+                            );
+                        }
+                    ); // end time lookup
                 },
 
                 /*
@@ -2474,37 +2486,40 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                     }
 
                     startRedisTimer();
-                    redisClient
-                        .multi(finalRedisCommands)
-                        .exec(function (error, results) {
+                    execCommands(redisClient, finalRedisCommands).then(
+                        function () {
                             endRedisTimer();
-                            if (error) {
-                                //clearInterval(paymentInterval);
-                                clearTimeout(paymentInterval);
-                                disablePeymentProcessing = true;
+                            callback();
+                        },
+                        function (error) {
+                            endRedisTimer();
+                            //clearInterval(paymentInterval);
+                            clearTimeout(paymentInterval);
+                            disablePeymentProcessing = true;
 
-                                logger.error(
-                                    logSystem,
-                                    logComponent,
-                                    'Payments sent but could not update redis. ' +
-                                        JSON.stringify(error) +
-                                        ' Disabling payment processing to prevent possible double-payouts. The redis commands in ' +
-                                        coin +
-                                        '_finalRedisCommands.txt must be ran manually'
-                                );
+                            logger.error(
+                                logSystem,
+                                logComponent,
+                                'Payments sent but could not update redis. ' +
+                                    JSON.stringify(error.message) +
+                                    ' Disabling payment processing to prevent possible double-payouts. The redis commands in ' +
+                                    coin +
+                                    '_finalRedisCommands.txt must be ran manually'
+                            );
 
-                                fs.writeFile(
-                                    coin + '_finalRedisCommands.txt',
-                                    JSON.stringify(finalRedisCommands),
-                                    function (err) {
+                            fs.writeFile(
+                                coin + '_finalRedisCommands.txt',
+                                JSON.stringify(finalRedisCommands),
+                                function (err) {
+                                    if (err)
                                         logger.error(
                                             'Could not write finalRedisCommands.txt, you are fucked.'
                                         );
-                                    }
-                                );
-                            }
+                                }
+                            );
                             callback();
-                        });
+                        }
+                    );
                 }
             ],
             function () {

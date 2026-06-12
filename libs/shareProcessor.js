@@ -1,4 +1,4 @@
-import redis from 'redis';
+import { createRedisClient, execCommands } from './redisUtil.js';
 
 /*
 This module deals with handling shares when in internal payment processing mode. It connects to a redis
@@ -19,10 +19,14 @@ export default function (logger, poolConfig) {
     var logComponent = coin;
     var logSubCat = 'Thread ' + (parseInt(forkId) + 1);
 
-    var connection = redis.createClient(redisConfig.port, redisConfig.host);
-    if (redisConfig.password) {
-        connection.auth(redisConfig.password);
-    }
+    var connection = createRedisClient(redisConfig, function (err) {
+        logger.error(
+            logSystem,
+            logComponent,
+            logSubCat,
+            'Redis client had an error: ' + JSON.stringify(err.message)
+        );
+    });
     connection.on('ready', function () {
         logger.debug(
             logSystem,
@@ -35,14 +39,6 @@ export default function (logger, poolConfig) {
                 ')'
         );
     });
-    connection.on('error', function (err) {
-        logger.error(
-            logSystem,
-            logComponent,
-            logSubCat,
-            'Redis client had an error: ' + JSON.stringify(err)
-        );
-    });
     connection.on('end', function () {
         logger.error(
             logSystem,
@@ -51,47 +47,48 @@ export default function (logger, poolConfig) {
             'Connection to redis database has been ended'
         );
     });
-    connection.info(function (error, response) {
-        if (error) {
+    connection
+        .info()
+        .then(function (response) {
+            var parts = response.split('\r\n');
+            var version;
+            var versionString;
+            for (var i = 0; i < parts.length; i++) {
+                if (parts[i].indexOf(':') !== -1) {
+                    var valParts = parts[i].split(':');
+                    if (valParts[0] === 'redis_version') {
+                        versionString = valParts[1];
+                        version = parseFloat(versionString);
+                        break;
+                    }
+                }
+            }
+            if (!version) {
+                logger.error(
+                    logSystem,
+                    logComponent,
+                    logSubCat,
+                    'Could not detect redis version - but be super old or broken'
+                );
+            } else if (version < 2.6) {
+                logger.error(
+                    logSystem,
+                    logComponent,
+                    logSubCat,
+                    "You're using redis version " +
+                        versionString +
+                        ' the minimum required version is 2.6. Follow the damn usage instructions...'
+                );
+            }
+        })
+        .catch(function () {
             logger.error(
                 logSystem,
                 logComponent,
                 logSubCat,
                 'Redis version check failed'
             );
-            return;
-        }
-        var parts = response.split('\r\n');
-        var version;
-        var versionString;
-        for (var i = 0; i < parts.length; i++) {
-            if (parts[i].indexOf(':') !== -1) {
-                var valParts = parts[i].split(':');
-                if (valParts[0] === 'redis_version') {
-                    versionString = valParts[1];
-                    version = parseFloat(versionString);
-                    break;
-                }
-            }
-        }
-        if (!version) {
-            logger.error(
-                logSystem,
-                logComponent,
-                logSubCat,
-                'Could not detect redis version - but be super old or broken'
-            );
-        } else if (version < 2.6) {
-            logger.error(
-                logSystem,
-                logComponent,
-                logSubCat,
-                "You're using redis version " +
-                    versionString +
-                    ' the minimum required version is 2.6. Follow the damn usage instructions...'
-            );
-        }
-    });
+        });
 
     this.handleShare = function (isValidShare, isValidBlock, shareData) {
         var redisCommands = [];
@@ -161,14 +158,14 @@ export default function (logger, poolConfig) {
             ]);
         }
 
-        connection.multi(redisCommands).exec(function (err, replies) {
-            if (err)
-                logger.error(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    'Error with share processor multi ' + JSON.stringify(err)
-                );
+        execCommands(connection, redisCommands).catch(function (err) {
+            logger.error(
+                logSystem,
+                logComponent,
+                logSubCat,
+                'Error with share processor multi ' +
+                    JSON.stringify(err.message)
+            );
         });
     };
 }
