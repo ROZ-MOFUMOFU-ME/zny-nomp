@@ -36,8 +36,9 @@ If your pool uses ZNY-NOMP let us know and we will list your website here.
 #### Requirements
 
 - Coin daemon(s) (find the coin's repo and build latest version from source)
-- [Node.js](http://nodejs.org/) v16.11+ ([follow these installation instructions](https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager))
+- [Node.js](https://nodejs.org/) v18+, tested up to v24 ([installation instructions](https://nodejs.org/en/download/package-manager))
 - [Redis](http://redis.io/) key-value store v2.6+ ([follow these instructions](http://redis.io/topics/quickstart))
+- A C/C++ toolchain with C++20 support (gcc 10+) and Python, used to build the [multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing) native addon pulled in via [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool)
 
 #### Development Tools (Optional but Recommended)
 
@@ -60,6 +61,16 @@ To lint code with ESLint:
 
 ```bash
 npx eslint "**/*.js"
+```
+
+#### Multi-repository development
+
+This portal depends on [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) which in turn depends on [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing); both are pinned to their `dev` branches as git dependencies, and all three repositories are developed together on `dev`. To work on the whole stack locally, clone the three repos side by side and link them:
+
+```bash
+cd ../node-multi-hashing && npm link
+cd ../node-stratum-pool  && npm link multi-hashing && npm link
+cd ../zny-nomp           && npm link stratum-pool
 ```
 
 ##### Seriously
