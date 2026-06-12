@@ -26,6 +26,7 @@ cd ../zny-nomp           && npm link stratum-pool
   `stratum-pool` をリンクすると、`multi-hashing` は `../node-stratum-pool/node_modules` 経由でローカルクローンに解決されます — 本リポジトリの `node_modules` 内の GitHub コピーは使われません。解除は `npm unlink stratum-pool && npm install`。
 - `npm install` が git 版 multi-hashing のコンパイルで失敗する場合（例: GitHub の `dev` がまだ対応していない Node バージョン）は、`npm install --ignore-scripts` を使い、リンクチェーンに任せてください — 他の依存はすべて純粋な JS です。
 - リリースフロー: `node-multi-hashing#dev` を push → `node-stratum-pool#dev` を push → ここで `npm update stratum-pool multi-hashing` を実行してロックされたコミットを進めます。
+- **リンクは npm install で消える**: このリポジトリで何かしら `npm install` / `npm update` を実行すると、`node_modules/stratum-pool` のシンボリックリンクが GitHub クローンに置き換えられます。インストール後は必ず `npm link stratum-pool` を再実行してください（リンクされているかは `ls -la node_modules/stratum-pool` で確認できます）。ローカル修正をテストしたのに反映されていない場合は、まずこれを疑ってください。
 - **ネイティブアドオンの注意点**: multi-hashing は Node の ABI ごとにコンパイルされる NAN アドオンです。Node のバージョンを切り替えると、起動時に `Error: Module did not self-register: .../multihashing.node` で失敗します — 再ビルドしてください（`../node-multi-hashing` で `npm run build`、または `npm rebuild multi-hashing`）。さらに Node 24 では multi-hashing を `-std=c++20` でビルドする必要があります（`dev` の `binding.gyp` で設定済み）。
 - Node 24 での動作確認済み（起動・プール spawn・Website・Redis）。
 
