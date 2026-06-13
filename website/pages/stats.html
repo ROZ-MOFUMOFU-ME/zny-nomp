@@ -125,6 +125,28 @@ d.getSeconds().toString().padStart(2, '0') + ' ' +
 d.toString().match(/GMT([+-]\d{4})/)[0].replace('GMT', 'UTC') + ' ' +
 '(' + d.toString().match(/\(([^)]+)\)$/)[1] + ')';
 } }}
+{{ function fmtPrice(v){ return typeof v !== 'number' ? v : (v >= 1 ? v.toFixed(2) : v.toPrecision(4)); } }}
+{{ var pf = (it.stats && it.stats.prices) ? it.stats.prices : { prices: {}, updated: null, count: 0 }; }}
+{{ if (pf.count > 0) { }}
+<div class="pure-g" style="margin: 0 9px;">
+    <div class="pure-u-1" style="padding: 0 9px;">
+        <div class="boxStats" id="boxStatsPrices"
+            style="color: black; background-color: #cccccc; border-radius: 5px; padding: 10px; margin-bottom: 18px;">
+            <div class="boxLowerHeader"><i class="fas fa-coins fa-fw"></i> Live Prices{{ if (pf.updated) { }}
+                <span style="font-size: 0.6em; opacity: 0.8;">updated {{=readableDate(pf.updated)}}</span>{{ } }}</div>
+            <div class="boxStatsList">
+                {{ for (var sym in pf.prices) { var p = pf.prices[sym]; }}
+                <div id="price_{{=sym}}">
+                    <div><b>{{=sym}}</b></div>
+                    <div><span class="priceValue">{{=fmtPrice(p.price)}}</span> {{=(p.vsCurrency || '').toUpperCase()}}</div>
+                    <div style="font-size: 0.8em; opacity: 0.7;">via {{=p.source}}</div>
+                </div>
+                {{ } }}
+            </div>
+        </div>
+    </div>
+</div>
+{{ } }}
 <div class="pure-g" id="boxesLower">
     {{ for(var pool in it.stats.pools) { }}
     <div class="pure-u-1-3">

@@ -1,6 +1,7 @@
 import async from 'async';
 import algos from 'stratum-pool/lib/algoProperties.js';
 import { createRedisClient } from './redisUtil.js';
+import { parsePriceHash } from './priceProviders.js';
 
 /**
  * Sort object properties (only own properties will be sorted).
@@ -50,8 +51,48 @@ export default function (logger, portalConfig, poolConfigs) {
     this.stats = {};
     this.statsString = '';
 
+    // Latest coin prices, cached from the price feed (priceFeed:prices) on its
+    // own timer and attached to each stats snapshot. Empty until the priceFeed
+    // worker is enabled.
+    this.priceData = { updated: null, count: 0, prices: {} };
+
     setupStatsRedis();
     gatherStatHistory();
+
+    this.updatePriceData = function () {
+        redisStats
+            .hGetAll('priceFeed:prices')
+            .then(function (raw) {
+                return redisStats
+                    .get('priceFeed:lastUpdated')
+                    .then(function (ts) {
+                        var prices = parsePriceHash(raw);
+                        _this.priceData = {
+                            updated: ts ? parseInt(ts, 10) : null,
+                            count: Object.keys(prices).length,
+                            prices: prices
+                        };
+                    });
+            })
+            .catch(function (err) {
+                logger.error(
+                    logSystem,
+                    'Prices',
+                    'price feed read failed: ' + (err && err.message)
+                );
+            });
+    };
+    this.updatePriceData();
+    setInterval(
+        function () {
+            _this.updatePriceData();
+        },
+        Math.max(
+            30,
+            (portalConfig.priceFeed && portalConfig.priceFeed.updateInterval) ||
+                300
+        ) * 1000
+    );
 
     var canDoStats = true;
 
@@ -867,6 +908,11 @@ export default function (logger, portalConfig, poolConfigs) {
                 });
                 _this.statsString = JSON.stringify(saveStats);
                 _this.statHistory.push(saveStats);
+
+                // Attach the latest cached prices to the live stats object.
+                // Kept out of saveStats/statsString so history stays lean; the
+                // website template and the live SSE read portalStats.prices.
+                portalStats.prices = _this.priceData;
 
                 addStatPoolHistory(portalStats);
 

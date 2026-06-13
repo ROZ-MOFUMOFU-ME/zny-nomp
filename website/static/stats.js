@@ -193,6 +193,23 @@ function rebuildAllChart() {
 }
 rebuildAllChart();
 
+function fmtPriceClient(v) {
+    if (typeof v !== 'number') return v;
+    return v >= 1 ? v.toFixed(2) : v.toPrecision(4);
+}
+
+// Update the Live Prices box in place from a stats SSE payload. Only touches
+// symbols already rendered server-side (#price_<SYM>); new symbols appear on
+// the next full page load.
+function updatePriceDisplay(stats) {
+    if (!stats || !stats.prices || !stats.prices.prices) return;
+    const prices = stats.prices.prices;
+    for (const sym in prices) {
+        const el = document.querySelector('#price_' + sym + ' .priceValue');
+        if (el) el.textContent = fmtPriceClient(prices[sym].price);
+    }
+}
+
 var poolChartHidden = false;
 
 statsSource.addEventListener('message', function (e) {
@@ -208,6 +225,7 @@ statsSource.addEventListener('message', function (e) {
     }
 
     const stats = JSON.parse(e.data);
+    updatePriceDisplay(stats);
     statData.push(stats);
     if (statData.length > 482) statData.shift();
 

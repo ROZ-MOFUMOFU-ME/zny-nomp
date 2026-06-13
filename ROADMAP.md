@@ -56,9 +56,9 @@ and the stack as a whole.
 - **Real-time price feeds** _(implemented)_ — a `priceFeed` worker polls
   CoinGecko and CoinPaprika with per-symbol fallback (more providers are
   pluggable via `libs/priceProviders.js`) and stores prices in Redis under
-  `priceFeed:prices`, served by the JSON API at `/api/prices`, and consumed
-  by profit switching (`profitSwitch.js`). Remaining: display the feed in the
-  website/stats and record the coin price at payout time.
+  `priceFeed:prices`, served by the JSON API at `/api/prices`, shown as a
+  live ticker on the stats page, and consumed by profit switching
+  (`profitSwitch.js`). Remaining: record the coin price at payout time.
 
 ### Long-term
 - **Consolidate the three repos into a single monorepo** — the portal, the
