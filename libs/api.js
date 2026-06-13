@@ -1,6 +1,7 @@
 import stats from './stats.js';
 import { createRedisClient } from './redisUtil.js';
 import { parsePriceHash } from './priceProviders.js';
+import { renderMetrics } from './metrics.js';
 
 export default function (logger, portalConfig, poolConfigs) {
     var _this = this;
@@ -59,6 +60,10 @@ export default function (logger, portalConfig, poolConfigs) {
                 _this.getPrices(function (data) {
                     res.end(JSON.stringify(data));
                 });
+                return;
+            case 'metrics':
+                res.header('Content-Type', 'text/plain; version=0.0.4');
+                res.end(renderMetrics(portalStats.stats));
                 return;
             case 'blocks':
             case 'getblocksstats':

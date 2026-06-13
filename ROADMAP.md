@@ -67,7 +67,9 @@ and the stack as a whole.
   pinning, the `npm link` chain, the per-repo CI duplication, and the
   three-way release dance. This is the intended end state of the stack.
 - Modern web UI consuming the existing JSON API (`libs/api.js`).
-- Metrics endpoint (Prometheus) for pool/worker hashrate and payments.
+- **Metrics endpoint (Prometheus)** _(implemented)_ — pool/worker/algo
+  hashrate, shares, blocks, network stats and live prices are exposed in the
+  exposition format at `/api/metrics` (`libs/metrics.js`).
 - Tagged-release workflow so consumers can pin git deps by tag instead of
   tracking `#main` (an interim step until the monorepo lands).
 - High availability and scale: run multiple portal instances, evaluate Redis
