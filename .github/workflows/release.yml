@@ -1,0 +1,49 @@
+name: Release
+
+# Publish a GitHub Release when a version tag is pushed, so consumers can pin
+# the git dependencies by tag (e.g. #v1.4.0-beta.0) instead of tracking #main.
+# Cut tags from an already-CI-green commit on main (see CLAUDE.md release flow):
+# the build/lint workflows gate main/develop but do not run on tag pushes.
+on:
+    push:
+        tags:
+            - 'v*'
+
+permissions:
+    contents: write # required to create the release
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22.x'
+
+            - name: Verify the tag matches package.json version
+              run: |
+                  tag="${GITHUB_REF_NAME#v}"
+                  pkg="$(node -p "require('./package.json').version")"
+                  if [ "$tag" != "$pkg" ]; then
+                      echo "::error::Tag ${GITHUB_REF_NAME} (${tag}) does not match package.json version (${pkg})"
+                      exit 1
+                  fi
+                  echo "Tag matches package.json version: ${pkg}"
+
+            - name: Create GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # A pre-release semver carries a hyphen (e.g. -beta.0, -rc.1).
+                  prerelease=""
+                  case "${GITHUB_REF_NAME}" in
+                      *-*) prerelease="--prerelease" ;;
+                  esac
+                  gh release create "${GITHUB_REF_NAME}" \
+                      --title "${GITHUB_REF_NAME}" \
+                      --generate-notes \
+                      ${prerelease}

@@ -70,8 +70,11 @@ and the stack as a whole.
 - **Metrics endpoint (Prometheus)** _(implemented)_ — pool/worker/algo
   hashrate, shares, blocks, network stats and live prices are exposed in the
   exposition format at `/api/metrics` (`libs/metrics.js`).
-- Tagged-release workflow so consumers can pin git deps by tag instead of
-  tracking `#main` (an interim step until the monorepo lands).
+- **Tagged-release workflow** _(implemented)_ — pushing a `vX.Y.Z` tag runs
+  `.github/workflows/release.yml`, which checks the tag matches `package.json`
+  and publishes a GitHub Release with auto-generated notes (a hyphenated semver
+  such as `-beta.0` is marked pre-release). Lets consumers pin the git deps by
+  tag instead of tracking `#main` (an interim step until the monorepo lands).
 - High availability and scale: run multiple portal instances, evaluate Redis
   Cluster/replicas, and harden share/payment processing under load.
 - More coins and algorithms as node-stratum-pool / node-multi-hashing gain
