@@ -1,12 +1,17 @@
 version: 2.1
 orbs:
-    node: circleci/node@5.2
+    node: circleci/node@7.1
 jobs:
-    test-v8:
+    test:
+        parameters:
+            node-version:
+                type: string
         docker:
-            - image: circleci/node:8
+            - image: cimg/base:stable
         steps:
             - checkout
+            - node/install:
+                  node-version: << parameters.node-version >>
             - run:
                   name: Install Redis
                   command: |
@@ -21,178 +26,10 @@ jobs:
             - run:
                   name: Verify build and test
                   command: echo "Build and test completed successfully!"
-    test-v10:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '10.24'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v12:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '12.22'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v14:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '14.21'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v16:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '16.20'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v18:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '18.20'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v20:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '20.19'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v22:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '22.17'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run test
-                  command: npm run test
-            - run:
-                  name: Verify build and test
-                  command: echo "Build and test completed successfully!"
-    test-v24:
-        docker:
-            - image: cimg/base:stable
-        steps:
-            - checkout
-            - node/install:
-                  node-version: '24.3'
-            - run:
-                  name: Install Redis
-                  command: |
-                      sudo apt-get update
-                      sudo apt-get install -y redis-server
-            - run:
-                  name: Run build
-                  command: npm install
-            - run:
-                  name: Run tests
-                  command: npm run test
-            - run:
-                  name: Verify build
-                  command: echo "Build and Test completed successfully!"
 workflows:
-    build:
+    build_and_test:
         jobs:
-            - test-v16
-            - test-v18
-            - test-v20
-            - test-v22
+            - test:
+                  matrix:
+                      parameters:
+                          node-version: ['20', '22', '24']
