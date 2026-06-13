@@ -64,6 +64,11 @@ and the stack as a whole.
 - Metrics endpoint (Prometheus) for pool/worker hashrate and payments.
 - Tagged-release workflow so consumers can pin git deps by tag instead of
   tracking `#main` (an interim step until the monorepo lands).
+- High availability and scale: run multiple portal instances, evaluate Redis
+  Cluster/replicas, and harden share/payment processing under load.
+- More coins and algorithms as node-stratum-pool / node-multi-hashing gain
+  them (e.g. Ethash family, RandomX, Equihash); optional merged mining
+  (AuxPoW).
 
 ## Focus areas
 
@@ -79,6 +84,10 @@ Monorepo consolidation is deferred; these are the active priorities.
 - **Finish i18n** — `website/static/translations.json` already ships en / ja /
   zh / zh-TW / fr and more; complete the string coverage, expose a language
   switcher in the UI, and make adding new locales straightforward.
+- **Mobile-friendly, responsive UI** plus a Progressive Web App (installable,
+  offline stats view, optional push notifications) and a dark mode.
+- Documented public API (OpenAPI/Swagger) and optional WebSocket push for
+  live stats instead of polling.
 
 ### Security hardening
 - Keep dependencies patched (Dependabot + `npm audit`); dev-only advisories
@@ -95,6 +104,8 @@ Monorepo consolidation is deferred; these are the active priorities.
   invalid shares, blocks found, payment totals, per-daemon reachability).
 - Structured (JSON) logging plus health / readiness endpoints.
 - Alerting on stale daemons, payment failures, and worker-process crashes.
+- Miner-facing notifications: block-found, payment-sent and worker-offline
+  alerts via email / Discord / generic webhook.
 
 ### Containerization
 - A `Dockerfile` for the portal (multi-stage; compiles the native addon with
