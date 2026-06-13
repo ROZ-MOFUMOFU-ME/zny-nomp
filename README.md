@@ -9,7 +9,7 @@
 [![ESLint](https://img.shields.io/badge/Code%20Quality-ESLint-4b32c3.svg)](https://eslint.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This is a Yescrypt, YesPoWer, Lyra2REv2, sha256d, Quark, x11 and more algo mining pool based off of Node Open Mining Portal.
+This is a Yescrypt, YesPoWer, YesPoWerSUGAR, YescryptR8G, Lyra2REv2, sha256d, Quark, x11, vipstar and more algo mining pool based off of Node Open Mining Portal. Coins known to work include BitZeny, Koto, Monacoin, Bellcoin, Sugarchain, KumaCoin, Yenten (dev-fee aware) and VIPSTARCOIN.
 
 #### Production Usage Notice
 
@@ -65,7 +65,7 @@ npx eslint "**/*.js"
 
 #### Multi-repository development
 
-This portal depends on [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) which in turn depends on [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing); both are pinned to their `dev` branches as git dependencies, and all three repositories are developed together on `dev`. To work on the whole stack locally, clone the three repos side by side and link them:
+This portal depends on [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) which in turn depends on [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing); both are pinned to their `main` branches as git dependencies, and all three repositories are developed together on `main` (node-stratum-pool's `main` is protected, so changes there land via pull request). To work on the whole stack locally, clone the three repos side by side and link them:
 
 ```bash
 cd ../node-multi-hashing && npm link
