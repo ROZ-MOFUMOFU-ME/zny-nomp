@@ -91,6 +91,9 @@ Monorepo consolidation is deferred; these are the active priorities.
 - Documented public API (OpenAPI/Swagger) and optional WebSocket push for
   live stats instead of polling.
 - Accessibility (a11y) pass on the UI.
+- **Web3 wallet (MetaMask) connect** — wallet-signature login (passwordless)
+  and EVM payout-address management, pairing with the planned Ethash-family
+  support.
 
 ### Security hardening
 - Keep dependencies patched (Dependabot + `npm audit`); dev-only advisories
@@ -111,7 +114,8 @@ Monorepo consolidation is deferred; these are the active priorities.
 - Structured (JSON) logging plus health / readiness endpoints.
 - Alerting on stale daemons, payment failures, and worker-process crashes.
 - Miner-facing notifications: block-found, payment-sent and worker-offline
-  alerts via email / Discord / generic webhook.
+  alerts via email / Discord / generic webhook / browser (Web Push, tying
+  into the PWA).
 
 ### Containerization
 - A `Dockerfile` for the portal (multi-stage; compiles the native addon with
@@ -139,6 +143,10 @@ Built on the real-time price feeds above:
   the order book (another input to profit switching and the profitability
   view), and optionally place / track hashpower-rental orders. Pairs with the
   NiceHash-compatible stratum support tracked in node-stratum-pool.
+- **Yiimp-style auto-exchange payouts** — adopt the strengths of Yiimp-style
+  pools: let miners mine any coin and get paid in a coin of their choice (or
+  BTC) via exchange integration, backed by multi-algo / multi-coin profit
+  optimization and per-algorithm dashboards.
 
 ### Operations & reliability
 - Hot-reload of pool configs (add or change pools without restarting workers).
