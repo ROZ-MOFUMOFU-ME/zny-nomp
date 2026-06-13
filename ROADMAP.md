@@ -64,3 +64,38 @@ and the stack as a whole.
 - Metrics endpoint (Prometheus) for pool/worker hashrate and payments.
 - Tagged-release workflow so consumers can pin git deps by tag instead of
   tracking `#main` (an interim step until the monorepo lands).
+
+## Focus areas
+
+Cross-cutting improvement themes that span the near/mid/long-term items above.
+Monorepo consolidation is deferred; these are the active priorities.
+
+### Modernization
+- Replace the `dot`-template frontend with a modern SPA built on the existing
+  JSON API (`libs/api.js` / `libs/workerapi.js`).
+- Evaluate TypeScript for the portal and the sibling libraries.
+- Keep the toolchain current (ESLint/Prettier, Node LTS, routine dependency
+  bumps).
+
+### Security hardening
+- Keep dependencies patched (Dependabot + `npm audit`); dev-only advisories
+  are already pinned via package.json `overrides`.
+- Move daemon RPC credentials out of plaintext `pool_configs/*.json` into
+  environment variables / a secrets store.
+- TLS for the website and (optionally) stratum ports; tighten the existing
+  IP-banning and vardiff-based DoS protection.
+- Redis hardening: bind to localhost, require a password/ACL, document
+  persistence and firewalling.
+
+### Observability
+- Prometheus-compatible metrics endpoint (pool/worker hashrate, valid and
+  invalid shares, blocks found, payment totals, per-daemon reachability).
+- Structured (JSON) logging plus health / readiness endpoints.
+- Alerting on stale daemons, payment failures, and worker-process crashes.
+
+### Containerization
+- A `Dockerfile` for the portal (multi-stage; compiles the native addon with
+  GCC 10+).
+- A `docker-compose` stack wiring the portal, Redis, and coin daemons for
+  reproducible local and dev deployments.
+- Kubernetes manifests / a Helm chart for production.
