@@ -34,6 +34,29 @@ if (!configFileName) {
 const portalConfig = JSON.parse(
     JSON.minify(fs.readFileSync(configFileName, { encoding: 'utf8' }))
 );
+
+// Allow the Redis connection to be overridden by environment variables so the
+// same config works inside a container (e.g. docker-compose points it at the
+// "redis" service). Overrides both the portal-level redis and the
+// defaultPoolConfigs redis that pools inherit.
+if (
+    process.env.REDIS_HOST ||
+    process.env.REDIS_PORT ||
+    process.env.REDIS_PASSWORD !== undefined
+) {
+    const applyRedisEnv = function (redis) {
+        if (!redis) return;
+        if (process.env.REDIS_HOST) redis.host = process.env.REDIS_HOST;
+        if (process.env.REDIS_PORT)
+            redis.port = parseInt(process.env.REDIS_PORT, 10);
+        if (process.env.REDIS_PASSWORD !== undefined)
+            redis.password = process.env.REDIS_PASSWORD;
+    };
+    applyRedisEnv(portalConfig.redis);
+    if (portalConfig.defaultPoolConfigs)
+        applyRedisEnv(portalConfig.defaultPoolConfigs.redis);
+}
+
 let poolConfigs;
 
 const logger = new PoolLogger({
