@@ -274,10 +274,21 @@ Explanation for each field:
     "profitSwitch": {
         "enabled": false,
         "updateInterval": 600,
-        "depth": 0.90,
-        "usePoloniex": true,
-        "useCryptsy": true,
-        "useMintpal": true
+        "threshold": 1.05 // only switch when the best coin beats the current one by this factor
+    },
+
+    /* Real-time price feed. Populates Redis (priceFeed:prices) and powers
+       /api/prices, the stats-page price ticker, and profit switching.
+       Providers are tried in order with per-symbol fallback. */
+    "priceFeed": {
+        "enabled": false,
+        "providers": ["coingecko", "coinpaprika"],
+        "vsCurrency": "usd",
+        "updateInterval": 300,
+        "coins": {
+            "BTC": { "coingecko": "bitcoin", "coinpaprika": "btc-bitcoin" },
+            "MONA": { "coingecko": "monacoin", "coinpaprika": "mona-monacoin" }
+        }
     }
 }
 ```
