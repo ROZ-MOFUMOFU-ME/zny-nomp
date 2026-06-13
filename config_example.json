@@ -103,11 +103,7 @@
     "profitSwitch": {
         "enabled": false,
         "updateInterval": 600,
-        "depth": 0.9,
-        "usePoloniex": true,
-        "useCryptsy": true,
-        "useMintpal": true,
-        "useBittrex": true
+        "threshold": 1.05
     },
     "priceFeed": {
         "enabled": false,
