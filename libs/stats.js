@@ -2,40 +2,14 @@ import async from 'async';
 import algos from 'stratum-pool/lib/algoProperties.js';
 import { createRedisClient } from './redisUtil.js';
 import { parsePriceHash } from './priceProviders.js';
-
-/**
- * Sort object properties (only own properties will be sorted).
- * @param {object} obj object to sort properties
- * @param {string|int} sortedBy 1 - sort object properties by specific value.
- * @param {bool} isNumericSort true - sort object properties as numeric value, false - sort as string value.
- * @param {bool} reverse false - reverse sorting.
- * @returns {Array} array of items in [[key,value],[key,value],...] format.
- */
-function sortProperties(obj, sortedBy, isNumericSort, reverse) {
-    sortedBy = sortedBy || 1; // by default first key
-    isNumericSort = isNumericSort || false; // by default text sort
-    reverse = reverse || false; // by default no reverse
-
-    var reversed = reverse ? -1 : 1;
-
-    var sortable = [];
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            sortable.push([key, obj[key]]);
-        }
-    }
-    if (isNumericSort)
-        sortable.sort(function (a, b) {
-            return reversed * (a[1][sortedBy] - b[1][sortedBy]);
-        });
-    else
-        sortable.sort(function (a, b) {
-            var x = a[1][sortedBy].toLowerCase(),
-                y = b[1][sortedBy].toLowerCase();
-            return x < y ? reversed * -1 : x > y ? reversed : 0;
-        });
-    return sortable; // array in format [ [ key1, val1 ], [ key2, val2 ], ... ]
-}
+import {
+    sortObjectByProperty,
+    roundTo,
+    readableSeconds,
+    readableHashRateString,
+    sortBlocks,
+    sortWorkersByHashrate
+} from './statsUtil.js';
 
 export default function (logger, portalConfig, poolConfigs) {
     var _this = this;
@@ -270,16 +244,6 @@ export default function (logger, portalConfig, poolConfigs) {
     var magnitude = 100000000;
     var coinPrecision = magnitude.toString().length - 1;
 
-    function roundTo(n, digits) {
-        if (digits === undefined) {
-            digits = 0;
-        }
-        var multiplicator = Math.pow(10, digits);
-        n = parseFloat((n * multiplicator).toFixed(11));
-        var test = Math.round(n) / multiplicator;
-        return +test.toFixed(digits);
-    }
-
     var satoshisToCoins = function (satoshis) {
         return roundTo(satoshis / magnitude, coinPrecision);
     };
@@ -290,27 +254,6 @@ export default function (logger, portalConfig, poolConfigs) {
 
     function coinsRound(number) {
         return roundTo(number, coinPrecision);
-    }
-
-    function readableSeconds(t) {
-        var seconds = Math.round(t);
-        var minutes = Math.floor(seconds / 60);
-        var hours = Math.floor(minutes / 60);
-        var days = Math.floor(hours / 24);
-        hours = hours - days * 24;
-        minutes = minutes - days * 24 * 60 - hours * 60;
-        seconds =
-            seconds - days * 24 * 60 * 60 - hours * 60 * 60 - minutes * 60;
-        if (days > 0) {
-            return days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
-        }
-        if (hours > 0) {
-            return hours + 'h ' + minutes + 'm ' + seconds + 's';
-        }
-        if (minutes > 0) {
-            return minutes + 'm ' + seconds + 's';
-        }
-        return seconds + 's';
     }
 
     this.getCoins = function (cback) {
@@ -566,7 +509,7 @@ export default function (logger, portalConfig, poolConfigs) {
                                             ? replies[i + 2].networkHash || 0
                                             : 0,
                                         networkHashString:
-                                            getReadableNetworkHashRateString(
+                                            readableHashRateString(
                                                 replies[i + 2]
                                                     ? replies[i + 2]
                                                           .networkHash || 0
@@ -633,7 +576,12 @@ export default function (logger, portalConfig, poolConfigs) {
                                 allCoinStats[coinStats.name] = coinStats;
                             }
                             // sort pools alphabetically
-                            allCoinStats = sortPoolsByName(allCoinStats);
+                            allCoinStats = sortObjectByProperty(
+                                allCoinStats,
+                                'name',
+                                false,
+                                false
+                            );
                             callback();
                         }
                     });
@@ -752,7 +700,12 @@ export default function (logger, portalConfig, poolConfigs) {
                     });
 
                     // sort miners
-                    coinStats.miners = sortMinersByHashrate(coinStats.miners);
+                    coinStats.miners = sortObjectByProperty(
+                        coinStats.miners,
+                        'shares',
+                        true,
+                        true
+                    );
 
                     var shareMultiplier =
                         Math.pow(2, 32) / algos[coinStats.algorithm].multiplier;
@@ -881,7 +834,12 @@ export default function (logger, portalConfig, poolConfigs) {
                     }
 
                     // sort workers by name
-                    coinStats.workers = sortWorkersByName(coinStats.workers);
+                    coinStats.workers = sortObjectByProperty(
+                        coinStats.workers,
+                        'name',
+                        false,
+                        false
+                    );
 
                     delete coinStats.hashrates;
                     delete coinStats.shares;
@@ -957,92 +915,5 @@ export default function (logger, portalConfig, poolConfigs) {
         );
     };
 
-    function sortPoolsByName(objects) {
-        var newObject = {};
-        var sortedArray = sortProperties(objects, 'name', false, false);
-        for (var i = 0; i < sortedArray.length; i++) {
-            var key = sortedArray[i][0];
-            var value = sortedArray[i][1];
-            newObject[key] = value;
-        }
-        return newObject;
-    }
-
-    function sortBlocks(a, b) {
-        var as = parseInt(a.split(':')[2]);
-        var bs = parseInt(b.split(':')[2]);
-        if (as > bs) return -1;
-        if (as < bs) return 1;
-        return 0;
-    }
-
-    function sortWorkersByName(objects) {
-        var newObject = {};
-        var sortedArray = sortProperties(objects, 'name', false, false);
-        for (var i = 0; i < sortedArray.length; i++) {
-            var key = sortedArray[i][0];
-            var value = sortedArray[i][1];
-            newObject[key] = value;
-        }
-        return newObject;
-    }
-
-    function sortMinersByHashrate(objects) {
-        var newObject = {};
-        var sortedArray = sortProperties(objects, 'shares', true, true);
-        for (var i = 0; i < sortedArray.length; i++) {
-            var key = sortedArray[i][0];
-            var value = sortedArray[i][1];
-            newObject[key] = value;
-        }
-        return newObject;
-    }
-
-    function sortWorkersByHashrate(a, b) {
-        if (a.hashrate === b.hashrate) {
-            return 0;
-        } else {
-            return a.hashrate < b.hashrate ? -1 : 1;
-        }
-    }
-
-    this.getReadableHashRateString = function (hashrate) {
-        hashrate = hashrate * 1000000;
-        if (hashrate < 1000000) {
-            return '0 H/s';
-        }
-        var byteUnits = [
-            ' H/s',
-            ' KH/s',
-            ' MH/s',
-            ' GH/s',
-            ' TH/s',
-            ' PH/s',
-            ' EH/s',
-            ' ZH/s',
-            ' YH/s'
-        ];
-        var i = Math.floor(Math.log(hashrate / 1000) / Math.log(1000) - 1);
-        hashrate = hashrate / 1000 / Math.pow(1000, i + 1);
-        return hashrate.toFixed(2) + byteUnits[i];
-    };
-
-    function getReadableNetworkHashRateString(hashrate) {
-        hashrate = hashrate * 1000000;
-        if (hashrate < 1000000) return '0 H/s';
-        var byteUnits = [
-            ' H/s',
-            ' KH/s',
-            ' MH/s',
-            ' GH/s',
-            ' TH/s',
-            ' PH/s',
-            ' EH/s',
-            ' ZH/s',
-            ' YH/s'
-        ];
-        var i = Math.floor(Math.log(hashrate / 1000) / Math.log(1000) - 1);
-        hashrate = hashrate / 1000 / Math.pow(1000, i + 1);
-        return hashrate.toFixed(2) + byteUnits[i];
-    }
+    this.getReadableHashRateString = readableHashRateString;
 }
