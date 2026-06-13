@@ -135,6 +135,10 @@ Built on the real-time price feeds above:
 - Profit switching driven by live price × network-difficulty, with optional
   auto-exchange / auto-conversion hooks.
 - Record the coin price at payout time for historical earnings reporting.
+- **NiceHash integration** — use the NiceHash API for per-algorithm prices and
+  the order book (another input to profit switching and the profitability
+  view), and optionally place / track hashpower-rental orders. Pairs with the
+  NiceHash-compatible stratum support tracked in node-stratum-pool.
 
 ### Operations & reliability
 - Hot-reload of pool configs (add or change pools without restarting workers).
