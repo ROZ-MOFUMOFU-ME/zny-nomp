@@ -1,11 +1,11 @@
 # BitZeny - Node Open Mining Portal
 
-[![gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ROZ-MOFUMOFU-ME/zny-nomp)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/zHUdQy2NzU)
 [![Lint/Format](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/lint-format.yml/badge.svg)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/lint-format.yml)
 [![GitHub CI](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/node.js.yml/badge.svg)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/node.js.yml)
 [![CircleCI](https://circleci.com/gh/ROZ-MOFUMOFU-ME/zny-nomp/tree/main.svg?style=svg)](https://circleci.com/gh/ROZ-MOFUMOFU-ME/zny-nomp/tree/main)
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=white)](https://www.javascript.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-20%20%7C%2022%20%7C%2024-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
 [![Prettier](https://img.shields.io/badge/Code%20Style-Prettier-f7b93e.svg)](https://prettier.io/)
 [![ESLint](https://img.shields.io/badge/Code%20Quality-ESLint-4b32c3.svg)](https://eslint.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
