@@ -4,7 +4,7 @@
 
 ## マルチリポジトリ開発
 
-このポータルは、一体で開発される3リポジトリ構成の最上位です。**3リポジトリとも単一の `main` ブランチで開発します**（2026-06-13 に dev/dev2/stable/old を main へ統合して削除しました。本リポジトリと node-multi-hashing の main は直接 push 可能、node-stratum-pool の main は保護ブランチなので PR 経由でマージします）。兄弟リポジトリは隣のディレクトリにローカルクローンがある前提です:
+このポータルは、一体で開発される3リポジトリ構成の最上位です。**開発は `develop` ブランチで行い、`main` はリリース／プレリリース用です**（2026-06-13 に旧 dev/dev2/stable/old を main へ統合・整理し、その後 `develop` を切って開発を再開しました。区切りごとに develop → main をマージしてタグ（例 `v1.4.0-beta.0`）を切ります。本リポジトリと node-multi-hashing の main は直接 push 可、node-stratum-pool の main は保護ブランチなので develop → main は PR 経由）。兄弟リポジトリは隣のディレクトリにローカルクローンがある前提です:
 
 ```
 zny-nomp (このリポジトリ — ポータル本体, ESM)
