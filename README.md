@@ -36,7 +36,7 @@ If your pool uses ZNY-NOMP let us know and we will list your website here.
 #### Requirements
 
 - Coin daemon(s) (find the coin's repo and build latest version from source)
-- [Node.js](https://nodejs.org/) v18+, tested up to v24 ([installation instructions](https://nodejs.org/en/download/package-manager))
+- [Node.js](https://nodejs.org/) v20+, tested up to v24 ([installation instructions](https://nodejs.org/en/download/package-manager)) — v20.17+/22+ is required because the bitcoinjs-lib dependency chain loads an ESM-only module via `require(esm)`
 - [Redis](http://redis.io/) key-value store v6.2+ ([follow these instructions](http://redis.io/topics/quickstart)) — the portal uses the node-redis v6 client, which officially supports Redis 6.2 and newer
 - A C/C++ toolchain with C++20 support (gcc 10+) and Python, used to build the [multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing) native addon pulled in via [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool)
 
