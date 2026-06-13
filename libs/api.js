@@ -1,4 +1,6 @@
 import stats from './stats.js';
+import { createRedisClient } from './redisUtil.js';
+import { parsePriceHash } from './priceProviders.js';
 
 export default function (logger, portalConfig, poolConfigs) {
     var _this = this;
@@ -11,6 +13,37 @@ export default function (logger, portalConfig, poolConfigs) {
 
     this.liveStatConnections = {};
 
+    // Read-only client for the price feed the priceFeed worker publishes to
+    // Redis (priceFeed:prices / priceFeed:lastUpdated). Empty until enabled.
+    var priceClient = createRedisClient(portalConfig.redis, function (err) {
+        logger.error('API', 'prices', 'Redis error: ' + (err && err.message));
+    });
+
+    this.getPrices = function (callback) {
+        priceClient
+            .hGetAll('priceFeed:prices')
+            .then(function (raw) {
+                var prices = parsePriceHash(raw);
+                return priceClient
+                    .get('priceFeed:lastUpdated')
+                    .then(function (ts) {
+                        callback({
+                            updated: ts ? parseInt(ts, 10) : null,
+                            count: Object.keys(prices).length,
+                            prices: prices
+                        });
+                    });
+            })
+            .catch(function (err) {
+                logger.error(
+                    'API',
+                    'prices',
+                    'Redis read failed: ' + (err && err.message)
+                );
+                callback({ error: 'price data unavailable' });
+            });
+    };
+
     this.handleApiRequest = function (req, res, next) {
         switch (req.params.method) {
             case 'stats':
@@ -20,6 +53,12 @@ export default function (logger, portalConfig, poolConfigs) {
             case 'pool_stats':
                 res.header('Content-Type', 'application/json');
                 res.end(JSON.stringify(portalStats.statPoolHistory));
+                return;
+            case 'prices':
+                res.header('Content-Type', 'application/json');
+                _this.getPrices(function (data) {
+                    res.end(JSON.stringify(data));
+                });
                 return;
             case 'blocks':
             case 'getblocksstats':

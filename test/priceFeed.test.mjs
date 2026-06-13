@@ -12,7 +12,8 @@ import {
     coingecko,
     coinpaprika,
     PROVIDERS,
-    collectPrices
+    collectPrices,
+    parsePriceHash
 } from '../libs/priceProviders.js';
 
 const jsonResponse = (obj, ok = true, status = 200) => ({
@@ -95,6 +96,20 @@ test('coinpaprika.transformOne reads uppercase quotes + ISO timestamp', () => {
     assert.equal(row.providerUpdatedAt, Date.parse('2023-11-14T00:00:00Z'));
     assert.equal(coinpaprika.transformOne('x', ['usd'], { quotes: {} }, 1), null);
     assert.equal(coinpaprika.transformOne('x', ['usd'], null, 1), null);
+});
+
+test('parsePriceHash parses JSON values and skips malformed entries', () => {
+    const raw = {
+        BTC: JSON.stringify({ price: 65000, source: 'coingecko' }),
+        MONA: JSON.stringify({ price: 0.5, source: 'coinpaprika' }),
+        BAD: '{not valid json'
+    };
+    const out = parsePriceHash(raw);
+    assert.deepEqual(Object.keys(out).sort(), ['BTC', 'MONA']);
+    assert.equal(out.BTC.price, 65000);
+    assert.equal(out.MONA.source, 'coinpaprika');
+    assert.deepEqual(parsePriceHash({}), {});
+    assert.deepEqual(parsePriceHash(undefined), {});
 });
 
 test('collectPrices: per-symbol fallback fills CoinGecko gaps from CoinPaprika', async () => {

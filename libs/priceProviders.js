@@ -275,6 +275,23 @@ export const PROVIDERS = {
 
 export const DEFAULT_PROVIDER_ORDER = ['coingecko', 'coinpaprika'];
 
+/*
+ * Parse a raw `priceFeed:prices` HGETALL reply ({ SYMBOL: jsonString }) back
+ * into { SYMBOL: row }, skipping any malformed entry rather than failing the
+ * whole read. Used by the API to serve what the priceFeed worker stored.
+ */
+export function parsePriceHash(raw) {
+    const out = {};
+    Object.keys(raw || {}).forEach(function (sym) {
+        try {
+            out[sym] = JSON.parse(raw[sym]);
+        } catch (_e) {
+            // skip a malformed entry
+        }
+    });
+    return out;
+}
+
 /* --------------------------- fallback orchestrator ----------------------- */
 
 /*
