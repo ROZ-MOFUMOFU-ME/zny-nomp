@@ -33,8 +33,10 @@ and the stack as a whole.
 - **Profit switching** has no live price source — the exchange-price API
   modules (Bittrex/Poloniex/etc.) were removed during the ESM migration.
 - **MySQL path** (MPOS compatibility) still uses the legacy `mysql` package.
-- KumaCoin needs a reachable seed node; the DNS seeder fix lives in the
-  bitcoin-seeder `kuma` branch but depends on a live anchor node.
+
+> KumaCoin's DNS seeder (bitcoin-seeder `kuma` branch, with the
+> `--minversion/--protover/--initversion` options for the old peercoin-style
+> wallet) is deployed and serving nodes, so KumaCoin mining is operational.
 
 ## Roadmap
 
@@ -53,7 +55,12 @@ and the stack as a whole.
 - Restore a profit-switch price source, or remove the feature and its config.
 
 ### Long-term
+- **Consolidate the three repos into a single monorepo** — the portal, the
+  Stratum library and the hashing addon are developed as one unit, so a
+  monorepo (e.g. npm workspaces) would remove the cross-repo git-dependency
+  pinning, the `npm link` chain, the per-repo CI duplication, and the
+  three-way release dance. This is the intended end state of the stack.
 - Modern web UI consuming the existing JSON API (`libs/api.js`).
 - Metrics endpoint (Prometheus) for pool/worker hashrate and payments.
 - Tagged-release workflow so consumers can pin git deps by tag instead of
-  tracking `#main`.
+  tracking `#main` (an interim step until the monorepo lands).
