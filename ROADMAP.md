@@ -88,6 +88,7 @@ Monorepo consolidation is deferred; these are the active priorities.
   offline stats view, optional push notifications) and a dark mode.
 - Documented public API (OpenAPI/Swagger) and optional WebSocket push for
   live stats instead of polling.
+- Accessibility (a11y) pass on the UI.
 
 ### Security hardening
 - Keep dependencies patched (Dependabot + `npm audit`); dev-only advisories
@@ -98,6 +99,9 @@ Monorepo consolidation is deferred; these are the active priorities.
   IP-banning and vardiff-based DoS protection.
 - Redis hardening: bind to localhost, require a password/ACL, document
   persistence and firewalling.
+- Admin-area 2FA, an audit log, and CSP / security response headers.
+- Stronger share-submission rate limiting (in concert with the stratum
+  server's banning/vardiff in node-stratum-pool).
 
 ### Observability
 - Prometheus-compatible metrics endpoint (pool/worker hashrate, valid and
@@ -113,3 +117,22 @@ Monorepo consolidation is deferred; these are the active priorities.
 - A `docker-compose` stack wiring the portal, Redis, and coin daemons for
   reproducible local and dev deployments.
 - Kubernetes manifests / a Helm chart for production.
+
+### Miner experience
+- Additional reward schemes (PPS, PPLNS, solo) on top of the current
+  PROP/PPLNT modes.
+- Per-worker minimum-payout threshold and payout address configurable by the
+  miner.
+- Richer hashrate-history graphs and custom worker labels.
+
+### Operations & reliability
+- Hot-reload of pool configs (add or change pools without restarting workers).
+- Automated CD (tag → deploy) and a documented backup/restore procedure for
+  the Redis data (shares, balances, stats).
+- A public status page.
+
+### Documentation
+- An "add a coin" guide covering the steps to wire a new coin through the
+  three repos (coin definition, algorithm, daemon, pool config).
+- An operations runbook (incident response, daemon-desync recovery, payout
+  reconciliation).
