@@ -678,7 +678,7 @@ const startPaymentProcessor = function () {
             'Payment processor died, spawning replacement...'
         );
         setTimeout(function () {
-            startPaymentProcessor(poolConfigs);
+            startPaymentProcessor();
         }, 2000);
     });
 };
@@ -698,7 +698,7 @@ const startWebsite = function () {
             'Website process died, spawning replacement...'
         );
         setTimeout(function () {
-            startWebsite(portalConfig, poolConfigs);
+            startWebsite();
         }, 2000);
     });
 };
@@ -721,7 +721,7 @@ const startProfitSwitch = function () {
             'Profit switching process died, spawning replacement...'
         );
         setTimeout(function () {
-            startWebsite(portalConfig, poolConfigs);
+            startProfitSwitch();
         }, 2000);
     });
 };
