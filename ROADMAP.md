@@ -200,3 +200,14 @@ Built on the real-time price feeds above:
   three repos (coin definition, algorithm, daemon, pool config).
 - An operations runbook (incident response, daemon-desync recovery, payout
   reconciliation).
+
+### Mining clients & onboarding
+- **Browser mining** — an opt-in, WebAssembly-based in-browser miner: Web
+  Workers hashing through a WASM build of node-multi-hashing, connected via a
+  WebSocket→stratum bridge (tracked in node-stratum-pool). Zero-install and
+  low-barrier for newcomers; explicitly consent-gated and rate-limited to
+  avoid the cryptojacking stigma.
+- **Per-coin mining apps** — ready-to-run miners preconfigured for each coin
+  (pool URL baked in, the miner just enters their address; the right algorithm
+  binary bundled), packaged as a one-click desktop (Electron) or mobile app,
+  with auto-update.
