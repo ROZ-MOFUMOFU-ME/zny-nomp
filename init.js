@@ -10,6 +10,7 @@ import PoolWorker from './libs/poolWorker.js';
 import PaymentProcessor from './libs/paymentProcessor.js';
 import Website from './libs/website.js';
 import ProfitSwitch from './libs/profitSwitch.js';
+import PriceFeed from './libs/priceFeed.js';
 import algos from 'stratum-pool/lib/algoProperties.js';
 import jsonMinify from 'node-json-minify';
 
@@ -126,6 +127,9 @@ async function init() {
             case 'profitSwitch':
                 new ProfitSwitch(logger);
                 break;
+            case 'priceFeed':
+                new PriceFeed(logger);
+                break;
         }
         return;
     }
@@ -135,6 +139,7 @@ async function init() {
     startPaymentProcessor();
     startWebsite();
     startProfitSwitch();
+    startPriceFeed();
     startCliListener();
 }
 
@@ -717,6 +722,28 @@ const startProfitSwitch = function () {
         );
         setTimeout(function () {
             startWebsite(portalConfig, poolConfigs);
+        }, 2000);
+    });
+};
+
+const startPriceFeed = function () {
+    if (!portalConfig.priceFeed || !portalConfig.priceFeed.enabled) {
+        return;
+    }
+
+    const worker = cluster.fork({
+        workerType: 'priceFeed',
+        pools: JSON.stringify(poolConfigs),
+        portalConfig: JSON.stringify(portalConfig)
+    });
+    worker.on('exit', function (_code, _signal) {
+        logger.error(
+            'Master',
+            'PriceFeed',
+            'Price feed process died, spawning replacement...'
+        );
+        setTimeout(function () {
+            startPriceFeed();
         }, 2000);
     });
 };

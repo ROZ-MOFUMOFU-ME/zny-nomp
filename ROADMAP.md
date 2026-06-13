@@ -30,8 +30,11 @@ and the stack as a whole.
   placeholders are still present.
 - **Frontend** uses `dot` templates; there is no modern SPA (an experimental
   Next.js rewrite once lived on a `dev2` branch but was dropped).
-- **Profit switching** has no live price source — the exchange-price API
-  modules (Bittrex/Poloniex/etc.) were removed during the ESM migration.
+- **Profit switching** is not yet wired to a live price source —
+  `profitSwitch.js` still references the exchange-price modules
+  (Bittrex/Poloniex/etc.) removed during the ESM migration. A `priceFeed`
+  worker now publishes live prices to Redis (see below); pointing profit
+  switching at it is the remaining step.
 - **MySQL path** (MPOS compatibility) still uses the legacy `mysql` package.
 
 > KumaCoin's DNS seeder (bitcoin-seeder `kuma` branch, with the
@@ -52,9 +55,11 @@ and the stack as a whole.
 - Add unit tests for `shareProcessor`, `paymentProcessor` and `stats` against
   a local Redis.
 - Replace `mysql` with `mysql2`, or drop MPOS mode if unused.
-- **Real-time price feeds** from a modern source (e.g. CoinGecko /
-  CoinMarketCap) to replace the removed Bittrex/Poloniex modules — restoring
-  profit switching and powering the price-driven services below.
+- **Real-time price feeds** _(implemented)_ — a `priceFeed` worker polls
+  CoinGecko and CoinPaprika with per-symbol fallback (more providers are
+  pluggable via `libs/priceProviders.js`) and stores prices in Redis under
+  `priceFeed:prices`. Remaining: surface the feed in stats/website, wire it
+  into profit switching, and record the coin price at payout time.
 
 ### Long-term
 - **Consolidate the three repos into a single monorepo** — the portal, the
