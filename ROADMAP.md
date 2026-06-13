@@ -72,6 +72,47 @@ and the stack as a whole.
   them (e.g. Ethash family, RandomX, Equihash); optional merged mining
   (AuxPoW).
 
+## Architecture & robustness
+
+Beyond individual features, a deeper modernization of the application
+*structure* itself — to make it more robust and easier to work with. The
+portal still follows the original NOMP shape (a `cluster` master forking
+workers that talk over IPC, modules issuing raw Redis commands, `dot`
+server-side templates, untyped JS, no tests). Several Focus-area items below
+are facets of this.
+
+### Type safety & layering
+- Migrate the portal and the sibling libraries to **TypeScript** for
+  compile-time safety and better editor support.
+- Introduce clear layers: a **data-access layer** that abstracts Redis behind
+  a repository/typed API instead of scattering raw commands across
+  `shareProcessor` / `paymentProcessor` / `stats`; a **service layer** for the
+  share/payment/stats domain logic; and a thin web/API layer on top.
+- Use dependency injection so each component is unit-testable in isolation.
+
+### Configuration & process model
+- **Schema-validated configuration** (e.g. zod) with helpful errors,
+  12-factor environment overrides, and hot reload — replacing the
+  hand-parsed JSON config.
+- Revisit the `cluster` + IPC model with well-defined service boundaries
+  (pool engine, payments, stats, web) that can run in one process or be split
+  out and scaled independently.
+
+### Robustness
+- Process-wide **error boundaries** and graceful shutdown; a supervised
+  worker-restart strategy driven by health checks.
+- **Idempotent, transactional payment processing** so a retry can never
+  double-pay (today a Redis error mid-payout disables processing entirely).
+- **Structured logging** (e.g. pino) with correlation IDs, replacing the
+  bespoke `logUtil` logger.
+- A **test pyramid** wired into CI: unit (share/payment/stats), integration
+  (mock daemon + Redis), and end-to-end (regtest).
+
+### Developer & operator experience
+- A **one-command dev environment** (docker-compose / devcontainer).
+- **Architecture docs and ADRs**, plus a setup wizard / CLI that scaffolds and
+  validates first-time configuration.
+
 ## Focus areas
 
 Cross-cutting improvement themes that span the near/mid/long-term items above.
