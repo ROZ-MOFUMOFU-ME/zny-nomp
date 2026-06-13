@@ -52,7 +52,9 @@ and the stack as a whole.
 - Add unit tests for `shareProcessor`, `paymentProcessor` and `stats` against
   a local Redis.
 - Replace `mysql` with `mysql2`, or drop MPOS mode if unused.
-- Restore a profit-switch price source, or remove the feature and its config.
+- **Real-time price feeds** from a modern source (e.g. CoinGecko /
+  CoinMarketCap) to replace the removed Bittrex/Poloniex modules — restoring
+  profit switching and powering the price-driven services below.
 
 ### Long-term
 - **Consolidate the three repos into a single monorepo** — the portal, the
@@ -124,6 +126,15 @@ Monorepo consolidation is deferred; these are the active priorities.
 - Per-worker minimum-payout threshold and payout address configurable by the
   miner.
 - Richer hashrate-history graphs and custom worker labels.
+
+### Price & profitability services
+Built on the real-time price feeds above:
+- Fiat-denominated (USD / JPY / ...) earnings and balances on the dashboard.
+- A profitability calculator (hashrate → estimated reward / day) and a
+  price ticker / chart.
+- Profit switching driven by live price × network-difficulty, with optional
+  auto-exchange / auto-conversion hooks.
+- Record the coin price at payout time for historical earnings reporting.
 
 ### Operations & reliability
 - Hot-reload of pool configs (add or change pools without restarting workers).
