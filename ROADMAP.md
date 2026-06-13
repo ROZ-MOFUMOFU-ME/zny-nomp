@@ -76,6 +76,9 @@ Monorepo consolidation is deferred; these are the active priorities.
 - Evaluate TypeScript for the portal and the sibling libraries.
 - Keep the toolchain current (ESLint/Prettier, Node LTS, routine dependency
   bumps).
+- **Finish i18n** — `website/static/translations.json` already ships en / ja /
+  zh / zh-TW / fr and more; complete the string coverage, expose a language
+  switcher in the UI, and make adding new locales straightforward.
 
 ### Security hardening
 - Keep dependencies patched (Dependabot + `npm audit`); dev-only advisories
