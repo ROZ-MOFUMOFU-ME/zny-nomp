@@ -43,7 +43,9 @@
         "lint:fix": "eslint init.js --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "test": "node init.js"
+        "test": "node init.js",
+        "test:unit": "node --test test/*.test.mjs",
+        "check:config": "node scripts/check-config.mjs"
     },
     "dependencies": {
         "async": "^3.2.6",

@@ -39,10 +39,12 @@ npm run lint       # eslint init.js
 npm run lint:fix
 npm run format     # prettier --write .
 npm run format:check
+npm run test:unit  # node:test のユニットテスト（test/*.test.mjs）。ネイティブアドオン不要の純粋ロジックのみ
+npm run check:config  # config_example.json / config.json / coins/* / pool_configs/* が JSON として妥当か検証（CI 用）
 node scripts/cli.js <command>   # 稼働中のポータルに CLI ポート経由でコマンド送信（例: blocknotify）
 ```
 
-`npm test` は `node init.js` を実行するだけで、実体のあるテストスイートはありません。
+`npm test` は `node init.js` を実行するだけの起動スモークで、テストスイートではありません。実体のあるユニットテストは `npm run test:unit`（`test/*.test.mjs`）にあります。`node --test test/`（ディレクトリ指定）はこの Node ではバグるため、glob/ファイル指定を使ってください。
 
 設定: `init.js` は `config.json`（ポータル設定）を読み込み、存在しない場合は `config_example.json` にフォールバックします。プールは `pool_configs/*.json` でファイルごとに有効化し、それぞれ `coins/*.json` のコイン定義を参照します。
 
