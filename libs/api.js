@@ -2,6 +2,7 @@ import stats from './stats.js';
 import { createRedisClient } from './redisUtil.js';
 import { parsePriceHash } from './priceProviders.js';
 import { renderMetrics } from './metrics.js';
+import { buildHealth } from './health.js';
 
 export default function (logger, portalConfig, poolConfigs) {
     var _this = this;
@@ -65,6 +66,22 @@ export default function (logger, portalConfig, poolConfigs) {
                 res.header('Content-Type', 'text/plain; version=0.0.4');
                 res.end(renderMetrics(portalStats.stats));
                 return;
+            case 'health': {
+                var statsInterval =
+                    portalConfig.website &&
+                    portalConfig.website.stats &&
+                    portalConfig.website.stats.updateInterval;
+                var health = buildHealth(
+                    portalStats.stats,
+                    Date.now(),
+                    process.uptime(),
+                    statsInterval ? statsInterval * 3 : 900
+                );
+                res.header('Content-Type', 'application/json');
+                res.status(health.status === 'ok' ? 200 : 503);
+                res.end(JSON.stringify(health));
+                return;
+            }
             case 'blocks':
             case 'getblocksstats':
                 portalStats.getBlocks(function (data) {
