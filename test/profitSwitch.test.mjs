@@ -2,7 +2,10 @@
 // Run: node --test test/profitSwitch.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rankProfitability, decideSwitches } from '../libs/profitSwitchLogic.js';
+import {
+    rankProfitability,
+    decideSwitches
+} from '../libs/profitSwitchLogic.js';
 
 test('rankProfitability scores reward*price/difficulty and picks the best', () => {
     const table = {
@@ -51,8 +54,15 @@ const switching = {
 };
 
 test('decideSwitches switches when best beats current by the threshold', () => {
-    const actions = decideSwitches(ranking, { scrypt: 'coinA' }, switching, 1.05);
-    assert.deepEqual(actions, [{ switchName: 's1', algo: 'scrypt', coin: 'coinB' }]);
+    const actions = decideSwitches(
+        ranking,
+        { scrypt: 'coinA' },
+        switching,
+        1.05
+    );
+    assert.deepEqual(actions, [
+        { switchName: 's1', algo: 'scrypt', coin: 'coinB' }
+    ]);
 });
 
 test('decideSwitches does nothing when already on the best coin', () => {
@@ -71,8 +81,15 @@ test('decideSwitches respects the threshold margin (no flapping)', () => {
 });
 
 test('decideSwitches switches when the current coin cannot be scored', () => {
-    const actions = decideSwitches(ranking, { scrypt: 'coinGone' }, switching, 1.3);
-    assert.deepEqual(actions, [{ switchName: 's1', algo: 'scrypt', coin: 'coinB' }]);
+    const actions = decideSwitches(
+        ranking,
+        { scrypt: 'coinGone' },
+        switching,
+        1.3
+    );
+    assert.deepEqual(actions, [
+        { switchName: 's1', algo: 'scrypt', coin: 'coinB' }
+    ]);
 });
 
 test('decideSwitches ignores disabled entries and algos with no ranking', () => {

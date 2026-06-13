@@ -19,10 +19,12 @@ export function rankProfitability(table) {
         let best = null;
         Object.keys(coins).forEach(function (name) {
             const c = coins[name];
-            if (!(c.difficulty > 0) || !(c.price > 0) || !(c.reward > 0)) return;
+            if (!(c.difficulty > 0) || !(c.price > 0) || !(c.reward > 0))
+                return;
             const score = (c.reward * c.price) / c.difficulty;
             scores[name] = score;
-            if (!best || score > best.score) best = { coin: name, score: score };
+            if (!best || score > best.score)
+                best = { coin: name, score: score };
         });
         if (best)
             out[algo] = { coin: best.coin, score: best.score, scores: scores };

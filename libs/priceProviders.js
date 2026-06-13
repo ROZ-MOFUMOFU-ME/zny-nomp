@@ -86,7 +86,12 @@ async function mapLimit(items, limit, fn) {
  *   2. priceFeed.coins[SYMBOL] as a string: shorthand for the CoinGecko id
  *   3. the coin profile's field named after the provider (coin.coingecko, ...)
  */
-export function resolveProviderId(providerName, symbol, coinsCfg, coinProfiles) {
+export function resolveProviderId(
+    providerName,
+    symbol,
+    coinsCfg,
+    coinProfiles
+) {
     const entry = coinsCfg && coinsCfg[symbol];
     if (entry !== undefined && entry !== null) {
         if (typeof entry === 'string') {
@@ -242,7 +247,8 @@ export const coinpaprika = {
         ).join(',');
         const headers = { accept: 'application/json' };
         // Paid CoinPaprika uses an Authorization header; harmless when unset.
-        if (opts.apiKey) headers[opts.apiKeyHeader || 'Authorization'] = opts.apiKey;
+        if (opts.apiKey)
+            headers[opts.apiKeyHeader || 'Authorization'] = opts.apiKey;
         const out = {};
         const syms = Object.keys(idMap);
         const self = this;
@@ -258,7 +264,12 @@ export const coinpaprika = {
                     headers: headers,
                     timeout: opts.timeout
                 });
-                const row = self.transformOne(idMap[sym], vsList, data, opts.now);
+                const row = self.transformOne(
+                    idMap[sym],
+                    vsList,
+                    data,
+                    opts.now
+                );
                 if (row) out[sym] = row;
             } catch (e) {
                 if (opts.onItemError) opts.onItemError('coinpaprika', sym, e);

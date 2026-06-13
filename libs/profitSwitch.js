@@ -4,10 +4,7 @@ import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/lib/util.js';
 import { createRedisClient } from './redisUtil.js';
 import { parsePriceHash } from './priceProviders.js';
-import {
-    rankProfitability,
-    decideSwitches
-} from './profitSwitchLogic.js';
+import { rankProfitability, decideSwitches } from './profitSwitchLogic.js';
 
 /*
  * Profit switching, driven by the live price feed.
@@ -101,12 +98,12 @@ export default function (logger) {
             callback(null, null);
             return;
         }
-        const daemon = new Stratum.daemon.interface(
-            [meta.daemon],
-            function (severity, message) {
-                logger[severity](logSystem, name, message);
-            }
-        );
+        const daemon = new Stratum.daemon.interface([meta.daemon], function (
+            severity,
+            message
+        ) {
+            logger[severity](logSystem, name, message);
+        });
         daemon.cmd(
             'getblocktemplate',
             [{ capabilities: ['coinbasetxn', 'workid', 'coinbase/append'] }],
@@ -121,7 +118,9 @@ export default function (logger) {
                         logSystem,
                         name,
                         'getblocktemplate failed: ' +
-                            JSON.stringify(result && result[0] && result[0].error)
+                            JSON.stringify(
+                                result && result[0] && result[0].error
+                            )
                     );
                     callback(null, null); // tolerate per-coin failure
                     return;
@@ -172,10 +171,7 @@ export default function (logger) {
             logger.error(
                 logSystem,
                 'Switch',
-                'Failed to reach CLI port ' +
-                    cliPort +
-                    ': ' +
-                    (e && e.message)
+                'Failed to reach CLI port ' + cliPort + ': ' + (e && e.message)
             );
         });
     };
@@ -220,7 +216,9 @@ export default function (logger) {
                             results.forEach(function (r) {
                                 if (!r.info) return;
                                 const meta = coinMeta[r.name];
-                                const row = meta.symbol ? prices[meta.symbol] : null;
+                                const row = meta.symbol
+                                    ? prices[meta.symbol]
+                                    : null;
                                 const price =
                                     row && typeof row.price === 'number'
                                         ? row.price

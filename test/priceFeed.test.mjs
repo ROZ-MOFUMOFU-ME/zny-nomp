@@ -39,10 +39,16 @@ test('resolveProviderId: object form + coin-profile fallback', () => {
     const coins = upperKeyMap({
         BTC: { coingecko: 'bitcoin', coinpaprika: 'btc-bitcoin' }
     });
-    assert.equal(resolveProviderId('coinpaprika', 'BTC', coins, {}), 'btc-bitcoin');
+    assert.equal(
+        resolveProviderId('coinpaprika', 'BTC', coins, {}),
+        'btc-bitcoin'
+    );
 
     const profiles = { MONA: { symbol: 'MONA', coingecko: 'monacoin' } };
-    assert.equal(resolveProviderId('coingecko', 'MONA', {}, profiles), 'monacoin');
+    assert.equal(
+        resolveProviderId('coingecko', 'MONA', {}, profiles),
+        'monacoin'
+    );
     assert.equal(resolveProviderId('coinpaprika', 'MONA', {}, profiles), null);
 });
 
@@ -89,12 +95,20 @@ test('coinpaprika.transformOne reads uppercase quotes + ISO timestamp', () => {
         quotes: { USD: { price: 64950 }, BTC: { price: 1 } },
         last_updated: '2023-11-14T00:00:00Z'
     };
-    const row = coinpaprika.transformOne('btc-bitcoin', ['usd', 'btc'], data, 222);
+    const row = coinpaprika.transformOne(
+        'btc-bitcoin',
+        ['usd', 'btc'],
+        data,
+        222
+    );
     assert.equal(row.price, 64950);
     assert.deepEqual(row.prices, { usd: 64950, btc: 1 });
     assert.equal(row.source, 'coinpaprika');
     assert.equal(row.providerUpdatedAt, Date.parse('2023-11-14T00:00:00Z'));
-    assert.equal(coinpaprika.transformOne('x', ['usd'], { quotes: {} }, 1), null);
+    assert.equal(
+        coinpaprika.transformOne('x', ['usd'], { quotes: {} }, 1),
+        null
+    );
     assert.equal(coinpaprika.transformOne('x', ['usd'], null, 1), null);
 });
 
