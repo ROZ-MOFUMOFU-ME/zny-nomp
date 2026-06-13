@@ -401,3 +401,12 @@ FodyWeavers.xsd
 config.json
 pool_configs/*.json
 coins/*.json
+
+# Build artifacts (legacy TypeScript/Next.js experiments — not used)
+dist/
+.next/
+*.tsbuildinfo
+
+# Local logs
+*.log
+.bootlog

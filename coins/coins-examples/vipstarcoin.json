@@ -1,0 +1,15 @@
+{
+    "name": "VIPSTARCOIN",
+    "symbol": "VIPS",
+    "algorithm": "vipstar",
+    "reward": "POW",
+    "_comment_reward": "must stay POW: getdifficulty returns a PoW/PoS hybrid object and auto-detection would pick POS, which appends an extra signature byte to serialized blocks and makes every submission invalid",
+    "peerMagic": "012ce7b5",
+    "noGetnetworkhashps": true,
+    "blockTime": 120,
+    "txfee": 0.001,
+    "explorer": {
+        "txURL": "https://insight.vipstarco.in/tx/",
+        "blockURL": "https://insight.vipstarco.in/block/"
+    }
+}
