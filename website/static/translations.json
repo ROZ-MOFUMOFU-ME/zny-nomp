@@ -15,6 +15,14 @@
         "payments": "Payments",
         "api": "API"
     },
+    "en-GB": {
+        "getting_started": "Getting Started",
+        "pool_stats": "Pool Stats",
+        "workers_stats": "Workers Stats",
+        "tab_stats": "Tabs Stats",
+        "payments": "Payments",
+        "api": "API"
+    },
     "ja": {
         "getting_started": "始め方",
         "pool_stats": "プール状況",

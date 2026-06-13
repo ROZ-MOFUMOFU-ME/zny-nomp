@@ -20,7 +20,8 @@
             "host": "127.0.0.1",
             "port": 7585,
             "user": "username",
-            "password": "password"
+            "password": "password",
+            "rpcPath": "/"
         }
     },
 
@@ -36,7 +37,7 @@
             "diff": 0.5,
             "tls": false,
             "varDiff": {
-                "minDiff": 0.00,
+                "minDiff": 0.0,
                 "maxDiff": 16,
                 "targetTime": 15,
                 "retargetTime": 60,
@@ -53,7 +54,8 @@
             "host": "127.0.0.1",
             "port": 7585,
             "user": "username",
-            "password": "password"
+            "password": "password",
+            "rpcPath": "/"
         }
     ],
 
@@ -74,5 +76,4 @@
         "checkPassword": true,
         "autoCreateWorker": false
     }
-
 }

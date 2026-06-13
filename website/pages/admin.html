@@ -1,17 +1,17 @@
 <div>
-
     <style>
-        #passwordForm, #adminCenter{
+        #passwordForm,
+        #adminCenter {
             display: none;
         }
-        #adminCenter{
+        #adminCenter {
             display: flex;
             flex-flow: row;
         }
-        #leftMenu{
+        #leftMenu {
             flex: 0 0 200px;
         }
-        #editForm{
+        #editForm {
             flex: 1 1 auto;
         }
     </style>
@@ -20,18 +20,19 @@
         <fieldset>
             <legend>Password</legend>
 
-            <input id="password" type="password" placeholder="Password">
+            <input id="password" type="password" placeholder="Password" />
 
             <label for="remember" class="pure-checkbox">
-                <input id="remember" type="checkbox"> Stay Logged In
+                <input id="remember" type="checkbox" /> Stay Logged In
             </label>
 
-            <button type="submit" class="pure-button pure-button-primary">Log In</button>
+            <button type="submit" class="pure-button pure-button-primary">
+                Log In
+            </button>
         </fieldset>
     </form>
 
     <div id="adminCenter">
-
         <div class="pure-menu pure-menu-open" id="leftMenu">
             <a class="pure-menu-heading">Administration</a>
             <ul>
@@ -41,10 +42,7 @@
         </div>
 
         <div id="editForm"></div>
-
     </div>
 
-
     <script src="/static/admin.js"></script>
-
 </div>

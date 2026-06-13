@@ -4,16 +4,16 @@ var poolBalanceChart;
 var statDataBalance;
 var poolKeysBalance;
 
-function buildChartDataB(){
-    var pools = {};
+function buildChartDataB() {
+    const pools = {};
 
-    poolKeysBalance = ["total", "transparent", "private"];
+    poolKeysBalance = ['total', 'transparent', 'private'];
 
-    for (var i = 0; i < statDataBalance.length; i++) {
-        var time = statDataBalance[i].time * 1000;
-		for (var f = 0; f < poolKeysBalance.length; f++){
-            var pName = poolKeysBalance[f];
-            var a = pools[pName] = (pools[pName] || {
+    for (let i = 0; i < statDataBalance.length; i++) {
+        const time = statDataBalance[i].time * 1000;
+        for (let f = 0; f < poolKeysBalance.length; f++) {
+            const pName = poolKeysBalance[f];
+            const a = (pools[pName] = pools[pName] || {
                 Balance: []
             });
             a.Balance.push([time, statDataBalance[i][pName]]);
@@ -21,62 +21,75 @@ function buildChartDataB(){
     }
 
     poolBalanceData = [];
-    for (var pool in pools){
-       poolBalanceData.push({
+    for (const pool in pools) {
+        poolBalanceData.push({
             key: pool,
             values: pools[pool].Balance
         });
-		$('#statsBalanceAvg' + pool).text(getReadableBalanceString(calculateAverageBalance(pool)));
+        $('#statsBalanceAvg' + pool).text(
+            getReadableBalanceString(calculateAverageBalance(pool))
+        );
     }
 }
 
 function calculateAverageBalance(pool) {
-		var count = 0;
-		var total = 1;
-		var avg = 0;
-		for (var i = 0; i < poolBalanceData.length; i++) {
-			count = 0;
-			for (var ii = 0; ii < poolBalanceData[i].values.length; ii++) {
-				if (pool == null || poolBalanceData[i].key === pool) {
-					count++;
-					avg += parseFloat(poolBalanceData[i].values[ii][1]);
-				}
-			}
-			if (count > total)
-				total = count;
-		}
-		avg = avg / total;
-		return avg;
+    let count = 0;
+    let total = 1;
+    let avg = 0;
+    for (let i = 0; i < poolBalanceData.length; i++) {
+        count = 0;
+        for (let ii = 0; ii < poolBalanceData[i].values.length; ii++) {
+            if (pool == null || poolBalanceData[i].key === pool) {
+                count++;
+                avg += parseFloat(poolBalanceData[i].values[ii][1]);
+            }
+        }
+        if (count > total) total = count;
+    }
+    avg = avg / total;
+    return avg;
 }
 
-function getReadableBalanceString(Balance){
-	Balance = (Balance * 1000000);
-	if (Balance < 1000000) {
-		return '0';
-	}
-    var byteUnits = [ ' KOTO', ' kKOTO', ' MKOTO', ' GKOTO', ' TKOTO', ' PKOTO' ];
-    var i = Math.floor((Math.log(Balance/1000) / Math.log(1000)) - 1);
-    Balance = (Balance/1000) / Math.pow(1000, i + 1);
+function getReadableBalanceString(Balance) {
+    Balance = Balance * 1000000;
+    if (Balance < 1000000) {
+        return '0';
+    }
+    const byteUnits = [
+        ' KOTO',
+        ' kKOTO',
+        ' MKOTO',
+        ' GKOTO',
+        ' TKOTO',
+        ' PKOTO'
+    ];
+    const i = Math.floor(Math.log(Balance / 1000) / Math.log(1000) - 1);
+    Balance = Balance / 1000 / Math.pow(1000, i + 1);
     return Balance.toFixed(2) + byteUnits[i];
 }
 
-function timeOfDayFormatB(timestamp){
-    var dStr = d3.time.format('%I:%M %p')(new Date(timestamp));
+function timeOfDayFormatB(timestamp) {
+    let dStr = d3.time.format('%I:%M %p')(new Date(timestamp));
     if (dStr.indexOf('0') === 0) dStr = dStr.slice(1);
     return dStr;
 }
 
-function displayChartsB(){
-    nv.addGraph(function() {
-        poolBalanceChart = nv.models.lineChart()
-            .margin({left: 80, right: 30})
-            .x(function(d){ return d[0] })
-            .y(function(d){ return d[1] })
+function displayChartsB() {
+    nv.addGraph(function () {
+        poolBalanceChart = nv.models
+            .lineChart()
+            .margin({ left: 80, right: 30 })
+            .x(function (d) {
+                return d[0];
+            })
+            .y(function (d) {
+                return d[1];
+            })
             .useInteractiveGuideline(true);
 
         poolBalanceChart.xAxis.tickFormat(timeOfDayFormatB);
 
-        poolBalanceChart.yAxis.tickFormat(function(d){
+        poolBalanceChart.yAxis.tickFormat(function (d) {
             return getReadableBalanceString(d);
         });
 
@@ -86,14 +99,14 @@ function displayChartsB(){
     });
 }
 
-function triggerChartUpdatesB(){
+function triggerChartUpdatesB() {
     poolBalanceChart.update();
 }
 
 nv.utils.windowResize(triggerChartUpdatesB);
 
 var updateChartB = function () {
-    $.getJSON('/static/balance.json?' + (new Date()).getTime(), function(data){
+    $.getJSON('/static/balance.json?' + new Date().getTime(), function (data) {
         statDataBalance = data;
         buildChartDataB();
         displayChartsB();

@@ -1,27 +1,32 @@
-name: Node.js CI
+name: CI
 
 on:
-  push:
-    branches: [ "main", "dev" ]
-  pull_request:
-    branches: [ "main", "dev" ]
+    push:
+        branches: ['main', 'dev']
+    pull_request:
+        branches: ['main', 'dev']
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x, 18.x, 20.x, 22.x]
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [16.x, 18.x, 20.x, 22.x]
 
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Run build
-      run:  npm isntall
-    - name: Run test
-      run:  npm run test
-    - name: Verify build and test
-      run: echo "Build and test completed successfully!"
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - name: Run build
+              run: npm install
+            - name: Install Redis
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y redis-server
+                  sudo service redis-server start
+            - name: Run test
+              run: npm run test
+            - name: Verify build and test
+              run: echo "Build and test completed successfully!"

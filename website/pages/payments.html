@@ -31,9 +31,42 @@
         text-overflow: ellipsis;
     }
 </style>
+
+<script>
+// Format date according to browser locale using Intl.DateTimeFormat
+function formatTimeLocale(timestamp) {
+    var d = new Date(parseInt(timestamp));
+    
+    // Use Intl.DateTimeFormat for locale-aware formatting
+    var formatter = new Intl.DateTimeFormat(navigator.language, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+    });
+    
+    return formatter.format(d);
+}
+
+// Apply formatting to all time cells when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    var timeCells = document.querySelectorAll('td:nth-child(2)');
+    timeCells.forEach(function(cell) {
+        var timestamp = cell.getAttribute('data-timestamp');
+        if (timestamp) {
+            cell.textContent = formatTimeLocale(timestamp);
+        }
+    });
+});
+</script>
+
 {{ function capitalizeFirstLetter(t){return t.charAt(0).toUpperCase()+t.slice(1)} }}
 {{ function readableDate(a) {
 var d = new Date(parseInt(a));
+return d.toLocaleString();
 } }}
 {{ for(var pool in it.stats.pools) { }}
 <div id="topPool">
@@ -72,7 +105,7 @@ var d = new Date(parseInt(a));
                         {{=it.stats.pools[pool].payments[p].blocks}}
                         {{ } }}
                     </td>
-                    <td>{{=readableDate(it.stats.pools[pool].payments[p].time)}}</td>
+                    <td data-timestamp="{{=it.stats.pools[pool].payments[p].time}}">{{=readableDate(it.stats.pools[pool].payments[p].time)}}</td>
                     <td>{{=it.stats.pools[pool].payments[p].miners}}</td>
                     <td>{{=Math.round(it.stats.pools[pool].payments[p].shares)}}</td>
                     <td>{{ for(var a in it.stats.pools[pool].payments[p].amounts){ }}
