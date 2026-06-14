@@ -278,17 +278,20 @@ export default function (logger, portalConfig, poolConfigs) {
 
     this.getTotalSharesByAddress = function (address, cback) {
         var a = address.split('.')[0];
-        var client = redisClients[0].client,
-            coins = redisClients[0].coins,
-            shares = [];
+        var client = redisClients[0].client;
 
-        var pindex = parseInt(0);
+        var pools = _this.stats.pools;
+        if (!pools || Object.keys(pools).length === 0) {
+            // Stats not gathered yet (e.g. just after startup) — nothing to sum.
+            cback(0);
+            return;
+        }
+
         var totalShares = parseFloat(0);
         async.each(
-            _this.stats.pools,
+            pools,
             function (pool, pcb) {
-                pindex++;
-                var coin = String(_this.stats.pools[pool.name].name);
+                var coin = String(pools[pool.name].name);
                 client
                     .hScan(coin + ':shares:roundCurrent', '0', {
                         MATCH: a + '*',
@@ -309,17 +312,10 @@ export default function (logger, portalConfig, poolConfigs) {
                     });
             },
             function (err) {
-                if (err) {
-                    cback(0);
-                    return;
-                }
-                if (
-                    totalShares > 0 ||
-                    pindex >= Object.keys(_this.stats.pools).length
-                ) {
-                    cback(totalShares);
-                    return;
-                }
+                // Always invoke the callback — even on error or when no pool had
+                // shares — otherwise the worker_stats request hangs and the page
+                // never populates.
+                cback(err ? 0 : totalShares);
             }
         );
     };
@@ -328,17 +324,29 @@ export default function (logger, portalConfig, poolConfigs) {
         var a = address.split('.')[0];
 
         var client = redisClients[0].client,
-            coins = redisClients[0].coins,
             balances = [];
 
         var totalHeld = parseFloat(0);
         var totalPaid = parseFloat(0);
         var totalImmature = parseFloat(0);
 
+        var pools = _this.stats.pools;
+        if (!pools || Object.keys(pools).length === 0) {
+            // Stats not gathered yet — still set the address so the page renders.
+            _this.stats.address = address;
+            cback({
+                totalHeld: 0,
+                totalPaid: 0,
+                totalImmature: 0,
+                balances: []
+            });
+            return;
+        }
+
         async.each(
-            _this.stats.pools,
+            pools,
             function (pool, pcb) {
-                var coin = String(_this.stats.pools[pool.name].name);
+                var coin = String(pools[pool.name].name);
                 var scanOptions = { MATCH: a + '*', COUNT: 10000 };
                 Promise.all([
                     // immature balances, balances and payouts for address
@@ -392,13 +400,23 @@ export default function (logger, portalConfig, poolConfigs) {
                     });
             },
             function (err) {
+                // Read by the miner_stats template to render the page — always set.
+                _this.stats.address = address;
+
                 if (err) {
-                    callback('There was an error getting balances');
+                    // Don't hang the request on a Redis error (this previously
+                    // called an undefined `callback`, throwing and hanging) —
+                    // return empty balances so the page still renders.
+                    cback({
+                        totalHeld: 0,
+                        totalPaid: 0,
+                        totalImmature: 0,
+                        balances: []
+                    });
                     return;
                 }
 
                 _this.stats.balances = balances;
-                _this.stats.address = address;
 
                 cback({
                     totalHeld: coinsRound(totalHeld),
