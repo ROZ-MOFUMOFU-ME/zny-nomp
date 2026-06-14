@@ -2368,7 +2368,7 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                             Object.keys(workerShares).forEach(
                                 function (worker) {
                                     orphanMergeCommands.push([
-                                        'hincrby',
+                                        'hincrbyfloat',
                                         coin + ':shares:roundCurrent',
                                         worker,
                                         workerShares[worker]
