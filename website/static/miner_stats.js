@@ -31,7 +31,10 @@ function getReadableHashRateString(hashrate) {
 }
 
 function getReadableLuckTime(lucktime) {
-    let luck = lucktime;
+    // The API serves luck values as strings (server-side .toFixed). Coerce to a
+    // number so the "Days" branch (luck >= 1) doesn't call .toFixed on a string,
+    // which throws and aborts the whole render (no worker boxes, no stats).
+    let luck = parseFloat(lucktime);
     const timeUnits = [' Days', ' Hours', ' Minutes', ' Seconds'];
     if (luck < 1) {
         luck = luck * 24;
