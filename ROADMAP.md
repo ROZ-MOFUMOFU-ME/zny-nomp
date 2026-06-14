@@ -20,7 +20,15 @@ and the stack as a whole.
     placeholder address/RPC credentials and needs a payout run.
   - Yenten — developer-fee coinbase output is implemented and source-verified
     against yenten 6.1, but untested against a live mainnet daemon.
-  - Susucoin — the coin daemon does not build yet; on hold.
+  - Susucoin — the daemon now builds and runs and its pool_config is enabled
+    (sha256d); pending an end-to-end payout verification.
+- **Recently fixed (Koto)**: blocks that carried shielded mempool transactions
+  were being found (valid PoW) but rejected by the daemon with
+  `hashMerkleRoot mismatch` — the Stratum library now builds the merkle root
+  from each transaction's full-serialization hash instead of `txid` (see the
+  [node-stratum-pool ROADMAP](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool/blob/main/ROADMAP.md)).
+  Separately, orphaned-round share merging in `paymentProcessor` now uses
+  `hincrbyfloat`, so fractional shares are preserved instead of erroring.
 
 ## Known issues & limitations
 
@@ -44,7 +52,8 @@ and the stack as a whole.
 ### Near-term
 - Fill in the LICENSE year / copyright holder.
 - Complete the VIPSTARCOIN mainnet config and verify a real payout.
-- Decide Susucoin: get the daemon building, or drop it to an example.
+- Verify Susucoin end-to-end (mining + payout); the daemon now builds and the
+  pool is enabled.
 - Verify Yenten dev-fee payouts on mainnet (height ≥ 2,030,000).
 - Add a CI step that does more than boot `init.js` (e.g. lint + a headless
   config-parse / Redis round-trip check).
