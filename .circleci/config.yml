@@ -23,6 +23,12 @@ jobs:
                   name: Run build
                   command: npm install
             - run:
+                  name: Check config files parse
+                  command: npm run check:config
+            - run:
+                  name: Run unit tests
+                  command: npm run test:unit
+            - run:
                   name: Run test
                   command: npm run test
             - run:

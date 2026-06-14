@@ -274,10 +274,21 @@ Explanation for each field:
     "profitSwitch": {
         "enabled": false,
         "updateInterval": 600,
-        "depth": 0.90,
-        "usePoloniex": true,
-        "useCryptsy": true,
-        "useMintpal": true
+        "threshold": 1.05 // only switch when the best coin beats the current one by this factor
+    },
+
+    /* Real-time price feed. Populates Redis (priceFeed:prices) and powers
+       /api/prices, the stats-page price ticker, and profit switching.
+       Providers are tried in order with per-symbol fallback. */
+    "priceFeed": {
+        "enabled": false,
+        "providers": ["coingecko", "coinpaprika"],
+        "vsCurrency": "usd",
+        "updateInterval": 300,
+        "coins": {
+            "BTC": { "coingecko": "bitcoin", "coinpaprika": "btc-bitcoin" },
+            "MONA": { "coingecko": "monacoin", "coinpaprika": "mona-monacoin" }
+        }
     }
 }
 ```
@@ -457,6 +468,35 @@ are commented in [scripts/blocknotify.c](scripts/blocknotify.c).
 ```bash
 npm start
 ```
+
+#### Running with Docker
+
+A `Dockerfile` and `docker-compose.yml` are provided to bring up the portal
+and Redis together:
+
+```bash
+docker compose up --build
+```
+
+The compose stack runs the portal plus a Redis service and mounts your
+`config.json`, `pool_configs/` and `coins/` into the container (without a
+`config.json` it falls back to `config_example.json` baked into the image).
+Redis is reached via the `REDIS_HOST`/`REDIS_PORT` env vars, so no config edit
+is needed. **Coin daemons are not included** — point each pool's `daemons` at a
+reachable node (a host daemon via `host.docker.internal`, another container, or
+an external host). Publish your stratum ports in the compose `ports:` list. The
+portal's container healthcheck probes `/api/health`.
+
+#### JSON API & monitoring endpoints
+
+Besides the stats endpoints (see `/api`), the portal exposes:
+
+- `GET /api/prices` — latest coin prices from the price feed (enable the
+  `priceFeed` block in the config; supports CoinGecko + CoinPaprika with
+  per-symbol fallback).
+- `GET /api/metrics` — Prometheus exposition-format metrics (pool/algo
+  hashrate, shares, blocks, network stats, prices).
+- `GET /api/health` — readiness probe (`200` ok / `503` degraded).
 
 ###### Optional enhancements for your awesome new mining pool server setup:
 

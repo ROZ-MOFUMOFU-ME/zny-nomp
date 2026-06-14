@@ -103,10 +103,25 @@
     "profitSwitch": {
         "enabled": false,
         "updateInterval": 600,
-        "depth": 0.9,
-        "usePoloniex": true,
-        "useCryptsy": true,
-        "useMintpal": true,
-        "useBittrex": true
+        "threshold": 1.05
+    },
+    "priceFeed": {
+        "enabled": false,
+        "providers": ["coingecko", "coinpaprika"],
+        "vsCurrency": "usd",
+        "updateInterval": 300,
+        "timeout": 15000,
+        "coingecko": {
+            "apiBase": "https://api.coingecko.com/api/v3",
+            "apiKey": "",
+            "apiKeyHeader": "x-cg-demo-api-key"
+        },
+        "coinpaprika": {
+            "apiBase": "https://api.coinpaprika.com/v1"
+        },
+        "coins": {
+            "BTC": { "coingecko": "bitcoin", "coinpaprika": "btc-bitcoin" },
+            "MONA": { "coingecko": "monacoin", "coinpaprika": "mona-monacoin" }
+        }
     }
 }

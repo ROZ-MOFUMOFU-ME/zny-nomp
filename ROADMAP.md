@@ -20,7 +20,15 @@ and the stack as a whole.
     placeholder address/RPC credentials and needs a payout run.
   - Yenten — developer-fee coinbase output is implemented and source-verified
     against yenten 6.1, but untested against a live mainnet daemon.
-  - Susucoin — the coin daemon does not build yet; on hold.
+  - Susucoin — the daemon now builds and runs and its pool_config is enabled
+    (sha256d); pending an end-to-end payout verification.
+- **Recently fixed (Koto)**: blocks that carried shielded mempool transactions
+  were being found (valid PoW) but rejected by the daemon with
+  `hashMerkleRoot mismatch` — the Stratum library now builds the merkle root
+  from each transaction's full-serialization hash instead of `txid` (see the
+  [node-stratum-pool ROADMAP](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool/blob/main/ROADMAP.md)).
+  Separately, orphaned-round share merging in `paymentProcessor` now uses
+  `hincrbyfloat`, so fractional shares are preserved instead of erroring.
 
 ## Known issues & limitations
 
@@ -30,8 +38,9 @@ and the stack as a whole.
   placeholders are still present.
 - **Frontend** uses `dot` templates; there is no modern SPA (an experimental
   Next.js rewrite once lived on a `dev2` branch but was dropped).
-- **Profit switching** has no live price source — the exchange-price API
-  modules (Bittrex/Poloniex/etc.) were removed during the ESM migration.
+- **Profit switching** is now driven by the live price feed
+  (`profitSwitch.js`, gated off by default), but its coin-switch path has not
+  been validated on a running multi-coin pool yet.
 - **MySQL path** (MPOS compatibility) still uses the legacy `mysql` package.
 
 > KumaCoin's DNS seeder (bitcoin-seeder `kuma` branch, with the
@@ -43,7 +52,8 @@ and the stack as a whole.
 ### Near-term
 - Fill in the LICENSE year / copyright holder.
 - Complete the VIPSTARCOIN mainnet config and verify a real payout.
-- Decide Susucoin: get the daemon building, or drop it to an example.
+- Verify Susucoin end-to-end (mining + payout); the daemon now builds and the
+  pool is enabled.
 - Verify Yenten dev-fee payouts on mainnet (height ≥ 2,030,000).
 - Add a CI step that does more than boot `init.js` (e.g. lint + a headless
   config-parse / Redis round-trip check).
@@ -52,9 +62,12 @@ and the stack as a whole.
 - Add unit tests for `shareProcessor`, `paymentProcessor` and `stats` against
   a local Redis.
 - Replace `mysql` with `mysql2`, or drop MPOS mode if unused.
-- **Real-time price feeds** from a modern source (e.g. CoinGecko /
-  CoinMarketCap) to replace the removed Bittrex/Poloniex modules — restoring
-  profit switching and powering the price-driven services below.
+- **Real-time price feeds** _(implemented)_ — a `priceFeed` worker polls
+  CoinGecko and CoinPaprika with per-symbol fallback (more providers are
+  pluggable via `libs/priceProviders.js`) and stores prices in Redis under
+  `priceFeed:prices`, served by the JSON API at `/api/prices`, shown as a
+  live ticker on the stats page, and consumed by profit switching
+  (`profitSwitch.js`). Remaining: record the coin price at payout time.
 
 ### Long-term
 - **Consolidate the three repos into a single monorepo** — the portal, the
@@ -63,9 +76,14 @@ and the stack as a whole.
   pinning, the `npm link` chain, the per-repo CI duplication, and the
   three-way release dance. This is the intended end state of the stack.
 - Modern web UI consuming the existing JSON API (`libs/api.js`).
-- Metrics endpoint (Prometheus) for pool/worker hashrate and payments.
-- Tagged-release workflow so consumers can pin git deps by tag instead of
-  tracking `#main` (an interim step until the monorepo lands).
+- **Metrics endpoint (Prometheus)** _(implemented)_ — pool/worker/algo
+  hashrate, shares, blocks, network stats and live prices are exposed in the
+  exposition format at `/api/metrics` (`libs/metrics.js`).
+- **Tagged-release workflow** _(implemented)_ — pushing a `vX.Y.Z` tag runs
+  `.github/workflows/release.yml`, which checks the tag matches `package.json`
+  and publishes a GitHub Release with auto-generated notes (a hyphenated semver
+  such as `-beta.0` is marked pre-release). Lets consumers pin the git deps by
+  tag instead of tracking `#main` (an interim step until the monorepo lands).
 - High availability and scale: run multiple portal instances, evaluate Redis
   Cluster/replicas, and harden share/payment processing under load.
 - More coins and algorithms as node-stratum-pool / node-multi-hashing gain

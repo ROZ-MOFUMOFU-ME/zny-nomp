@@ -10,6 +10,7 @@ import PoolWorker from './libs/poolWorker.js';
 import PaymentProcessor from './libs/paymentProcessor.js';
 import Website from './libs/website.js';
 import ProfitSwitch from './libs/profitSwitch.js';
+import PriceFeed from './libs/priceFeed.js';
 import algos from 'stratum-pool/lib/algoProperties.js';
 import jsonMinify from 'node-json-minify';
 
@@ -34,6 +35,29 @@ if (!configFileName) {
 const portalConfig = JSON.parse(
     JSON.minify(fs.readFileSync(configFileName, { encoding: 'utf8' }))
 );
+
+// Allow the Redis connection to be overridden by environment variables so the
+// same config works inside a container (e.g. docker-compose points it at the
+// "redis" service). Overrides both the portal-level redis and the
+// defaultPoolConfigs redis that pools inherit.
+if (
+    process.env.REDIS_HOST ||
+    process.env.REDIS_PORT ||
+    process.env.REDIS_PASSWORD !== undefined
+) {
+    const applyRedisEnv = function (redis) {
+        if (!redis) return;
+        if (process.env.REDIS_HOST) redis.host = process.env.REDIS_HOST;
+        if (process.env.REDIS_PORT)
+            redis.port = parseInt(process.env.REDIS_PORT, 10);
+        if (process.env.REDIS_PASSWORD !== undefined)
+            redis.password = process.env.REDIS_PASSWORD;
+    };
+    applyRedisEnv(portalConfig.redis);
+    if (portalConfig.defaultPoolConfigs)
+        applyRedisEnv(portalConfig.defaultPoolConfigs.redis);
+}
+
 let poolConfigs;
 
 const logger = new PoolLogger({
@@ -103,6 +127,9 @@ async function init() {
             case 'profitSwitch':
                 new ProfitSwitch(logger);
                 break;
+            case 'priceFeed':
+                new PriceFeed(logger);
+                break;
         }
         return;
     }
@@ -112,6 +139,7 @@ async function init() {
     startPaymentProcessor();
     startWebsite();
     startProfitSwitch();
+    startPriceFeed();
     startCliListener();
 }
 
@@ -650,7 +678,7 @@ const startPaymentProcessor = function () {
             'Payment processor died, spawning replacement...'
         );
         setTimeout(function () {
-            startPaymentProcessor(poolConfigs);
+            startPaymentProcessor();
         }, 2000);
     });
 };
@@ -670,7 +698,7 @@ const startWebsite = function () {
             'Website process died, spawning replacement...'
         );
         setTimeout(function () {
-            startWebsite(portalConfig, poolConfigs);
+            startWebsite();
         }, 2000);
     });
 };
@@ -693,7 +721,29 @@ const startProfitSwitch = function () {
             'Profit switching process died, spawning replacement...'
         );
         setTimeout(function () {
-            startWebsite(portalConfig, poolConfigs);
+            startProfitSwitch();
+        }, 2000);
+    });
+};
+
+const startPriceFeed = function () {
+    if (!portalConfig.priceFeed || !portalConfig.priceFeed.enabled) {
+        return;
+    }
+
+    const worker = cluster.fork({
+        workerType: 'priceFeed',
+        pools: JSON.stringify(poolConfigs),
+        portalConfig: JSON.stringify(portalConfig)
+    });
+    worker.on('exit', function (_code, _signal) {
+        logger.error(
+            'Master',
+            'PriceFeed',
+            'Price feed process died, spawning replacement...'
+        );
+        setTimeout(function () {
+            startPriceFeed();
         }, 2000);
     });
 };
