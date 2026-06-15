@@ -32,7 +32,10 @@ function checkDir(dir) {
 check('config_example.json');
 check('config.json');
 checkDir('coins');
+checkDir('coins/coins-examples');
+checkDir('coins/coins-examples-testnet');
 checkDir('pool_configs');
+checkDir('pool_configs/examples');
 
 console.log('\nparsed ' + checked + ' file(s), ' + failed + ' failed');
 if (failed > 0) process.exit(1);
