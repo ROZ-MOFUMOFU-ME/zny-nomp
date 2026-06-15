@@ -1,6 +1,8 @@
 {
     "enabled": true,
     "coin": "testnet/bitzeny.json",
+    "BTCover17": false,
+    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
 
     "address": "",
 

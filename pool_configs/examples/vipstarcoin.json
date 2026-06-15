@@ -2,6 +2,8 @@
     "enabled": true,
     "_comment_enabled": "set true after: VIPS daemon running+synced, address/rpc credentials filled in",
     "coin": "vipstarcoin.json",
+    "BTCover17": false,
+    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
 
     "address": "VFILL_IN_POOL_ADDRESS_LEGACY_BASE58",
     "_comment_address": "use a legacy base58 'V...' address (not bech32) owned by the daemon wallet",
