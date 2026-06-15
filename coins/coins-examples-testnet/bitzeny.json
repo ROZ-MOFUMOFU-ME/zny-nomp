@@ -5,5 +5,15 @@
     "peerMagic": "daa5bef9",
     "peerMagicTestnet": "59454e59",
     "txfee": 0.0001,
-    "blockTime": 90
+    "blockTime": 90,
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true,
+    "testnet": {
+        "bip32": {
+            "public": "043587cf"
+        },
+        "pubKeyHash": "6f",
+        "scriptHash": "c4"
+    }
 }

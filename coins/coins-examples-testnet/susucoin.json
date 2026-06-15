@@ -8,5 +8,13 @@
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
     "blockTime": 120,
-    "version_mask": true
+    "version_mask": true,
+    "testnet": {
+        "bech32": "tutu",
+        "bip32": {
+            "public": "043587cf"
+        },
+        "pubKeyHash": "6f",
+        "scriptHash": "c4"
+    }
 }
