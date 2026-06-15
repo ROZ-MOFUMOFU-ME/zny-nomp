@@ -524,7 +524,7 @@ Donations for development are greatly appreciated!
 
 - ZNY: ZmnBu9jPKvVFL22PcwMHSEuVpTxFeCdvNv
 - NUKO: 0xa79bde46faab3c40632604728e9f2165b052581c
-- KOTO :k1FTuimwDJ8oo3x23cEBLxovxw5Cqq2U1HK
+- KOTO: k1FTuimwDJ8oo3x23cEBLxovxw5Cqq2U1HK
 - SUSU: SeXbMBaax7NgnTEFEMxin5ycXy9r9CDBot
 - MONA: MLEqE3vi11j4ZguMjkvMn5rUtze6kXbAzQ
 - BELL: BCVicYRSqKKt1ynJKPrXHA46hUWLrbjR49
