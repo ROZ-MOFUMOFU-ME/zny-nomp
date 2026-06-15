@@ -12,5 +12,13 @@
     "explorer": {
         "txURL": "https://explorer.susu.mofumofu.me/tx/",
         "blockURL": "https://explorer.susu.mofumofu.me/block/"
+    },
+    "mainnet": {
+        "bech32": "susu",
+        "bip32": {
+            "public": "0488b21e"
+        },
+        "pubKeyHash": "3f",
+        "scriptHash": "05"
     }
 }

@@ -26,5 +26,8 @@
     "explorer": {
         "txURL": "https://insight.kotocoin.info/tx/",
         "blockURL": "https://insight.kotocoin.info/block/"
-    }
+    },
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true
 }

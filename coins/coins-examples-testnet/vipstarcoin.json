@@ -1,24 +1,21 @@
 {
-    "name": "VIPSTARCOIN",
-    "symbol": "VIPS",
+    "name": "VIPSTARCOIN_testnet",
+    "symbol": "tVIPS",
     "algorithm": "vipstar",
     "reward": "POW",
     "_comment_reward": "must stay POW: getdifficulty returns a PoW/PoS hybrid object and auto-detection would pick POS, which appends an extra signature byte to serialized blocks and makes every submission invalid",
     "peerMagic": "012ce7b5",
+    "peerMagicTestnet": "1a2b3c4d",
+    "getInfo": false,
+    "noNetworkInfo": false,
     "noGetnetworkhashps": true,
     "blockTime": 120,
     "txfee": 0.001,
-    "explorer": {
-        "txURL": "https://insight.nezirin.net/tx/",
-        "blockURL": "https://insight.nezirin.net/block/"
-    },
-    "getInfo": false,
-    "noNetworkInfo": false,
-    "mainnet": {
+    "testnet": {
         "bip32": {
-            "public": "0488b21e"
+            "public": "043587cf"
         },
-        "pubKeyHash": "46",
-        "scriptHash": "32"
+        "pubKeyHash": "84",
+        "scriptHash": "6e"
     }
 }

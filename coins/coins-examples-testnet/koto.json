@@ -25,5 +25,8 @@
     "explorer": {
         "txURL": "https://test-koto.blockbook.ovh//tx/",
         "blockURL": "https://test-koto.blockbook.ovh//block/"
-    }
+    },
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true
 }

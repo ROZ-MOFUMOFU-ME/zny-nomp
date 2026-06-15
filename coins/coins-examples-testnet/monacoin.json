@@ -7,14 +7,17 @@
     "testnet": {
         "bech32": "tmona",
         "bip32": {
-            "public": "70617039"
+            "public": "043587cf"
         },
-        "pubKeyHash": "111",
-        "scriptHash": "117"
+        "pubKeyHash": "6f",
+        "scriptHash": "c4"
     },
     "blockTime": 90,
     "explorer": {
         "txURL": "https://testnet-blockbook.electrum-mona.org/tx/",
         "blockURL": "https://testnet-blockbook.electrum-mona.org/block/"
-    }
+    },
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true
 }

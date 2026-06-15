@@ -10,10 +10,10 @@
     "mainnet": {
         "bech32": "mona",
         "bip32": {
-            "public": "76067358"
+            "public": "0488b21e"
         },
-        "pubKeyHash": "50",
-        "scriptHash": "55"
+        "pubKeyHash": "32",
+        "scriptHash": "37"
     },
     "blockTime": 90,
     "explorer": {

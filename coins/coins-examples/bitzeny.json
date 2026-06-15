@@ -12,5 +12,12 @@
     "explorer": {
         "txURL": "https://insight.bitzeny.jp/tx/",
         "blockURL": "https://insight.bitzeny.jp/block/"
+    },
+    "mainnet": {
+        "bip32": {
+            "public": "0488b21e"
+        },
+        "pubKeyHash": "51",
+        "scriptHash": "05"
     }
 }
