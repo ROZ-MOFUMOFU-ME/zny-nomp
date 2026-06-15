@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import cluster from 'cluster';
 import extend from 'extend';
-import { createRedisClient } from './libs/redisUtil.js';
+import { createRedisClient, execCommands } from './libs/redisUtil.js';
 import PoolLogger from './libs/logUtil.js';
 import CliListener from './libs/cliListener.js';
 import PoolWorker from './libs/poolWorker.js';
@@ -469,18 +469,17 @@ const spawnPoolWorkers = function () {
                                     timeChangeSec
                                 ]);
                                 //logger.debug('PPLNT', msg.coin, 'Thread '+msg.thread, workerAddress+':{totalTimeSec:'+timeChangeTotal+', timeChangeSec:'+timeChangeSec+'}');
-                                connection
-                                    .multi(redisCommands)
-                                    .exec(function (err, _replies) {
-                                        if (err)
-                                            logger.error(
-                                                'PPLNT',
-                                                msg.coin,
-                                                'Thread ' + msg.thread,
-                                                'Error with time share processor call to redis ' +
-                                                    JSON.stringify(err)
-                                            );
-                                    });
+                                execCommands(connection, redisCommands).catch(
+                                    function (err) {
+                                        logger.error(
+                                            'PPLNT',
+                                            msg.coin,
+                                            'Thread ' + msg.thread,
+                                            'Error with time share processor call to redis ' +
+                                                JSON.stringify(err.message)
+                                        );
+                                    }
+                                );
                             } else {
                                 // they just re-joined the pool
                                 _lastStartTimes[workerAddress] = now;
