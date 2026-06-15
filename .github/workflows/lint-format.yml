@@ -24,5 +24,8 @@ jobs:
             - name: Run ESLint
               run: npm run lint
 
+            - name: Typecheck (tsc --noEmit)
+              run: npm run typecheck
+
             - name: Run Prettier (check only)
               run: npx prettier --ignore-path .gitignore --check "**/*.+(js|ts|json)"

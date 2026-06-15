@@ -10,20 +10,25 @@
 
 /**
  * Sort an object's own enumerable properties into an array of [key, value] pairs.
- * @param {object} obj object whose own properties are sorted.
- * @param {string|number} sortedBy property of each value to sort by (default 1).
- * @param {boolean} isNumericSort numeric compare when true, otherwise case-insensitive string compare.
- * @param {boolean} reverse reverse the sort order.
- * @returns {Array<[string, *]>} [[key, value], ...] in sorted order.
+ * @param obj object whose own properties are sorted.
+ * @param sortedBy property of each value to sort by (default 1).
+ * @param isNumericSort numeric compare when true, otherwise case-insensitive string compare.
+ * @param reverse reverse the sort order.
+ * @returns [[key, value], ...] in sorted order.
  */
-export function sortProperties(obj, sortedBy, isNumericSort, reverse) {
+export function sortProperties(
+    obj: Record<string, any>,
+    sortedBy?: string | number,
+    isNumericSort?: boolean,
+    reverse?: boolean
+): [string, any][] {
     sortedBy = sortedBy || 1; // by default first key
     isNumericSort = isNumericSort || false; // by default text sort
     reverse = reverse || false; // by default no reverse
 
     const reversed = reverse ? -1 : 1;
 
-    const sortable = [];
+    const sortable: [string, any][] = [];
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
             sortable.push([key, obj[key]]);
@@ -45,19 +50,14 @@ export function sortProperties(obj, sortedBy, isNumericSort, reverse) {
 
 /**
  * Sort an object's properties and rebuild it as a new object in sorted order.
- * @param {object} objects object to sort.
- * @param {string|number} sortedBy property of each value to sort by.
- * @param {boolean} isNumericSort numeric compare when true.
- * @param {boolean} reverse reverse the sort order.
- * @returns {object} new object with the same entries in sorted insertion order.
  */
 export function sortObjectByProperty(
-    objects,
-    sortedBy,
-    isNumericSort,
-    reverse
-) {
-    const newObject = {};
+    objects: Record<string, any>,
+    sortedBy?: string | number,
+    isNumericSort?: boolean,
+    reverse?: boolean
+): Record<string, any> {
+    const newObject: Record<string, any> = {};
     const sortedArray = sortProperties(
         objects,
         sortedBy,
@@ -70,13 +70,8 @@ export function sortObjectByProperty(
     return newObject;
 }
 
-/**
- * Round a number to the given number of decimal digits.
- * @param {number} n value to round.
- * @param {number} [digits=0] number of decimal digits.
- * @returns {number} rounded value.
- */
-export function roundTo(n, digits) {
+/** Round a number to the given number of decimal digits. */
+export function roundTo(n: number, digits?: number): number {
     if (digits === undefined) {
         digits = 0;
     }
@@ -86,12 +81,8 @@ export function roundTo(n, digits) {
     return +test.toFixed(digits);
 }
 
-/**
- * Format a duration in seconds as a compact "Xd Xh Xm Xs" string.
- * @param {number} t seconds.
- * @returns {string} human-readable duration.
- */
-export function readableSeconds(t) {
+/** Format a duration in seconds as a compact "Xd Xh Xm Xs" string. */
+export function readableSeconds(t: number): string {
     let seconds = Math.round(t);
     let minutes = Math.floor(seconds / 60);
     let hours = Math.floor(minutes / 60);
@@ -115,10 +106,8 @@ export function readableSeconds(t) {
  * Format a hashrate (in MH/s, the portal's internal unit) as a human-readable
  * string. Used for both pool/worker and network hashrates, which historically
  * shared an identical implementation.
- * @param {number} hashrate hashrate in MH/s.
- * @returns {string} e.g. "12.34 GH/s", or "0 H/s" below the display threshold.
  */
-export function readableHashRateString(hashrate) {
+export function readableHashRateString(hashrate: number): string {
     hashrate = hashrate * 1000000;
     if (hashrate < 1000000) {
         return '0 H/s';
@@ -139,13 +128,8 @@ export function readableHashRateString(hashrate) {
     return hashrate.toFixed(2) + byteUnits[i];
 }
 
-/**
- * Comparator that orders Redis block keys ("...:...:height") by height, descending.
- * @param {string} a block key.
- * @param {string} b block key.
- * @returns {number} sort comparison result.
- */
-export function sortBlocks(a, b) {
+/** Comparator that orders Redis block keys ("...:...:height") by height, descending. */
+export function sortBlocks(a: string, b: string): number {
     const as = parseInt(a.split(':')[2]);
     const bs = parseInt(b.split(':')[2]);
     if (as > bs) return -1;
@@ -153,13 +137,11 @@ export function sortBlocks(a, b) {
     return 0;
 }
 
-/**
- * Comparator that orders workers by ascending hashrate.
- * @param {{hashrate: number}} a worker.
- * @param {{hashrate: number}} b worker.
- * @returns {number} sort comparison result.
- */
-export function sortWorkersByHashrate(a, b) {
+/** Comparator that orders workers by ascending hashrate. */
+export function sortWorkersByHashrate(
+    a: { hashrate: number },
+    b: { hashrate: number }
+): number {
     if (a.hashrate === b.hashrate) {
         return 0;
     } else {

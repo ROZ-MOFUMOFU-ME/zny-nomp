@@ -1,8 +1,8 @@
 // Unit tests for the pure helpers extracted from libs/stats.js.
-// Run: node --test test/stats.test.mjs
+// Run: node --test test/stats.test.ts
 //
 // These lock the original stats.js behaviour so the extraction into
-// libs/statsUtil.js stays a behaviour-preserving refactor.
+// libs/statsUtil.ts stays a behaviour-preserving refactor.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -13,7 +13,7 @@ import {
     readableHashRateString,
     sortBlocks,
     sortWorkersByHashrate
-} from '../libs/statsUtil.js';
+} from '../libs/statsUtil.ts';
 
 test('roundTo rounds to the requested decimal digits', () => {
     // default digits === 0

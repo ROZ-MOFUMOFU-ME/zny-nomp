@@ -2,7 +2,7 @@ import stats from './stats.js';
 import { createRedisClient } from './redisUtil.js';
 import { parsePriceHash } from './priceProviders.js';
 import { renderMetrics } from './metrics.js';
-import { buildHealth } from './health.js';
+import { buildHealth } from './health.ts';
 
 export default function (logger, portalConfig, poolConfigs) {
     var _this = this;

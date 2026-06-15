@@ -44,8 +44,9 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "test": "node init.js",
-        "test:unit": "node --test test/*.test.mjs",
-        "check:config": "node scripts/check-config.mjs"
+        "test:unit": "node --test test/*.test.ts test/*.test.mjs",
+        "check:config": "node scripts/check-config.mjs",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "async": "^3.2.6",
@@ -65,12 +66,14 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@types/node": "^25.9.3",
         "eslint": "^10.5.0",
         "eslint-config-prettier": "^10.1.8",
-        "prettier": "^3.8.4"
+        "prettier": "^3.8.4",
+        "typescript": "^6.0.3"
     },
     "engines": {
-        "node": "^20.19.0 || >=22.12.0",
+        "node": ">=22.18.0",
         "npm": ">=9"
     }
 }

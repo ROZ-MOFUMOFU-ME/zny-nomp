@@ -9,7 +9,7 @@ import {
     readableHashRateString,
     sortBlocks,
     sortWorkersByHashrate
-} from './statsUtil.js';
+} from './statsUtil.ts';
 
 export default function (logger, portalConfig, poolConfigs) {
     var _this = this;

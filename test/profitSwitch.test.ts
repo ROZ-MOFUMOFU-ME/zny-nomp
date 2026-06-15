@@ -1,11 +1,13 @@
 // Unit tests for the pure profit-switching logic.
-// Run: node --test test/profitSwitch.test.mjs
+// Run: node --test test/profitSwitch.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     rankProfitability,
-    decideSwitches
-} from '../libs/profitSwitchLogic.js';
+    decideSwitches,
+    type Ranking,
+    type SwitchEntry
+} from '../libs/profitSwitchLogic.ts';
 
 test('rankProfitability scores reward*price/difficulty and picks the best', () => {
     const table = {
@@ -44,10 +46,10 @@ test('rankProfitability handles each algo independently', () => {
     assert.equal(r.sha256.coin, 'b');
 });
 
-const ranking = {
+const ranking: Ranking = {
     scrypt: { coin: 'coinB', score: 1.25, scores: { coinA: 1.0, coinB: 1.25 } }
 };
-const switching = {
+const switching: Record<string, SwitchEntry> = {
     s1: { enabled: true, algorithm: 'scrypt' },
     s2: { enabled: false, algorithm: 'scrypt' },
     s3: { enabled: true, algorithm: 'sha256' } // no ranking -> ignored

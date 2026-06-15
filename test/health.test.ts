@@ -1,8 +1,8 @@
 // Unit tests for the health/readiness summary.
-// Run: node --test test/health.test.mjs
+// Run: node --test test/health.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHealth } from '../libs/health.js';
+import { buildHealth } from '../libs/health.ts';
 
 test('buildHealth: ok on a fresh snapshot', () => {
     const h = buildHealth(

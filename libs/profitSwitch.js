@@ -4,7 +4,7 @@ import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/lib/util.js';
 import { createRedisClient } from './redisUtil.js';
 import { parsePriceHash } from './priceProviders.js';
-import { rankProfitability, decideSwitches } from './profitSwitchLogic.js';
+import { rankProfitability, decideSwitches } from './profitSwitchLogic.ts';
 
 /*
  * Profit switching, driven by the live price feed.
