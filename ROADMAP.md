@@ -29,6 +29,15 @@ and the stack as a whole.
   [node-stratum-pool ROADMAP](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool/blob/main/ROADMAP.md)).
   Separately, orphaned-round share merging in `paymentProcessor` now uses
   `hincrbyfloat`, so fractional shares are preserved instead of erroring.
+- **Recently fixed (block accounting / PPLNT)**: now that blocks are actually
+  accepted, the block-found Redis MULTI surfaced two issues. The
+  `shares:timesCurrent` → `times<height>` rename is now skipped when the key is
+  absent (it previously failed that one command and logged a spurious
+  "1 commands failed"; the block itself was always recorded). And the master's
+  PPLNT per-worker time tracking — dead since the node-redis v6 migration
+  (`init.js` still used the v3 `multi().exec(cb)` API, a silent no-op, so
+  `timesCurrent` was never written) — now uses `execCommands`, so PPLNT time
+  data is recorded again.
 
 ## Known issues & limitations
 

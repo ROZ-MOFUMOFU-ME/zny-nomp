@@ -127,15 +127,13 @@ export default function (logger, poolConfig) {
         ]);
 
         if (isValidBlock) {
+            // roundCurrent is created by the valid-share hincrbyfloat above (a
+            // block share is always a valid share), so renaming it within this
+            // same MULTI is safe. timesCurrent is handled below.
             redisCommands.push([
                 'rename',
                 coin + ':shares:roundCurrent',
                 coin + ':shares:round' + shareData.height
-            ]);
-            redisCommands.push([
-                'rename',
-                coin + ':shares:timesCurrent',
-                coin + ':shares:times' + shareData.height
             ]);
             redisCommands.push([
                 'sadd',
@@ -158,14 +156,58 @@ export default function (logger, poolConfig) {
             ]);
         }
 
-        execCommands(connection, redisCommands).catch(function (err) {
+        var logMultiError = function (err) {
+            var detail = (err && err.message) || String(err);
+            // node-redis throws an aggregate when some MULTI commands fail; name
+            // the offending command(s) instead of the opaque "N commands failed".
+            if (err && Array.isArray(err.errorIndexes)) {
+                detail +=
+                    ' [' +
+                    err.errorIndexes
+                        .map(function (i) {
+                            var cmd = redisCommands[i]
+                                ? redisCommands[i].join(' ')
+                                : 'cmd#' + i;
+                            var reply = err.replies && err.replies[i];
+                            return (
+                                cmd +
+                                ' -> ' +
+                                ((reply && reply.message) || reply)
+                            );
+                        })
+                        .join('; ') +
+                    ']';
+            }
             logger.error(
                 logSystem,
                 logComponent,
                 logSubCat,
-                'Error with share processor multi ' +
-                    JSON.stringify(err.message)
+                'Error with share processor multi ' + detail
             );
-        });
+        };
+
+        if (isValidBlock) {
+            // timesCurrent (PPLNT per-worker round time, written by the master
+            // process) may not exist when a block is found -- e.g. a block found
+            // before any non-block share recreated it for the round, or a PROP
+            // pool. RENAME aborts on a missing key, failing just that command in
+            // the MULTI and logging a spurious error, so only snapshot it for the
+            // round when it actually exists.
+            connection
+                .exists(coin + ':shares:timesCurrent')
+                .then(function (exists) {
+                    if (exists) {
+                        redisCommands.push([
+                            'rename',
+                            coin + ':shares:timesCurrent',
+                            coin + ':shares:times' + shareData.height
+                        ]);
+                    }
+                    return execCommands(connection, redisCommands);
+                })
+                .catch(logMultiError);
+        } else {
+            execCommands(connection, redisCommands).catch(logMultiError);
+        }
     };
 }
