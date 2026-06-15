@@ -29,6 +29,7 @@ cd ../zny-nomp           && npm link stratum-pool
 - **リンクは npm install で消える**: このリポジトリで何かしら `npm install` / `npm update` を実行すると、`node_modules/stratum-pool` のシンボリックリンクが GitHub クローンに置き換えられます。インストール後は必ず `npm link stratum-pool` を再実行してください（リンクされているかは `ls -la node_modules/stratum-pool` で確認できます）。ローカル修正をテストしたのに反映されていない場合は、まずこれを疑ってください。
 - **ネイティブアドオンの注意点**: multi-hashing は Node の ABI ごとにコンパイルされる NAN アドオンです。Node のバージョンを切り替えると、起動時に `Error: Module did not self-register: .../multihashing.node` で失敗します — 再ビルドしてください（`../node-multi-hashing` で `npm run build`、または `npm rebuild multi-hashing`）。さらに Node 24 では multi-hashing を `-std=c++20` でビルドする必要があります（`binding.gyp` で設定済み）。
 - Node 24 での動作確認済み（起動・プール spawn・Website・Redis）。
+- **Node の最低要件**: 依存 `@exodus/bitcoinjs-lib-zcash`（node-stratum-pool 経由、koto/zcash アドレス処理）が ESM の `@exodus/crypto` を `require()` で読み込むため、`require(ESM)` 対応の Node が必須です（`^20.19 || >=22.12`、推奨 24）。Node 20.0–20.18・22.0–22.11 は起動時に `ERR_REQUIRE_ESM` で失敗します（暫定回避は起動フラグ `--experimental-require-module`）。`package.json` の `engines` にも反映済み。
 
 ## コマンド
 
