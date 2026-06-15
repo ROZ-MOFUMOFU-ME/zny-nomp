@@ -2,6 +2,8 @@
     "enabled": true,
     "_comment_enabled": "set true after: VIPS testnet daemon (-testnet) running+synced, address/rpc credentials filled in",
     "coin": "testnet/vipstarcoin.json",
+    "BTCover17": false,
+    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
 
     "address": "",
     "_comment_address": "use a legacy base58 testnet address (starts with the testnet PUBKEY_ADDRESS) owned by the daemon wallet",
