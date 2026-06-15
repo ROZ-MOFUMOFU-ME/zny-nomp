@@ -15,6 +15,14 @@ and the stack as a whole.
   node-redis v6 client (Redis 6.2+). Older Node fails to load the ESM
   `@exodus/crypto` dependency with `ERR_REQUIRE_ESM`.
 - CI green on GitHub Actions and CircleCI (Node 20/22/24).
+- **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
+  node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
+  dependencies are pinned to those release commits in `package-lock.json`.
+- **Example configs completed**: `coins/coins-examples{,-testnet}/` and
+  `pool_configs/examples/` carry full per-coin templates — address/network
+  params (`mainnet`/`testnet`), the `getInfo`/`noNetworkInfo`/`noGetnetworkhashps`
+  daemon-capability flags, and distinct stratum ports — and are JSON-validated
+  in CI (`check:config`).
 - **Mining + payout verified**: BitZeny, Koto, Monacoin, Bellcoin,
   Sugarchain, KumaCoin.
 - **In progress** (pool_configs enabled but not production-ready):
@@ -45,8 +53,6 @@ and the stack as a whole.
 
 - **No real test suite** — `npm test` just boots `init.js`; there is no unit
   coverage for share/payment/stats Redis logic.
-- **LICENSE is the unfilled MIT template** — the year and copyright holder
-  placeholders are still present.
 - **Frontend** uses `dot` templates; there is no modern SPA (an experimental
   Next.js rewrite once lived on a `dev2` branch but was dropped).
 - **Profit switching** is now driven by the live price feed
@@ -61,7 +67,6 @@ and the stack as a whole.
 ## Roadmap
 
 ### Near-term
-- Fill in the LICENSE year / copyright holder.
 - Complete the VIPSTARCOIN mainnet config and verify a real payout.
 - Verify Susucoin end-to-end (mining + payout); the daemon now builds and the
   pool is enabled.

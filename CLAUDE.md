@@ -41,13 +41,15 @@ npm run lint:fix
 npm run format     # prettier --write .
 npm run format:check
 npm run test:unit  # node:test のユニットテスト（test/*.test.mjs）。ネイティブアドオン不要の純粋ロジックのみ
-npm run check:config  # config_example.json / config.json / coins/* / pool_configs/* が JSON として妥当か検証（CI 用）
+npm run check:config  # config_example.json / config.json / coins/*・coins/coins-examples{,-testnet}/*・pool_configs/*・pool_configs/examples/* を JSON として検証（CI 用）
 node scripts/cli.js <command>   # 稼働中のポータルに CLI ポート経由でコマンド送信（例: blocknotify）
 ```
 
 `npm test` は `node init.js` を実行するだけの起動スモークで、テストスイートではありません。実体のあるユニットテストは `npm run test:unit`（`test/*.test.mjs`）にあります。`node --test test/`（ディレクトリ指定）はこの Node ではバグるため、glob/ファイル指定を使ってください。
 
 設定: `init.js` は `config.json`（ポータル設定）を読み込み、存在しない場合は `config_example.json` にフォールバックします。プールは `pool_configs/*.json` でファイルごとに有効化し、それぞれ `coins/*.json` のコイン定義を参照します。
+
+コイン定義（`coins/*.json`）はアドレス→スクリプト変換用の `mainnet`／`testnet`（`pubKeyHash`／`scriptHash`／`bech32`／`bip32.public` を **16進文字列**で指定。bech32/P2SH を使うコインは必須。`addressToScript` は network 未指定だと「バージョンバイトを無視した base58 P2PKH」へフォールバックする。koto は `kotoAddressToScript` を使うため network ブロック不要、kumacoin は旧 Peercoin 系で BIP32 が無いため省略）と、デーモン互換フラグ `getInfo`／`noNetworkInfo`／`noGetnetworkhashps` を持ちます。各コインの雛形は `coins/coins-examples{,-testnet}/` と `pool_configs/examples/` にあり、CI（check:config）で検証されます。`config.json`／`pool_configs/*.json`／`coins/*.json` は `.gitignore` 済み（実運用設定）で、コミットされるのは例のみです。
 
 ## アーキテクチャ
 
