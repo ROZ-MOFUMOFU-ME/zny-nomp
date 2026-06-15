@@ -1,4 +1,4 @@
-var net = require('net');
+import net from 'node:net';
 
 var defaultPort = 17117;
 var defaultHost = '127.0.0.1';
