@@ -2,7 +2,7 @@
 
 This portal is the top of a three-repo stack developed together:
 
-- **zny-nomp** (this repo) — the mining portal (ESM, Node 20+)
+- **zny-nomp** (this repo) — the mining portal (ESM, Node `^20.19 || >=22.12`, Node 24 recommended)
 - [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) — the Stratum poolserver library
 - [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing) — the native hashing addon
 
@@ -11,7 +11,9 @@ and the stack as a whole.
 
 ## Current state
 
-- Runs on Node 20–24 (ESM) with the node-redis v6 client (Redis 6.2+).
+- Runs on Node `^20.19 || >=22.12` (Node 24 recommended; ESM) with the
+  node-redis v6 client (Redis 6.2+). Older Node fails to load the ESM
+  `@exodus/crypto` dependency with `ERR_REQUIRE_ESM`.
 - CI green on GitHub Actions and CircleCI (Node 20/22/24).
 - **Mining + payout verified**: BitZeny, Koto, Monacoin, Bellcoin,
   Sugarchain, KumaCoin.
