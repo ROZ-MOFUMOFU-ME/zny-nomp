@@ -4,50 +4,104 @@
  * never throws on a partial stats object. Served at /api/metrics.
  */
 
-function escapeLabel(v) {
+interface MetricSample {
+    labels: Record<string, unknown>;
+    value: number;
+}
+
+interface PoolStat {
+    workerCount?: number;
+    minerCount?: number;
+    hashrate?: number;
+    poolStats?: {
+        networkHash?: number;
+        networkDiff?: number;
+        networkBlocks?: number;
+        validShares?: number;
+        invalidShares?: number;
+        [key: string]: unknown;
+    };
+    blocks?: { pending?: number; confirmed?: number; [key: string]: unknown };
+    [key: string]: unknown;
+}
+
+interface AlgoStat {
+    hashrate?: number;
+    workers?: number;
+    [key: string]: unknown;
+}
+
+interface PriceRow {
+    price?: number;
+    vsCurrency?: string;
+    source?: string;
+    [key: string]: unknown;
+}
+
+export interface MetricsStats {
+    pools?: Record<string, PoolStat>;
+    algos?: Record<string, AlgoStat>;
+    prices?: { prices?: Record<string, PriceRow> };
+    time?: number;
+    [key: string]: unknown;
+}
+
+function escapeLabel(v: unknown): string {
     return String(v)
         .replace(/\\/g, '\\\\')
         .replace(/"/g, '\\"')
         .replace(/\n/g, '\\n');
 }
 
-function labelStr(labels) {
+function labelStr(labels?: Record<string, unknown> | null): string {
     const keys = Object.keys(labels || {});
     if (keys.length === 0) return '';
     return (
         '{' +
         keys
             .map(function (k) {
-                return k + '="' + escapeLabel(labels[k]) + '"';
+                return (
+                    k +
+                    '="' +
+                    escapeLabel((labels as Record<string, unknown>)[k]) +
+                    '"'
+                );
             })
             .join(',') +
         '}'
     );
 }
 
-function num(v) {
+function num(v: unknown): number {
     const n = Number(v);
     return isFinite(n) ? n : 0;
 }
 
-export function renderMetrics(stats) {
-    stats = stats || {};
-    const pools = stats.pools || {};
-    const algosObj = stats.algos || {};
-    const out = [];
+export function renderMetrics(stats?: MetricsStats | null): string {
+    const s = stats || {};
+    const pools = s.pools || {};
+    const algosObj = s.algos || {};
+    const out: string[] = [];
 
     // Emit a metric block (HELP + TYPE + samples); skip when no samples.
-    const metric = function (name, type, help, samples) {
+    const metric = function (
+        name: string,
+        type: string,
+        help: string,
+        samples?: MetricSample[]
+    ): void {
         if (!samples || samples.length === 0) return;
         out.push('# HELP ' + name + ' ' + help);
         out.push('# TYPE ' + name + ' ' + type);
-        samples.forEach(function (s) {
-            out.push(name + labelStr(s.labels) + ' ' + s.value);
+        samples.forEach(function (sm) {
+            out.push(name + labelStr(sm.labels) + ' ' + sm.value);
         });
     };
 
     const poolNames = Object.keys(pools);
-    const poolSamples = function (pick) {
+    const poolSamples = function (
+        pick: (c: PoolStat) => number
+    ): MetricSample[] {
         return poolNames.map(function (p) {
             return { labels: { pool: p }, value: pick(pools[p]) };
         });
@@ -139,7 +193,7 @@ export function renderMetrics(stats) {
         'nomp_algo_hashrate_hps',
         'gauge',
         'Aggregate hashrate per algorithm in H/s',
-        algoNames.map(function (a) {
+        algoNames.map(function (a): MetricSample {
             return {
                 labels: { algo: a },
                 value: num(algosObj[a].hashrate) * 1e6
@@ -150,17 +204,17 @@ export function renderMetrics(stats) {
         'nomp_algo_workers',
         'gauge',
         'Workers per algorithm',
-        algoNames.map(function (a) {
+        algoNames.map(function (a): MetricSample {
             return { labels: { algo: a }, value: num(algosObj[a].workers) };
         })
     );
 
-    const prices = (stats.prices && stats.prices.prices) || {};
+    const prices = (s.prices && s.prices.prices) || {};
     metric(
         'nomp_price',
         'gauge',
         'Latest coin price from the price feed',
-        Object.keys(prices).map(function (sym) {
+        Object.keys(prices).map(function (sym): MetricSample {
             const p = prices[sym];
             return {
                 labels: {
@@ -173,12 +227,12 @@ export function renderMetrics(stats) {
         })
     );
 
-    if (stats.time)
+    if (s.time)
         metric(
             'nomp_stats_time_seconds',
             'gauge',
             'Unix time of this snapshot',
-            [{ labels: {}, value: num(stats.time) }]
+            [{ labels: {}, value: num(s.time) }]
         );
 
     return out.join('\n') + '\n';

@@ -1,7 +1,7 @@
 import async from 'async';
 import algos from 'stratum-pool/lib/algoProperties.js';
 import { createRedisClient } from './redisUtil.js';
-import { parsePriceHash } from './priceProviders.js';
+import { parsePriceHash } from './priceProviders.ts';
 import {
     sortObjectByProperty,
     roundTo,

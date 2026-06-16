@@ -1,5 +1,5 @@
 // Unit tests for the price-feed pure logic + multi-provider fallback.
-// Run: node --test test/   (or: node --test test/priceFeed.test.mjs)
+// Run: node --test test/   (or: node --test test/priceFeed.test.ts)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { URL } from 'node:url';
@@ -14,9 +14,9 @@ import {
     PROVIDERS,
     collectPrices,
     parsePriceHash
-} from '../libs/priceProviders.js';
+} from '../libs/priceProviders.ts';
 
-const jsonResponse = (obj, ok = true, status = 200) => ({
+const jsonResponse = (obj: any, ok = true, status = 200) => ({
     ok,
     status,
     json: async () => obj
@@ -100,7 +100,7 @@ test('coinpaprika.transformOne reads uppercase quotes + ISO timestamp', () => {
         ['usd', 'btc'],
         data,
         222
-    );
+    )!;
     assert.equal(row.price, 64950);
     assert.deepEqual(row.prices, { usd: 64950, btc: 1 });
     assert.equal(row.source, 'coinpaprika');
@@ -136,18 +136,18 @@ test('collectPrices: per-symbol fallback fills CoinGecko gaps from CoinPaprika',
     const symbols = gatherSymbols(order, coins, {});
     const idMaps = buildIdMaps(order, symbols, coins, {});
 
-    const gecko = {
+    const gecko: Record<string, any> = {
         bitcoin: { usd: 65000, last_updated_at: 1700000000 },
         monacoin: { usd: 0.5, last_updated_at: 1700000000 }
     };
-    const paprika = {
+    const paprika: Record<string, any> = {
         'btc-bitcoin': { quotes: { USD: { price: 64950 } } },
         'foo-coin': { quotes: { USD: { price: 1.23 } } }
     };
-    const fetchImpl = async (url) => {
+    const fetchImpl = async (url: string) => {
         if (url.includes('/simple/price')) {
-            const ids = new URL(url).searchParams.get('ids').split(',');
-            const out = {};
+            const ids = (new URL(url).searchParams.get('ids') ?? '').split(',');
+            const out: Record<string, any> = {};
             ids.forEach((id) => {
                 if (gecko[id]) out[id] = gecko[id];
             });
@@ -188,7 +188,7 @@ test('collectPrices: a provider that throws falls through to the next', async ()
     const symbols = gatherSymbols(order, coins, {});
     const idMaps = buildIdMaps(order, symbols, coins, {});
 
-    const fetchImpl = async (url) => {
+    const fetchImpl = async (url: string) => {
         if (url.includes('/simple/price')) throw new Error('network down');
         if (url.includes('/tickers/')) {
             const id = decodeURIComponent(
@@ -201,7 +201,7 @@ test('collectPrices: a provider that throws falls through to the next', async ()
         throw new Error('unexpected url ' + url);
     };
 
-    const seenErrors = [];
+    const seenErrors: Array<[string, string]> = [];
     const { rows, servedBy, errors } = await collectPrices(
         order.map((n) => PROVIDERS[n]),
         idMaps,
@@ -211,7 +211,8 @@ test('collectPrices: a provider that throws falls through to the next', async ()
             timeout: 1000,
             fetchImpl,
             providerOpts: {},
-            onProviderError: (name, e) => seenErrors.push([name, e.message])
+            onProviderError: (name, e) =>
+                seenErrors.push([name, (e as Error).message])
         }
     );
 

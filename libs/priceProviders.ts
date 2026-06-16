@@ -16,17 +16,80 @@
  * CoinPaprika (or any later provider).
  */
 
+/* ------------------------------- types ----------------------------------- */
+
+/** A coin's id config entry: a CoinGecko-id string, or a per-provider id map. */
+export type CoinEntry = string | Record<string, string | undefined>;
+export type CoinsConfig = Record<string, CoinEntry | null | undefined>;
+export type CoinProfile = Record<string, unknown>;
+export type CoinProfiles = Record<string, CoinProfile | null | undefined>;
+
+export interface PriceRow {
+    id: string;
+    price: number;
+    prices: Record<string, number>;
+    vsCurrency: string;
+    source: string;
+    providerUpdatedAt: number | null;
+    updated: number;
+}
+
+/** Minimal shape of a fetch() response we depend on (real fetch satisfies it). */
+export interface FetchResponse {
+    ok: boolean;
+    status: number;
+    json(): Promise<any>;
+}
+export type FetchImpl = (url: string, init?: any) => Promise<FetchResponse>;
+
+export interface ProviderOpts {
+    apiBase?: string;
+    apiKey?: string;
+    apiKeyHeader?: string;
+    fetchImpl: FetchImpl;
+    timeout?: number;
+    now: number;
+    concurrency?: number;
+    onItemError?: (provider: string, sym: string, e: unknown) => void;
+}
+
+export interface Provider {
+    name: string;
+    needsKey: boolean;
+    defaultBase: string;
+    fetchPrices(
+        idMap: Record<string, string>,
+        vsList: string[],
+        opts: ProviderOpts
+    ): Promise<Record<string, PriceRow>>;
+}
+
+export interface CollectOpts {
+    now: number;
+    timeout?: number;
+    fetchImpl: FetchImpl;
+    onItemError?: (provider: string, sym: string, e: unknown) => void;
+    onProviderError?: (provider: string, e: unknown) => void;
+    providerOpts?: Record<string, Partial<ProviderOpts>>;
+}
+
+export interface CollectResult {
+    rows: Record<string, PriceRow>;
+    servedBy: Record<string, string>;
+    errors: Array<{ provider: string; error: unknown }>;
+}
+
 /* ----------------------------- shared helpers ---------------------------- */
 
-function stripTrailingSlash(s) {
+function stripTrailingSlash(s: string): string {
     return String(s).replace(/\/+$/, '');
 }
 
-function uniq(arr) {
+function uniq<T>(arr: T[]): T[] {
     return [...new Set(arr)];
 }
 
-export function parseVsCurrencies(vsCurrency) {
+export function parseVsCurrencies(vsCurrency?: string | null): string[] {
     return String(vsCurrency || 'usd')
         .toLowerCase()
         .split(',')
@@ -36,7 +99,14 @@ export function parseVsCurrencies(vsCurrency) {
         .filter(Boolean);
 }
 
-function makeRow(id, prices, primaryVs, source, providerUpdatedAt, now) {
+function makeRow(
+    id: string,
+    prices: Record<string, number>,
+    primaryVs: string,
+    source: string,
+    providerUpdatedAt: number | null,
+    now: number
+): PriceRow {
     return {
         id: id,
         price: prices[primaryVs],
@@ -48,14 +118,25 @@ function makeRow(id, prices, primaryVs, source, providerUpdatedAt, now) {
     };
 }
 
-async function fetchJson(fetchImpl, url, opts) {
-    opts = opts || {};
+interface FetchJsonOpts {
+    headers?: Record<string, string>;
+    timeout?: number;
+}
+
+async function fetchJson(
+    fetchImpl: FetchImpl,
+    url: string,
+    opts?: FetchJsonOpts
+): Promise<any> {
+    const o = opts || {};
     const resp = await fetchImpl(url, {
-        headers: opts.headers || { accept: 'application/json' },
-        signal: AbortSignal.timeout(opts.timeout || 15000)
+        headers: o.headers || { accept: 'application/json' },
+        signal: AbortSignal.timeout(o.timeout || 15000)
     });
     if (!resp || !resp.ok) {
-        const e = new Error('HTTP ' + (resp ? resp.status : 'no response'));
+        const e: any = new Error(
+            'HTTP ' + (resp ? resp.status : 'no response')
+        );
         if (resp) e.status = resp.status;
         throw e;
     }
@@ -63,8 +144,12 @@ async function fetchJson(fetchImpl, url, opts) {
 }
 
 /* Run `fn` over items with at most `limit` in flight; resolves when all done. */
-async function mapLimit(items, limit, fn) {
-    const results = [];
+async function mapLimit<T, R>(
+    items: T[],
+    limit: number,
+    fn: (item: T, idx: number) => Promise<R>
+): Promise<R[]> {
+    const results: R[] = [];
     let next = 0;
     const runners = new Array(Math.max(1, Math.min(limit, items.length)))
         .fill(0)
@@ -87,27 +172,31 @@ async function mapLimit(items, limit, fn) {
  *   3. the coin profile's field named after the provider (coin.coingecko, ...)
  */
 export function resolveProviderId(
-    providerName,
-    symbol,
-    coinsCfg,
-    coinProfiles
-) {
+    providerName: string,
+    symbol: string,
+    coinsCfg?: CoinsConfig | null,
+    coinProfiles?: CoinProfiles | null
+): string | null {
     const entry = coinsCfg && coinsCfg[symbol];
     if (entry !== undefined && entry !== null) {
         if (typeof entry === 'string') {
             if (providerName === 'coingecko' && entry) return entry;
-        } else if (typeof entry === 'object' && entry[providerName]) {
-            return entry[providerName];
+        } else if (typeof entry === 'object') {
+            const id = entry[providerName];
+            if (id) return id;
         }
     }
     const profile = coinProfiles && coinProfiles[symbol];
-    if (profile && profile[providerName]) return profile[providerName];
+    if (profile && profile[providerName])
+        return profile[providerName] as string;
     return null;
 }
 
 /* Uppercase the keys of a SYMBOL-keyed map (config coins may be lowercased). */
-export function upperKeyMap(obj) {
-    const out = {};
+export function upperKeyMap<T>(
+    obj?: Record<string, T> | null
+): Record<string, T> {
+    const out: Record<string, T> = {};
     if (obj)
         Object.keys(obj).forEach(function (k) {
             out[k.toUpperCase()] = obj[k];
@@ -116,8 +205,12 @@ export function upperKeyMap(obj) {
 }
 
 /* All symbols resolvable by at least one of the given providers. */
-export function gatherSymbols(providerNames, coinsCfg, coinProfiles) {
-    const set = new Set();
+export function gatherSymbols(
+    providerNames: string[],
+    coinsCfg?: CoinsConfig | null,
+    coinProfiles?: CoinProfiles | null
+): string[] {
+    const set = new Set<string>();
     if (coinsCfg)
         Object.keys(coinsCfg).forEach(function (s) {
             set.add(s.toUpperCase());
@@ -140,8 +233,13 @@ export function gatherSymbols(providerNames, coinsCfg, coinProfiles) {
 }
 
 /* { providerName: { SYMBOL: providerId } } for the resolvable symbols. */
-export function buildIdMaps(providerNames, symbols, coinsCfg, coinProfiles) {
-    const maps = {};
+export function buildIdMaps(
+    providerNames: string[],
+    symbols: string[],
+    coinsCfg?: CoinsConfig | null,
+    coinProfiles?: CoinProfiles | null
+): Record<string, Record<string, string>> {
+    const maps: Record<string, Record<string, string>> = {};
     providerNames.forEach(function (n) {
         maps[n] = {};
         symbols.forEach(function (s) {
@@ -160,14 +258,19 @@ export const coingecko = {
     defaultBase: 'https://api.coingecko.com/api/v3',
 
     /* { id: { usd: 1, last_updated_at: 170... } } -> { SYMBOL: row } */
-    transform(idMap, vsList, data, now) {
+    transform(
+        idMap: Record<string, string>,
+        vsList: string[],
+        data: any,
+        now: number
+    ): Record<string, PriceRow> {
         const primary = vsList[0];
-        const out = {};
+        const out: Record<string, PriceRow> = {};
         Object.keys(idMap).forEach(function (sym) {
             const id = idMap[sym];
             const row = data && data[id];
             if (!row) return;
-            const prices = {};
+            const prices: Record<string, number> = {};
             vsList.forEach(function (v) {
                 if (typeof row[v] === 'number' && isFinite(row[v]))
                     prices[v] = row[v];
@@ -187,7 +290,11 @@ export const coingecko = {
         return out;
     },
 
-    async fetchPrices(idMap, vsList, opts) {
+    async fetchPrices(
+        idMap: Record<string, string>,
+        vsList: string[],
+        opts: ProviderOpts
+    ): Promise<Record<string, PriceRow>> {
         const base = stripTrailingSlash(opts.apiBase || this.defaultBase);
         const ids = uniq(
             Object.keys(idMap).map(function (s) {
@@ -199,7 +306,7 @@ export const coingecko = {
             vs_currencies: vsList.join(','),
             include_last_updated_at: 'true'
         });
-        const headers = { accept: 'application/json' };
+        const headers: Record<string, string> = { accept: 'application/json' };
         if (opts.apiKey)
             headers[opts.apiKeyHeader || 'x-cg-demo-api-key'] = opts.apiKey;
         const data = await fetchJson(
@@ -217,10 +324,15 @@ export const coinpaprika = {
     defaultBase: 'https://api.coinpaprika.com/v1',
 
     /* one /tickers/{id} response -> row (or null if no usable price). */
-    transformOne(id, vsList, data, now) {
+    transformOne(
+        id: string,
+        vsList: string[],
+        data: any,
+        now: number
+    ): PriceRow | null {
         if (!data || !data.quotes) return null;
         const primary = vsList[0];
-        const prices = {};
+        const prices: Record<string, number> = {};
         vsList.forEach(function (v) {
             const q = data.quotes[v.toUpperCase()];
             if (q && typeof q.price === 'number' && isFinite(q.price))
@@ -238,18 +350,22 @@ export const coinpaprika = {
         );
     },
 
-    async fetchPrices(idMap, vsList, opts) {
+    async fetchPrices(
+        idMap: Record<string, string>,
+        vsList: string[],
+        opts: ProviderOpts
+    ): Promise<Record<string, PriceRow>> {
         const base = stripTrailingSlash(opts.apiBase || this.defaultBase);
         const quotes = uniq(
             vsList.map(function (v) {
                 return v.toUpperCase();
             })
         ).join(',');
-        const headers = { accept: 'application/json' };
+        const headers: Record<string, string> = { accept: 'application/json' };
         // Paid CoinPaprika uses an Authorization header; harmless when unset.
         if (opts.apiKey)
             headers[opts.apiKeyHeader || 'Authorization'] = opts.apiKey;
-        const out = {};
+        const out: Record<string, PriceRow> = {};
         const syms = Object.keys(idMap);
         const self = this;
         await mapLimit(syms, opts.concurrency || 4, async function (sym) {
@@ -279,7 +395,7 @@ export const coinpaprika = {
     }
 };
 
-export const PROVIDERS = {
+export const PROVIDERS: Record<string, Provider> = {
     coingecko: coingecko,
     coinpaprika: coinpaprika
 };
@@ -291,11 +407,14 @@ export const DEFAULT_PROVIDER_ORDER = ['coingecko', 'coinpaprika'];
  * into { SYMBOL: row }, skipping any malformed entry rather than failing the
  * whole read. Used by the API to serve what the priceFeed worker stored.
  */
-export function parsePriceHash(raw) {
-    const out = {};
-    Object.keys(raw || {}).forEach(function (sym) {
+export function parsePriceHash(
+    raw?: Record<string, string> | null
+): Record<string, any> {
+    const out: Record<string, any> = {};
+    const r = raw || {};
+    Object.keys(r).forEach(function (sym) {
         try {
-            out[sym] = JSON.parse(raw[sym]);
+            out[sym] = JSON.parse(r[sym]);
         } catch (_e) {
             // skip a malformed entry
         }
@@ -311,19 +430,24 @@ export function parsePriceHash(raw) {
  * A provider that throws is recorded and skipped (its symbols fall through to
  * later providers). Returns { rows, servedBy, errors }.
  */
-export async function collectPrices(providers, idMaps, vsList, opts) {
-    const rows = {};
-    const servedBy = {};
-    const errors = [];
+export async function collectPrices(
+    providers: Provider[],
+    idMaps: Record<string, Record<string, string>>,
+    vsList: string[],
+    opts: CollectOpts
+): Promise<CollectResult> {
+    const rows: Record<string, PriceRow> = {};
+    const servedBy: Record<string, string> = {};
+    const errors: Array<{ provider: string; error: unknown }> = [];
     for (const provider of providers) {
         const full = idMaps[provider.name] || {};
-        const targets = {};
+        const targets: Record<string, string> = {};
         Object.keys(full).forEach(function (sym) {
             if (!rows[sym]) targets[sym] = full[sym];
         });
         if (Object.keys(targets).length === 0) continue;
 
-        const providerOpts = Object.assign(
+        const providerOpts: ProviderOpts = Object.assign(
             {},
             (opts.providerOpts && opts.providerOpts[provider.name]) || {},
             {
@@ -334,7 +458,7 @@ export async function collectPrices(providers, idMaps, vsList, opts) {
             }
         );
 
-        let got;
+        let got: Record<string, PriceRow> | undefined;
         try {
             got = await provider.fetchPrices(targets, vsList, providerOpts);
         } catch (e) {
@@ -342,9 +466,10 @@ export async function collectPrices(providers, idMaps, vsList, opts) {
             if (opts.onProviderError) opts.onProviderError(provider.name, e);
             continue;
         }
-        Object.keys(got || {}).forEach(function (sym) {
+        const g = got || {};
+        Object.keys(g).forEach(function (sym) {
             if (!rows[sym]) {
-                rows[sym] = got[sym];
+                rows[sym] = g[sym];
                 servedBy[sym] = provider.name;
             }
         });

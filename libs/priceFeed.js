@@ -7,7 +7,7 @@ import {
     gatherSymbols,
     buildIdMaps,
     collectPrices
-} from './priceProviders.js';
+} from './priceProviders.ts';
 
 /*
  * Real-time price feed worker.

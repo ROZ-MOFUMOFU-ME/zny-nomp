@@ -1,8 +1,8 @@
 // Unit tests for the Prometheus metrics renderer.
-// Run: node --test test/metrics.test.mjs
+// Run: node --test test/metrics.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderMetrics } from '../libs/metrics.js';
+import { renderMetrics } from '../libs/metrics.ts';
 
 const sample = {
     time: 1700000000,
