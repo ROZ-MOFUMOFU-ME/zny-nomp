@@ -233,9 +233,6 @@ export default function (this: any, logger: Logger) {
         else res.sendFile(path.resolve('website/key.html'));
     });
 
-    // Legacy static assets (kept for key.html and any external references).
-    app.use('/static', express.static('website/static'));
-
     // Built SPA assets (index.html at /, hashed assets under /assets).
     app.use(express.static(SPA_DIR));
 
