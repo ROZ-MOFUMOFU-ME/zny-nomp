@@ -51,9 +51,9 @@ export default function GettingStarted() {
                 <h2 className="mb-3 text-lg font-bold">How to start mining</h2>
                 <ol className="list-decimal space-y-1 pl-5">
                     <li>
-                        Get a wallet address for the coin you want to mine — see
-                        the <a href="/mining_key">Mining Key</a> page for how
-                        your address is used as your mining username.
+                        Get a receiving address for the coin you want to mine
+                        from your own wallet (e.g. the coin's official
+                        wallet/daemon) — that address is your mining username.
                     </li>
                     <li>
                         Pick a coin from the list below to see its connection

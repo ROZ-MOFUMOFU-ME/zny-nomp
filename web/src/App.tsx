@@ -10,7 +10,6 @@ import TabStats from './pages/TabStats.tsx';
 import GettingStarted from './pages/GettingStarted.tsx';
 import ApiDocs from './pages/ApiDocs.tsx';
 import Admin from './pages/Admin.tsx';
-import MiningKey from './pages/MiningKey.tsx';
 
 export default function App() {
     return (
@@ -29,7 +28,6 @@ export default function App() {
                     <Route path="/payments" element={<Payments />} />
                     <Route path="/tbs" element={<TabStats />} />
                     <Route path="/api" element={<ApiDocs />} />
-                    <Route path="/mining_key" element={<MiningKey />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

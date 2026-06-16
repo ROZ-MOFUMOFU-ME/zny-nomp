@@ -7,9 +7,8 @@ import api from './api.ts';
 import type { Logger } from './logUtil.ts';
 
 // Directory of the built Vite + React SPA (see web/). Everything the browser
-// loads — the app, its assets, and the static key.html wallet tool (web/public/
-// key.html) — is served from here, with a catch-all fallback to index.html so
-// client-side routes work.
+// loads — the app and its assets — is served from here, with a catch-all
+// fallback to index.html so client-side routes work.
 const SPA_DIR = path.resolve('web/dist');
 const SPA_INDEX = path.join(SPA_DIR, 'index.html');
 
@@ -65,7 +64,7 @@ export default function (this: any, logger: Logger) {
     });
 
     // Built SPA assets + static files (index.html at /, hashed assets under
-    // /assets, the wallet tool at /key.html — all from web/dist via web/public).
+    // /assets — all from web/dist via web/public).
     app.use(express.static(SPA_DIR));
 
     // SPA fallback: any other GET serves the app shell for client-side routing.
