@@ -35,6 +35,18 @@ export default function GettingStarted() {
         ? pools[selected]
         : undefined;
 
+    // Normalize the selected coin's mining-software links ({name,url} or a bare
+    // URL string), keeping only safe http(s) URLs.
+    const miningTools = (selectedPool?.coin.miningTools ?? [])
+        .map((t) =>
+            typeof t === 'string'
+                ? { url: t, name: t }
+                : { url: t.url, name: t.name || t.url }
+        )
+        .filter(
+            (t) => typeof t.url === 'string' && /^https?:\/\//i.test(t.url)
+        );
+
     // Auto-switching ports that are actually enabled.
     const switchEntries = Object.entries(config.switching ?? {}).filter(
         ([, s]) => s.enabled === true
@@ -171,6 +183,28 @@ export default function GettingStarted() {
                         Select the port that matches your hardware/difficulty,
                         then connect with the URL above.
                     </p>
+
+                    {miningTools.length > 0 && (
+                        <div className="mt-4 border-t border-black/10 pt-3">
+                            <div className="mb-1 font-semibold">
+                                <i className="fas fa-download fa-fw text-accent" />{' '}
+                                Mining Software
+                            </div>
+                            <ul className="list-disc space-y-1 pl-5">
+                                {miningTools.map((t, i) => (
+                                    <li key={i}>
+                                        <a
+                                            href={t.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            {t.name}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
 

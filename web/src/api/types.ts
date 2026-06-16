@@ -143,12 +143,20 @@ export interface ExplorerLinks {
     address?: string;
 }
 
+export interface MiningTool {
+    name?: string;
+    url: string;
+}
+
 export interface AppConfigPool {
     coin: {
         name: string;
         symbol?: string;
         algorithm?: string;
         explorer?: ExplorerLinks;
+        // Per-coin mining-software links from coins/<coin>.json `miningTools`.
+        // Each entry may be { name, url } or a bare URL string.
+        miningTools?: Array<MiningTool | string>;
     };
     ports?: Record<string, unknown>;
 }

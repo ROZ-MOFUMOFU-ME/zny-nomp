@@ -20,6 +20,8 @@ export const getBlocks = () => getJson<Record<string, string>>('/api/blocks');
 export const getPayments = () => getJson<PoolPayments[]>('/api/payments');
 export const getPrices = () => getJson<PricesPayload>('/api/prices');
 export const getConfig = () => getJson<AppConfig>('/api/config');
+export const getAnnouncement = () =>
+    getJson<{ announcement: string }>('/api/announcement');
 
 // /api/worker_stats takes the address as the RAW query string (?ADDRESS),
 // not ?addr= — see libs/api.ts (req.url.split('?')[1]).
@@ -33,6 +35,18 @@ export async function adminPools(
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ password })
+    });
+    return resp.json();
+}
+
+export async function adminSetAnnouncement(
+    password: string,
+    announcement: string
+): Promise<{ result?: { announcement: string }; error?: string }> {
+    const resp = await fetch('/api/admin/announcement', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password, announcement })
     });
     return resp.json();
 }

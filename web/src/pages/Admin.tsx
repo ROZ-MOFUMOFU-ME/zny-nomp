@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { adminPools } from '../api/client.ts';
+import {
+    adminPools,
+    getAnnouncement,
+    adminSetAnnouncement
+} from '../api/client.ts';
 
 // Password-gated admin center at /admin. The backend only implements
 // POST /api/admin/pools, which echoes back the (large, nested) pool config map
@@ -12,6 +16,10 @@ export default function Admin() {
     const [loginError, setLoginError] = useState<string | null>(null);
     const [result, setResult] = useState<unknown>(null);
     const [loading, setLoading] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
+    const [annStatus, setAnnStatus] = useState<
+        'idle' | 'saving' | 'saved' | 'error'
+    >('idle');
 
     async function login() {
         setLoading(true);
@@ -24,9 +32,25 @@ export default function Admin() {
             } else {
                 localStorage.setItem('admin_password', password);
                 setResult(response.result ?? null);
+                try {
+                    const ann = await getAnnouncement();
+                    setAnnouncement(ann.announcement || '');
+                } catch {
+                    /* leave the editor empty if the fetch fails */
+                }
             }
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function saveAnnouncement() {
+        setAnnStatus('saving');
+        try {
+            const resp = await adminSetAnnouncement(password, announcement);
+            setAnnStatus(resp.error ? 'error' : 'saved');
+        } catch {
+            setAnnStatus('error');
         }
     }
 
@@ -94,6 +118,44 @@ export default function Admin() {
                     Pool configuration (read-only). This reflects the live
                     pool_configs as seen by the portal.
                 </p>
+            </div>
+
+            <div className="card mt-4">
+                <div className="mb-2 font-semibold">
+                    <i className="fas fa-bullhorn fa-fw text-accent" /> Top
+                    Announcement
+                </div>
+                <p className="muted mb-2 text-sm">
+                    Shown as a banner at the top of the home page. Leave empty
+                    to hide it.
+                </p>
+                <textarea
+                    className="field min-h-[120px] w-full"
+                    value={announcement}
+                    maxLength={2000}
+                    placeholder="Announcement text…"
+                    onChange={(e) => {
+                        setAnnouncement(e.target.value);
+                        setAnnStatus('idle');
+                    }}
+                />
+                <div className="mt-2 flex items-center gap-3">
+                    <button
+                        className="btn"
+                        type="button"
+                        onClick={saveAnnouncement}
+                        disabled={annStatus === 'saving'}
+                    >
+                        <i className="fas fa-floppy-disk fa-fw" />{' '}
+                        {annStatus === 'saving' ? 'Saving…' : 'Save'}
+                    </button>
+                    {annStatus === 'saved' && (
+                        <span className="text-sm text-green-600">Saved.</span>
+                    )}
+                    {annStatus === 'error' && (
+                        <span className="error">Failed to save.</span>
+                    )}
+                </div>
             </div>
 
             {Object.keys(pools).length === 0 ? (

@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { useLiveStats } from '../api/useLiveStats.tsx';
+import { getAnnouncement } from '../api/client.ts';
 import { readableHashRateString } from '../lib/format.ts';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -10,9 +12,22 @@ export default function Home() {
     const stats = useLiveStats();
     const algos = stats ? Object.entries(stats.algos) : [];
     const pools = stats ? Object.values(stats.pools) : [];
+    const announcement = useQuery({
+        queryKey: ['announcement'],
+        queryFn: getAnnouncement
+    });
+    const note = announcement.data?.announcement?.trim();
 
     return (
         <div>
+            {note && (
+                <section className="mb-5 rounded-xl border-l-4 border-accent bg-accent/10 px-5 py-4">
+                    <div className="mb-1 font-bold text-accent">
+                        <i className="fas fa-bullhorn fa-fw" /> Announcement
+                    </div>
+                    <div className="whitespace-pre-wrap text-sm">{note}</div>
+                </section>
+            )}
             <section className="mb-5 flex flex-wrap items-center gap-6 rounded-xl bg-accent px-8 py-7 text-white">
                 <img
                     src="/logo.svg"

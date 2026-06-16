@@ -22,8 +22,9 @@ export default function (
 
     this.liveStatConnections = {};
 
-    // Read-only client for the price feed the priceFeed worker publishes to
-    // Redis (priceFeed:prices / priceFeed:lastUpdated). Empty until enabled.
+    // Redis client for the API: reads the price feed the priceFeed worker
+    // publishes (priceFeed:prices / priceFeed:lastUpdated) and reads/writes the
+    // admin-editable site announcement ('announcement').
     var priceClient = createRedisClient(
         portalConfig.redis,
         function (err: any) {
@@ -97,7 +98,8 @@ export default function (
                             name: coin.name,
                             symbol: coin.symbol,
                             algorithm: coin.algorithm,
-                            explorer: coin.explorer
+                            explorer: coin.explorer,
+                            miningTools: coin.miningTools
                         },
                         ports: pc.ports
                     };
@@ -119,6 +121,19 @@ export default function (
                 _this.getPrices(function (data: any) {
                     res.end(JSON.stringify(data));
                 });
+                return;
+            case 'announcement':
+                // Public: the admin-editable banner shown at the top of the
+                // home page. Empty string when unset.
+                res.header('Content-Type', 'application/json');
+                priceClient
+                    .get('announcement')
+                    .then(function (text: any) {
+                        res.end(JSON.stringify({ announcement: text || '' }));
+                    })
+                    .catch(function () {
+                        res.end(JSON.stringify({ announcement: '' }));
+                    });
                 return;
             case 'metrics':
                 res.header('Content-Type', 'text/plain; version=0.0.4');
@@ -347,6 +362,37 @@ export default function (
         switch (req.params.method) {
             case 'pools': {
                 res.end(JSON.stringify({ result: poolConfigs }));
+                return;
+            }
+            case 'announcement': {
+                // Set/clear the home-page announcement (password already checked
+                // by the /api/admin route). Plain text, capped, rendered escaped.
+                var text =
+                    typeof req.body.announcement === 'string'
+                        ? req.body.announcement.slice(0, 2000)
+                        : '';
+                res.header('Content-Type', 'application/json');
+                priceClient
+                    .set('announcement', text)
+                    .then(function () {
+                        res.end(
+                            JSON.stringify({ result: { announcement: text } })
+                        );
+                    })
+                    .catch(function (err: any) {
+                        logger.error(
+                            'API',
+                            'admin',
+                            'Failed to save announcement: ' +
+                                (err && err.message)
+                        );
+                        res.status(500);
+                        res.end(
+                            JSON.stringify({
+                                error: 'failed to save announcement'
+                            })
+                        );
+                    });
                 return;
             }
             default:
