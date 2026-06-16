@@ -59,7 +59,7 @@
         "node-json-minify": "^3.0.0",
         "node-watch": "^0.7.4",
         "redis": "^6.0.0",
-        "stratum-pool": "https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#main"
+        "stratum-pool": "https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#develop"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
