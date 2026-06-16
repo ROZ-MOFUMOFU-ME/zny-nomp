@@ -29,8 +29,7 @@ and the stack as a whole.
   stack (`cd web && npm run build` → `web/dist`); the portal serves it from
   `src/website.ts` with an index.html fallback for client-side routes and a new
   `GET /api/config` endpoint exposing public runtime config. The old `dot`
-  templates + jQuery/nvd3 were removed; the self-contained wallet/mining-key
-  tool now lives at `web/public/key.html`, served statically at `/key.html`.
+  templates + jQuery/nvd3 were removed.
 - CI green on GitHub Actions and CircleCI (Node 22/24).
 - **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
   node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
@@ -74,7 +73,6 @@ and the stack as a whole.
 - **Profit switching** is now driven by the live price feed
   (`src/profitSwitch.ts`, gated off by default), but its coin-switch path has not
   been validated on a running multi-coin pool yet.
-- **MySQL path** (MPOS compatibility) still uses the legacy `mysql` package.
 
 > KumaCoin's DNS seeder (bitcoin-seeder `kuma` branch, with the
 > `--minversion/--protover/--initversion` options for the old peercoin-style
@@ -95,7 +93,6 @@ and the stack as a whole.
 
 - Add unit tests for `shareProcessor`, `paymentProcessor` and `stats` against
   a local Redis.
-- Replace `mysql` with `mysql2`, or drop MPOS mode if unused.
 - **Real-time price feeds** _(implemented)_ — a `priceFeed` worker polls
   CoinGecko and CoinPaprika with per-symbol fallback (more providers are
   pluggable via `src/priceProviders.ts`) and stores prices in Redis under

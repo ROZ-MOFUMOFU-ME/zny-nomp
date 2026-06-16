@@ -167,7 +167,7 @@ Explanation for each field:
         /* Disconnect workers that haven't submitted shares for this many seconds. */
         "connectionTimeout": 600,
 
-        /* (For MPOS mode) Store the block hashes for shares that aren't block candidates. */
+        /* Store the block hashes for shares that aren't block candidates. */
         "emitInvalidBlockHashes": false,
 
         /* This option will only authenticate miners using an address or mining key. */
@@ -326,8 +326,6 @@ Here is an example of the required fields:
     "peerMagicTestnet": "59454e59" //optional
 
     //"txMessages": false, //options - defaults to false
-
-    //"mposDiffMultiplier": 256, //options - only for x11 coins in mpos mode
 }
 ```
 
@@ -441,17 +439,6 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
         "host": "127.0.0.1", // Host for the P2P server.
         "port": 9253, // Port for the P2P server.
         "disableTransactions": true // Disables transaction messages in P2P mode.
-    },
-
-    "mposMode": {
-        "enabled": false, // Enables MPOS compatibility mode.
-        "host": "127.0.0.1", // Database server host for MPOS mode.
-        "port": 3306, // Database server port for MPOS mode.
-        "user": "", // Database username.
-        "password": "", // Database password.
-        "database": "", // Database name.
-        "checkPassword": true, // Enables password checking for miners.
-        "autoCreateWorker": false // Automatically creates a worker if it doesn't exist.
     }
 }
 ```
