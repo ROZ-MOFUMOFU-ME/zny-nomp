@@ -7,14 +7,18 @@ export function toNum(v: unknown): number {
     return isFinite(n) ? n : 0;
 }
 
-// Hashrate is stored in an internal MH/s-scaled unit; mirror
-// statsUtil.readableHashRateString (multiplies by 1e6 first).
+// coinStats.hashrate is already in H/s. The server's
+// statsUtil.readableHashRateString multiplies by 1e6 and then divides it back
+// out, so its net effect is just to format the value in H/s with a "< 1 → 0"
+// floor — this mirrors that exactly. (The previous ×1e6 here was a misread of
+// that formula and inflated every value by a million, e.g. the pool-history
+// chart showed 1.5 KH/s as "1.50 GH/s".)
 export function readableHashRateString(hashrate: unknown): string {
-    let h = toNum(hashrate) * 1000000;
+    let h = toNum(hashrate);
+    if (h < 1) return '0 H/s';
     const units = [' H', ' KH', ' MH', ' GH', ' TH', ' PH'];
     let i = 0;
-    if (h < 1) return '0 H/s';
-    while (h > 1000 && i < units.length - 1) {
+    while (h >= 1000 && i < units.length - 1) {
         h = h / 1000;
         i++;
     }
