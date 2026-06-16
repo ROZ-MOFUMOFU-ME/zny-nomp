@@ -14,6 +14,10 @@ declare module 'nonce';
 declare module 'newrelic';
 declare module 'posix';
 
+// Pulled in transitively by the (now .ts) stratum-pool lib, which zny-nomp
+// type-checks directly via its deep imports; the package ships no types.
+declare module '@exodus/bitcoinjs-lib-zcash';
+
 // node-json-minify installs JSON.minify at runtime (see init.ts); declare it on
 // the global JSON object so call sites typecheck.
 interface JSON {

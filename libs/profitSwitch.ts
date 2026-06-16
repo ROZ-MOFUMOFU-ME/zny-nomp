@@ -1,7 +1,7 @@
 import net from 'net';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
-import * as StratumUtil from 'stratum-pool/lib/util.js';
+import * as StratumUtil from 'stratum-pool/lib/util.ts';
 import { createRedisClient } from './redisUtil.ts';
 import { parsePriceHash } from './priceProviders.ts';
 import { rankProfitability, decideSwitches } from './profitSwitchLogic.ts';
@@ -21,7 +21,7 @@ import type { Logger } from './logUtil.ts';
  * feed running. Safe no-op when prices or daemons are unavailable.
  */
 
-// difficulty-1 target (matches stratum-pool/lib/algoProperties.js diff1).
+// difficulty-1 target (matches stratum-pool/lib/algoProperties.ts diff1).
 const DIFF1 = BigInt(
     '0x00000000ffff0000000000000000000000000000000000000000000000000000'
 );
@@ -99,12 +99,12 @@ export default function (this: any, logger: Logger) {
             callback(null, null);
             return;
         }
-        const daemon = new Stratum.daemon.interface([meta.daemon], function (
-            severity: string,
-            message: string
-        ) {
-            (logger as any)[severity](logSystem, name, message);
-        });
+        const daemon = new (Stratum as any).daemon.interface(
+            [meta.daemon],
+            function (severity: string, message: string) {
+                (logger as any)[severity](logSystem, name, message);
+            }
+        );
         daemon.cmd(
             'getblocktemplate',
             [{ capabilities: ['coinbasetxn', 'workid', 'coinbase/append'] }],

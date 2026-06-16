@@ -11,7 +11,7 @@ import PaymentProcessor from './libs/paymentProcessor.ts';
 import Website from './libs/website.ts';
 import ProfitSwitch from './libs/profitSwitch.ts';
 import PriceFeed from './libs/priceFeed.ts';
-import algos from 'stratum-pool/lib/algoProperties.js';
+import algos from 'stratum-pool/lib/algoProperties.ts';
 import jsonMinify from 'node-json-minify';
 
 // Set JSON.minify for backward compatibility

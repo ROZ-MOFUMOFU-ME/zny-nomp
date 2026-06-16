@@ -8,7 +8,7 @@ import dot from 'dot';
 import express from 'express';
 import compress from 'compression';
 import * as Stratum from 'stratum-pool';
-import * as StratumUtil from 'stratum-pool/lib/util.js';
+import * as StratumUtil from 'stratum-pool/lib/util.ts';
 import api from './api.ts';
 import type { Logger } from './logUtil.ts';
 
@@ -188,7 +188,7 @@ export default function (this: any, logger: Logger) {
                                         };
                                 }
                             })();
-                            var daemon = new Stratum.daemon.interface(
+                            var daemon = new (Stratum as any).daemon.interface(
                                 [coinInfo.daemon],
                                 function (severity: any, message: any) {
                                     (logger as any)[severity](

@@ -3,7 +3,7 @@ import request from 'axios';
 import { createRedisClient, execCommands } from './redisUtil.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
-import * as StratumUtil from 'stratum-pool/lib/util.js';
+import * as StratumUtil from 'stratum-pool/lib/util.ts';
 import type { Logger } from './logUtil.ts';
 
 // `util` is referenced (but never imported) by getProperAddress/handleAddress
