@@ -128,18 +128,34 @@ export default function (this: any, logger: Logger) {
                                         return;
                                     }
 
-                                    var vBytePub = StratumUtil.getVersionByte(
-                                        coinInfo.address
-                                    )[0];
-                                    var vBytePriv = StratumUtil.getVersionByte(
-                                        result[0].response
-                                    )[0];
+                                    // Some coins (e.g. koto, bech32-only chains)
+                                    // have addresses bs58check can't decode;
+                                    // skip them instead of crashing the worker.
+                                    try {
+                                        var vBytePub =
+                                            StratumUtil.getVersionByte(
+                                                coinInfo.address
+                                            )[0];
+                                        var vBytePriv =
+                                            StratumUtil.getVersionByte(
+                                                result[0].response
+                                            )[0];
 
-                                    coinBytes[c] =
-                                        vBytePub.toString() +
-                                        ',' +
-                                        vBytePriv.toString();
-                                    coinsForRedis[c] = coinBytes[c];
+                                        coinBytes[c] =
+                                            vBytePub.toString() +
+                                            ',' +
+                                            vBytePriv.toString();
+                                        coinsForRedis[c] = coinBytes[c];
+                                    } catch (e: any) {
+                                        logger.error(
+                                            logSystem,
+                                            c,
+                                            'Could not derive key.html version bytes for ' +
+                                                c +
+                                                ' (address not base58check): ' +
+                                                (e && e.message)
+                                        );
+                                    }
                                     cback();
                                 }
                             );
