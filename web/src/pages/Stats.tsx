@@ -22,6 +22,7 @@ import {
     readableHashRateString,
     readableLuckTime,
     readableDate,
+    shortTime,
     parseBlockString,
     explorerUrl
 } from '../lib/format.ts';
@@ -39,7 +40,6 @@ const COLORS = [
     '#39a0ed',
     '#e07b39'
 ];
-const shortTime = (t: number) => new Date(t * 1000).toLocaleTimeString();
 
 function Row({
     icon,

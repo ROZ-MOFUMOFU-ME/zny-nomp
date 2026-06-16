@@ -81,28 +81,37 @@ export function parseBlockString(raw: string): ParsedBlock {
     };
 }
 
-export function formatTime(unixSecondsOrMs: unknown): string {
+// Time-of-day in the viewer's own time zone, English/24h — for compact chart
+// axis ticks. Accepts seconds or milliseconds.
+export function shortTime(unixSecondsOrMs: unknown): string {
     const n = toNum(unixSecondsOrMs);
     if (!n) return '';
     const ms = n < 1e12 ? n * 1000 : n;
-    return new Date(ms).toLocaleString();
+    return new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).format(new Date(ms));
 }
 
-// "YYYY/MM/DD HH:MM:SS UTC±HHMM (local tz)" — matches the legacy stats page.
+// Full timestamp in English, rendered for the viewer's own time zone via Intl.
+// The zone label is whatever Intl derives from the browser (e.g. "GMT+9") — we
+// never hardcode "UTC+9"/"JST"/a locale-specific long name like "日本標準時".
 export function readableDate(msOrSec: unknown): string {
     const n = toNum(msOrSec);
     if (!n) return '';
-    const d = new Date(n < 1e12 ? n * 1000 : n);
-    const p = (x: number) => x.toString().padStart(2, '0');
-    const s = d.toString();
-    const off = s.match(/GMT([+-]\d{4})/);
-    const tz = s.match(/\(([^)]+)\)$/);
-    return (
-        `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ` +
-        `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
-        (off ? ' ' + off[0].replace('GMT', 'UTC') : '') +
-        (tz ? ` (${tz[1]})` : '')
-    );
+    const ms = n < 1e12 ? n * 1000 : n;
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZoneName: 'short'
+    }).format(new Date(ms));
 }
 
 export function explorerUrl(

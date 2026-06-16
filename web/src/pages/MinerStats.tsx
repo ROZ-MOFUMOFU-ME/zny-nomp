@@ -9,7 +9,8 @@ import {
     readableLuckTime,
     formatAmount,
     toNum,
-    formatTime
+    shortTime,
+    readableDate
 } from '../lib/format.ts';
 import {
     LineChart,
@@ -170,7 +171,7 @@ export default function MinerStats() {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis
                                     dataKey="time"
-                                    tickFormatter={(t) => formatTime(t)}
+                                    tickFormatter={(t) => shortTime(t)}
                                     minTickGap={32}
                                     fontSize={11}
                                 />
@@ -182,7 +183,7 @@ export default function MinerStats() {
                                     fontSize={11}
                                 />
                                 <Tooltip
-                                    labelFormatter={(t) => formatTime(t)}
+                                    labelFormatter={(t) => readableDate(t)}
                                     formatter={(value: number | string) =>
                                         readableHashRateString(value)
                                     }
