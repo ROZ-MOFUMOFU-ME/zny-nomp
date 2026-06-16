@@ -10,6 +10,16 @@
         "txURL": "http://ytn.ccore.online/transaction/",
         "blockURL": "http://ytn.ccore.online/block/"
     },
+    "miningTools": [
+        {
+            "name": "cpuminer-opt-rplant",
+            "url": "https://github.com/rplant8/cpuminer-opt-rplant/releases"
+        },
+        {
+            "name": "cpuminer-opt (JayDDee)",
+            "url": "https://github.com/JayDDee/cpuminer-opt/releases"
+        }
+    ],
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,

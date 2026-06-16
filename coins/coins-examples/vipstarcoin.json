@@ -14,6 +14,12 @@
     },
     "getInfo": false,
     "noNetworkInfo": false,
+    "miningTools": [
+        {
+            "name": "ccminer",
+            "url": "https://github.com/vips-web/github-pages/raw/master/download/ccminer.zip"
+        }
+    ],
     "mainnet": {
         "bip32": {
             "public": "0488b21e"

@@ -5,7 +5,9 @@
     "peerMagic": "c3d4d2fe",
     "peerMagicTestnet": "cdf2c0ef",
     "blockTime": 90,
+    "txfee": 0.03,
     "getInfo": true,
     "noNetworkInfo": true,
-    "noGetnetworkhashps": true
+    "noGetnetworkhashps": true,
+    "subVersion": "/Antenna:{version}/"
 }

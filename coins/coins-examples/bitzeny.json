@@ -13,6 +13,24 @@
         "txURL": "https://insight.bitzeny.jp/tx/",
         "blockURL": "https://insight.bitzeny.jp/block/"
     },
+    "miningTools": [
+        {
+            "name": "cpuminer (official)",
+            "url": "https://github.com/BitzenyCoreDevelopers/cpuminer/releases"
+        },
+        {
+            "name": "cpuminer-opt-rplant",
+            "url": "https://github.com/rplant8/cpuminer-opt-rplant/releases"
+        },
+        {
+            "name": "cpuminer-opt (JayDDee)",
+            "url": "https://github.com/JayDDee/cpuminer-opt/releases"
+        },
+        {
+            "name": "ccminer KlausT (GPU miner)",
+            "url": "https://onedrive.live.com/?authkey=%21AHk1hss4HZtCU60&id=C7ABE390AB1575E7%21825&cid=C7ABE390AB1575E7"
+        }
+    ],
     "mainnet": {
         "bip32": {
             "public": "0488b21e"

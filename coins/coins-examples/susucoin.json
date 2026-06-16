@@ -20,5 +20,11 @@
         },
         "pubKeyHash": "3f",
         "scriptHash": "05"
-    }
+    },
+    "miningTools": [
+        {
+            "name": "ccminer",
+            "url": "https://github.com/tpruvot/ccminer/releases"
+        }
+    ]
 }

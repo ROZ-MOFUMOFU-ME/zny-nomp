@@ -19,5 +19,11 @@
     "explorer": {
         "txURL": "https://sugarchain.org/explorer/#/transaction/",
         "blockURL": "https://sugarchain.org/explorer/#/block/"
-    }
+    },
+    "miningTools": [
+        {
+            "name": "Sugarmaker",
+            "url": "https://github.com/decryp2kanon/sugarmaker/releases"
+        }
+    ]
 }

@@ -5,11 +5,23 @@
     "peerMagic": "c3d4d2fe",
     "peerMagicTestnet": "cdf2c0ef",
     "blockTime": 90,
+    "txfee": 0.03,
     "getInfo": true,
     "noNetworkInfo": true,
     "noGetnetworkhashps": true,
+    "subVersion": "/Antenna:{version}/",
     "explorer": {
-        "txURL": "https://spbird.mydns.jp/myexplorer2/probeexplorer.php?timezone=2&probeno=2&coinno=144&searchcode=",
-        "blockURL": "https://spbird.mydns.jp/myexplorer2/probeexplorer.php?timezone=2&probeno=2&coinno=144&searchcode="
-    }
+        "txURL": "https://explorer.kuma.mofumofu.me/tx/",
+        "blockURL": "https://explorer.kuma.mofumofu.me/block/"
+    },
+    "miningTools": [
+        {
+            "name": "cpuminer-multi (CPU miner)",
+            "url": "https://github.com/tpruvot/cpuminer-multi/releases"
+        },
+        {
+            "name": "ccminer (GPU miner)",
+            "url": "https://github.com/tpruvot/ccminer/releases"
+        }
+    ]
 }

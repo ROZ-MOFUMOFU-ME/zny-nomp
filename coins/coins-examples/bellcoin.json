@@ -13,6 +13,12 @@
         "txURL": "https://explorer.bellcoin.web4u.jp/tx/",
         "blockURL": "https://explorer.bellcoin.web4u.jp/block/"
     },
+    "miningTools": [
+        {
+            "name": "cpuminer-opt (Official)",
+            "url": "https://github.com/bellflower2015/cpuminer-opt/releases"
+        }
+    ],
     "mainnet": {
         "bech32": "bm",
         "bip32": {

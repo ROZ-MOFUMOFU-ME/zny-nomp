@@ -19,5 +19,15 @@
     "explorer": {
         "txURL": "https://insight.electrum-mona.org/insight/tx/",
         "blockURL": "https://insight.electrum-mona.org/insight/block/"
-    }
+    },
+    "miningTools": [
+        {
+            "name": "cpuminer-multi (CPU miner)",
+            "url": "https://github.com/tpruvot/cpuminer-multi/releases"
+        },
+        {
+            "name": "ccminer (GPU miner)",
+            "url": "https://github.com/tpruvot/ccminer/releases"
+        }
+    ]
 }
