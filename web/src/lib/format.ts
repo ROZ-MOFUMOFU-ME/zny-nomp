@@ -47,9 +47,12 @@ export function readableSeconds(secondsRaw: unknown): string {
     return `${s}s`;
 }
 
-// 1e8 satoshis -> coin amount string.
-export function formatCoins(satoshis: unknown, digits = 8): string {
-    return (toNum(satoshis) / 1e8).toFixed(digits);
+// Coin-amount formatter. The API serves balances/payouts/payment amounts as
+// already-decimal coin values (the share/payment processor stores coins, and
+// stats.js converts the only satoshi field, immature, server-side), so this
+// must NOT divide by 1e8 — it just fixes the precision.
+export function formatAmount(coins: unknown, digits = 8): string {
+    return toNum(coins).toFixed(digits);
 }
 
 export function maskAddress(addr: string): string {

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveStats } from '../api/useLiveStats.tsx';
@@ -6,7 +7,7 @@ import type { WorkerStats, WorkerEntry } from '../api/types.ts';
 import {
     readableHashRateString,
     readableLuckTime,
-    formatCoins,
+    formatAmount,
     toNum,
     formatTime
 } from '../lib/format.ts';
@@ -23,14 +24,14 @@ import {
 // Deterministic per-line colours (cycled by worker index) so we don't pull in
 // any extra colour dependency.
 const LINE_COLORS = [
-    '#4f9dff',
-    '#ff7a59',
-    '#41c7a9',
-    '#d98cff',
-    '#ffc247',
-    '#7ed957',
-    '#ff6b9d',
-    '#5bc0eb'
+    '#0eafc7',
+    '#b064e1',
+    '#10bb9c',
+    '#f0a90e',
+    '#e1646b',
+    '#646be1',
+    '#10bb6b',
+    '#39a0ed'
 ];
 
 type MergedRow = { time: number; [worker: string]: number };
@@ -58,6 +59,60 @@ function mergeHistory(history: WorkerStats['history']): {
     return { rows, workers };
 }
 
+// Mean hashrate of one worker's history series.
+function seriesAvg(points: Array<{ hashrate: number }> | undefined): number {
+    if (!points || points.length === 0) return 0;
+    let sum = 0;
+    for (const p of points) sum += toNum(p.hashrate);
+    return sum / points.length;
+}
+
+// Total average hashrate over the window — mirrors the legacy
+// calculateAverageHashrate(null): sum every point, divide by the longest series.
+function totalAvg(history: WorkerStats['history']): number {
+    let sum = 0;
+    let max = 1;
+    for (const points of Object.values(history)) {
+        if (points.length > max) max = points.length;
+        for (const p of points) sum += toNum(p.hashrate);
+    }
+    return sum / max;
+}
+
+// Combined luck across all of a miner's workers (legacy: 1 / Σ(1/luckDays)).
+function combinedLuckDays(workers: Record<string, WorkerEntry>): number {
+    let inv = 0;
+    for (const w of Object.values(workers)) {
+        const ld = toNum(w.luckDays);
+        if (ld > 0) inv += 1 / ld;
+    }
+    return inv > 0 ? 1 / inv : 0;
+}
+
+// Worker label = the part after the dot (rig name), or "noname".
+function workerLabel(key: string): string {
+    const parts = key.split('.');
+    return parts.length > 1 && parts[1] ? parts[1] : 'noname';
+}
+
+function Stat({
+    icon,
+    label,
+    value
+}: {
+    icon: string;
+    label: string;
+    value: ReactNode;
+}) {
+    return (
+        <div className="whitespace-nowrap py-0.5 text-sm">
+            <i className={`fas ${icon} fa-fw text-black/40`} />{' '}
+            <span className="text-muted">{label}:</span>{' '}
+            <span className="font-medium">{value}</span>
+        </div>
+    );
+}
+
 export default function MinerStats() {
     const { address } = useParams();
     const live = useLiveStats();
@@ -81,41 +136,35 @@ export default function MinerStats() {
 
     return (
         <div>
-            <h1 className="page-title">{address}</h1>
-            <p>
-                <Link to="/workers">← Back to workers</Link>
-            </p>
-
-            <div className="card">
-                <h2>Totals</h2>
-                <div className="stat">
-                    <span className="label">Total hashrate</span>
-                    <span className="value">
-                        {readableHashRateString(data.totalHash)}
-                    </span>
-                </div>
-                <div className="stat">
-                    <span className="label">Total shares</span>
-                    <span className="value">{data.totalShares}</span>
-                </div>
-                <div className="stat">
-                    <span className="label">Immature</span>
-                    <span className="value">{formatCoins(data.immature)}</span>
-                </div>
-                <div className="stat">
-                    <span className="label">Balance</span>
-                    <span className="value">{formatCoins(data.balance)}</span>
-                </div>
-                <div className="stat">
-                    <span className="label">Paid</span>
-                    <span className="value">{formatCoins(data.paid)}</span>
-                </div>
+            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <h1 className="m-0 break-all text-2xl font-bold">
+                    <i className="fas fa-user fa-fw text-accent" /> {address}
+                </h1>
+                <Link className="text-sm" to="/workers">
+                    <i className="fas fa-arrow-left fa-fw" /> Back to workers
+                </Link>
             </div>
 
+            {/* Hashrate chart with the headline now/avg/luck readouts. */}
             <div className="card">
-                <h2>Worker hashrate</h2>
+                <div className="mb-2 flex flex-wrap items-center gap-x-6 gap-y-1">
+                    <span className="font-semibold">Hashrate</span>
+                    <span className="ml-auto text-sm text-muted">
+                        <i className="fas fa-gauge-simple-high fa-fw" />{' '}
+                        {readableHashRateString(data.totalHash)} (Now)
+                    </span>
+                    <span className="text-sm text-muted">
+                        <i className="fas fa-gauge-simple fa-fw" />{' '}
+                        {readableHashRateString(totalAvg(data.history))} (Avg)
+                    </span>
+                    <span className="text-sm text-muted">
+                        <i className="fas fa-clock fa-fw" /> Luck{' '}
+                        {readableLuckTime(combinedLuckDays(data.workers))}
+                    </span>
+                </div>
+
                 {rows.length > 0 && workers.length > 0 ? (
-                    <div className="chart-wrap">
+                    <div className="h-[280px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={rows}>
                                 <CartesianGrid strokeDasharray="3 3" />
@@ -123,12 +172,14 @@ export default function MinerStats() {
                                     dataKey="time"
                                     tickFormatter={(t) => formatTime(t)}
                                     minTickGap={32}
+                                    fontSize={11}
                                 />
                                 <YAxis
                                     tickFormatter={(v) =>
                                         readableHashRateString(v)
                                     }
                                     width={90}
+                                    fontSize={11}
                                 />
                                 <Tooltip
                                     labelFormatter={(t) => formatTime(t)}
@@ -141,7 +192,7 @@ export default function MinerStats() {
                                         key={worker}
                                         type="monotone"
                                         dataKey={worker}
-                                        name={worker}
+                                        name={workerLabel(worker)}
                                         stroke={
                                             LINE_COLORS[i % LINE_COLORS.length]
                                         }
@@ -156,43 +207,89 @@ export default function MinerStats() {
                 ) : (
                     <div className="muted">No history yet</div>
                 )}
+
+                <div className="mt-3 flex flex-wrap gap-x-8 gap-y-1 text-sm">
+                    <span>
+                        <i className="fas fa-chart-bar fa-fw text-black/40" />{' '}
+                        <span className="text-muted">Shares:</span>{' '}
+                        <span className="font-medium">
+                            {toNum(data.totalShares).toFixed(2)}
+                        </span>
+                    </span>
+                    <span>
+                        <i className="fas fa-hourglass-half fa-fw text-black/40" />{' '}
+                        <span className="text-muted">Immature:</span>{' '}
+                        <span className="font-medium">
+                            {formatAmount(data.immature)}
+                        </span>
+                    </span>
+                    <span>
+                        <i className="fas fa-wallet fa-fw text-black/40" />{' '}
+                        <span className="text-muted">Balance:</span>{' '}
+                        <span className="font-medium">
+                            {formatAmount(data.balance)}
+                        </span>
+                    </span>
+                    <span>
+                        <i className="fas fa-money-bill fa-fw text-black/40" />{' '}
+                        <span className="text-muted">Paid:</span>{' '}
+                        <span className="font-medium">
+                            {formatAmount(data.paid)}
+                        </span>
+                    </span>
+                </div>
             </div>
 
-            <div className="grid grid-2">
+            {/* Per-worker boxes. */}
+            <div className="mt-4 grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]">
                 {workerEntries.map(([name, w]) => (
                     <div className="card" key={name}>
-                        <h2>{name}</h2>
-                        <div className="stat">
-                            <span className="label">Hashrate</span>
-                            <span className="value">
-                                {w.hashrateString ||
-                                    readableHashRateString(w.hashrate)}
-                            </span>
+                        <div className="mb-2 break-all text-lg font-bold">
+                            <i className="fas fa-microchip fa-fw text-accent2" />{' '}
+                            {workerLabel(name)}
                         </div>
-                        <div className="stat">
-                            <span className="label">Round shares</span>
-                            <span className="value">
-                                {toNum(w.currRoundShares)}
-                            </span>
-                        </div>
-                        <div className="stat">
-                            <span className="label">Luck</span>
-                            <span className="value">
-                                {readableLuckTime(w.luckDays)}
-                            </span>
-                        </div>
-                        <div className="stat">
-                            <span className="label">Balance</span>
-                            <span className="value">
-                                {formatCoins(toNum(w.balance))}
-                            </span>
-                        </div>
-                        <div className="stat">
-                            <span className="label">Paid</span>
-                            <span className="value">
-                                {formatCoins(toNum(w.paid))}
-                            </span>
-                        </div>
+                        <Stat
+                            icon="fa-gauge-simple-high"
+                            label="Hashrate (Now)"
+                            value={
+                                w.hashrateString ||
+                                readableHashRateString(w.hashrate)
+                            }
+                        />
+                        <Stat
+                            icon="fa-gauge-simple"
+                            label="Hashrate (Avg)"
+                            value={readableHashRateString(
+                                seriesAvg(data.history[name])
+                            )}
+                        />
+                        <Stat
+                            icon="fa-unlock"
+                            label="Diff"
+                            value={toNum(w.diff)}
+                        />
+                        <Stat
+                            icon="fa-chart-bar"
+                            label="Shares"
+                            value={
+                                Math.round(toNum(w.currRoundShares) * 100) / 100
+                            }
+                        />
+                        <Stat
+                            icon="fa-clock"
+                            label="Luck"
+                            value={readableLuckTime(w.luckDays)}
+                        />
+                        <Stat
+                            icon="fa-wallet"
+                            label="Balance"
+                            value={formatAmount(w.balance)}
+                        />
+                        <Stat
+                            icon="fa-money-bill"
+                            label="Paid"
+                            value={formatAmount(w.paid)}
+                        />
                     </div>
                 ))}
             </div>
