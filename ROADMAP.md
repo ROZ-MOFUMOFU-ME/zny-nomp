@@ -14,6 +14,22 @@ and the stack as a whole.
 - Runs on Node `^20.19 || >=22.12` (Node 24 recommended; ESM) with the
   node-redis v6 client (Redis 6.2+). Older Node fails to load the ESM
   `@exodus/crypto` dependency with `ERR_REQUIRE_ESM`.
+- **TypeScript migration complete (all three repos, buildless)**: the portal
+  (`init.ts`, `scripts/cli.ts`, `libs/*.ts`) and node-stratum-pool (`lib/*.ts`,
+  main `lib/index.ts`) are now TypeScript, run directly via Node's native
+  type-stripping (Node 22.18+/24, no build step), and are type-checked with
+  `tsc --noEmit`. node-multi-hashing's `index.js` stays JavaScript on purpose —
+  the `bindings` resolver can't locate the native `multihashing.node` addon when
+  the entry is a `.ts` loaded through Node's ESM→CJS translator. (`eslint.config.js`
+  also stays JS.)
+- **New React/Vite SPA frontend** in `web/` (Vite + React + TypeScript, React
+  Router v7, @tanstack/react-query, recharts, react-i18next with the 21-language
+  i18n ported from the old `translations.json`). It is the one build step in the
+  stack (`cd web && npm run build` → `web/dist`); the portal serves it from
+  `libs/website.ts` with an index.html fallback for client-side routes and a new
+  `GET /api/config` endpoint exposing public runtime config. The old `dot`
+  templates + jQuery/nvd3 were removed (only the self-contained `website/key.html`
+  wallet/mining-key tool remains, served at `/key.html`).
 - CI green on GitHub Actions and CircleCI (Node 20/22/24).
 - **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
   node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
@@ -45,16 +61,15 @@ and the stack as a whole.
   absent (it previously failed that one command and logged a spurious
   "1 commands failed"; the block itself was always recorded). And the master's
   PPLNT per-worker time tracking — dead since the node-redis v6 migration
-  (`init.js` still used the v3 `multi().exec(cb)` API, a silent no-op, so
+  (`init.ts` still used the v3 `multi().exec(cb)` API, a silent no-op, so
   `timesCurrent` was never written) — now uses `execCommands`, so PPLNT time
   data is recorded again.
 
 ## Known issues & limitations
 
-- **No real test suite** — `npm test` just boots `init.js`; there is no unit
-  coverage for share/payment/stats Redis logic.
-- **Frontend** uses `dot` templates; there is no modern SPA (an experimental
-  Next.js rewrite once lived on a `dev2` branch but was dropped).
+- **Limited test coverage** — `npm test` just boots `init.ts`; `npm run test:unit`
+  covers only pure logic helpers, with no coverage for the share/payment/stats
+  Redis logic.
 - **Profit switching** is now driven by the live price feed
   (`profitSwitch.js`, gated off by default), but its coin-switch path has not
   been validated on a running multi-coin pool yet.
@@ -71,7 +86,7 @@ and the stack as a whole.
 - Verify Susucoin end-to-end (mining + payout); the daemon now builds and the
   pool is enabled.
 - Verify Yenten dev-fee payouts on mainnet (height ≥ 2,030,000).
-- Add a CI step that does more than boot `init.js` (e.g. lint + a headless
+- Add a CI step that does more than boot `init.ts` (e.g. lint + a headless
   config-parse / Redis round-trip check).
 
 ### Mid-term
@@ -80,10 +95,10 @@ and the stack as a whole.
 - Replace `mysql` with `mysql2`, or drop MPOS mode if unused.
 - **Real-time price feeds** _(implemented)_ — a `priceFeed` worker polls
   CoinGecko and CoinPaprika with per-symbol fallback (more providers are
-  pluggable via `libs/priceProviders.js`) and stores prices in Redis under
+  pluggable via `libs/priceProviders.ts`) and stores prices in Redis under
   `priceFeed:prices`, served by the JSON API at `/api/prices`, shown as a
   live ticker on the stats page, and consumed by profit switching
-  (`profitSwitch.js`). Remaining: record the coin price at payout time.
+  (`profitSwitch.ts`). Remaining: record the coin price at payout time.
 
 ### Long-term
 - **Consolidate the three repos into a single monorepo** — the portal, the
@@ -91,10 +106,11 @@ and the stack as a whole.
   monorepo (e.g. npm workspaces) would remove the cross-repo git-dependency
   pinning, the `npm link` chain, the per-repo CI duplication, and the
   three-way release dance. This is the intended end state of the stack.
-- Modern web UI consuming the existing JSON API (`libs/api.js`).
+- **Modern web UI** _(implemented)_ — a Vite + React + TypeScript SPA in `web/`
+  consuming the existing JSON API (`libs/api.ts`).
 - **Metrics endpoint (Prometheus)** _(implemented)_ — pool/worker/algo
   hashrate, shares, blocks, network stats and live prices are exposed in the
-  exposition format at `/api/metrics` (`libs/metrics.js`).
+  exposition format at `/api/metrics` (`libs/metrics.ts`).
 - **Tagged-release workflow** _(implemented)_ — pushing a `vX.Y.Z` tag runs
   `.github/workflows/release.yml`, which checks the tag matches `package.json`
   and publishes a GitHub Release with auto-generated notes (a hyphenated semver
@@ -111,13 +127,15 @@ and the stack as a whole.
 Beyond individual features, a deeper modernization of the application
 *structure* itself — to make it more robust and easier to work with. The
 portal still follows the original NOMP shape (a `cluster` master forking
-workers that talk over IPC, modules issuing raw Redis commands, `dot`
-server-side templates, untyped JS, no tests). Several Focus-area items below
-are facets of this.
+workers that talk over IPC, modules issuing raw Redis commands). The frontend
+is now a React/Vite SPA and the codebase is TypeScript, but the layering and
+test-coverage items below remain. Several Focus-area items below are facets of
+this.
 
 ### Type safety & layering
-- Migrate the portal and the sibling libraries to **TypeScript** for
-  compile-time safety and better editor support.
+- ~~Migrate the portal and the sibling libraries to **TypeScript**~~ _(done —
+  portal + node-stratum-pool are TypeScript; node-multi-hashing's native binding
+  stays JS)._
 - Introduce clear layers: a **data-access layer** that abstracts Redis behind
   a repository/typed API instead of scattering raw commands across
   `shareProcessor` / `paymentProcessor` / `stats`; a **service layer** for the
@@ -153,14 +171,16 @@ Cross-cutting improvement themes that span the near/mid/long-term items above.
 Monorepo consolidation is deferred; these are the active priorities.
 
 ### Modernization
-- Replace the `dot`-template frontend with a modern SPA built on the existing
-  JSON API (`libs/api.js` / `libs/workerapi.js`).
-- Evaluate TypeScript for the portal and the sibling libraries.
+- ~~Replace the `dot`-template frontend with a modern SPA built on the existing
+  JSON API~~ _(done — `web/` is a Vite + React + TypeScript SPA consuming
+  `libs/api.ts` / `libs/workerapi.ts` and the new `/api/config`)._
+- ~~Evaluate TypeScript for the portal and the sibling libraries~~ _(done —
+  migrated; see "Type safety & layering")._
 - Keep the toolchain current (ESLint/Prettier, Node LTS, routine dependency
   bumps).
-- **Finish i18n** — `website/static/translations.json` already ships en / ja /
-  zh / zh-TW / fr and more; complete the string coverage, expose a language
-  switcher in the UI, and make adding new locales straightforward.
+- **i18n** — the SPA now ships 21-language i18n via react-i18next (ported from
+  the old `translations.json`); keep string coverage complete as the UI grows
+  and make adding new locales straightforward.
 - **Mobile-friendly, responsive UI** plus a Progressive Web App (installable,
   offline stats view, optional push notifications) and a dark mode.
 - Documented public API (OpenAPI/Swagger) and optional WebSocket push for

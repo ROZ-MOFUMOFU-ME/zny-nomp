@@ -113,6 +113,21 @@ cd zny-nomp
 npm install
 ```
 
+##### Frontend (`web/`)
+
+The website is a Vite + React + TypeScript single-page app in `web/` (served by
+the portal from `web/dist`). It is the only build step in the stack — the
+backend runs buildless via Node's native type-stripping. Build it before
+starting the portal:
+
+```bash
+cd web
+npm install --legacy-peer-deps
+npm run build          # outputs web/dist (use `npm run dev` for the Vite dev server on :5173)
+```
+
+The Docker image builds `web/` automatically during the image build.
+
 #### 2) Configuration
 
 ##### Portal config
@@ -451,13 +466,13 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
 2. In your daemon conf file set the `blocknotify` command to use:
 
 ```
-node [path to cli.js] [coin name in config] [block hash symbol]
+node [path to cli.ts] [coin name in config] [block hash symbol]
 ```
 
 Example: inside `bitzeny.conf` add the line
 
 ```
-blocknotify=node /home/user/zny-nomp/scripts/cli.js blocknotify bitzeny %s
+blocknotify=node /home/user/zny-nomp/scripts/cli.ts blocknotify bitzeny %s
 ```
 
 Alternatively, you can use a more efficient block notify script written in pure C. Build and usage instructions
@@ -513,7 +528,7 @@ Besides the stats endpoints (see `/api`), the portal exposes:
 When updating ZNY-NOMP to the latest code its important to not only `git pull` the latest from this repo, but to also update
 the `node-stratum-pool` and `node-multi-hashing` modules, and any config files that may have been changed.
 
-- Inside your ZNY-NOMP directory (where the init.js script is) do `git pull` to get the latest ZNY-NOMP code.
+- Inside your ZNY-NOMP directory (where the init.ts script is) do `git pull` to get the latest ZNY-NOMP code.
 - Remove the dependenices by deleting the `node_modules` directory with `rm -r node_modules`.
 - Run `npm update` to force updating/reinstalling of the dependencies.
 - Compare your `config.json` and `pool_configs/coin.json` configurations to the latest example ones in this repo or the ones in the setup instructions where each config field is explained. <b>You may need to modify or add any new changes.</b>
