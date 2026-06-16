@@ -1,0 +1,170 @@
+{
+    "en": {
+        "getting_started": "Getting Started",
+        "pool_stats": "Pool Stats",
+        "workers_stats": "Workers Stats",
+        "tab_stats": "Tabs Stats",
+        "payments": "Payments",
+        "api": "API"
+    },
+    "en-US": {
+        "getting_started": "Getting Started",
+        "pool_stats": "Pool Stats",
+        "workers_stats": "Workers Stats",
+        "tab_stats": "Tabs Stats",
+        "payments": "Payments",
+        "api": "API"
+    },
+    "en-GB": {
+        "getting_started": "Getting Started",
+        "pool_stats": "Pool Stats",
+        "workers_stats": "Workers Stats",
+        "tab_stats": "Tabs Stats",
+        "payments": "Payments",
+        "api": "API"
+    },
+    "ja": {
+        "getting_started": "始め方",
+        "pool_stats": "プール状況",
+        "workers_stats": "ワーカー状況",
+        "tab_stats": "タブ状況",
+        "payments": "支払状況",
+        "api": "API"
+    },
+    "zh": {
+        "getting_started": "开始",
+        "pool_stats": "矿池数据",
+        "workers_stats": "工人数据",
+        "tab_stats": "标签数据",
+        "payments": "支付数据",
+        "api": "API"
+    },
+    "zh-TW": {
+        "getting_started": "開始",
+        "pool_stats": "礦池統計",
+        "workers_stats": "礦工統計",
+        "tab_stats": "標籤統計",
+        "payments": "付款統計",
+        "api": "API"
+    },
+    "zh-HK": {
+        "getting_started": "開始",
+        "pool_stats": "礦池數據",
+        "workers_stats": "工人數據",
+        "tab_stats": "標籤數據",
+        "payments": "支付數據",
+        "api": "API"
+    },
+    "fr": {
+        "getting_started": "Démarrer",
+        "pool_stats": "Stats Pool",
+        "workers_stats": "Stats Trav.",
+        "tab_stats": "Stats Onglets",
+        "payments": "Paiements",
+        "api": "API"
+    },
+    "es": {
+        "getting_started": "Inicio",
+        "pool_stats": "Estad. Pool",
+        "workers_stats": "Estad. Trab.",
+        "tab_stats": "Estad. Pestañas",
+        "payments": "Pagos",
+        "api": "API"
+    },
+    "de": {
+        "getting_started": "Starten",
+        "pool_stats": "Pool-Statistiken",
+        "workers_stats": "Arbeiterstatistiken",
+        "tab_stats": "Tabellenstatistiken",
+        "payments": "Zahlungen",
+        "api": "API"
+    },
+    "ru": {
+        "getting_started": "Начало работы",
+        "pool_stats": "Статистика пула",
+        "workers_stats": "Работники",
+        "tab_stats": "Статистика вкладок",
+        "payments": "Платежи",
+        "api": "API"
+    },
+    "hi": {
+        "getting_started": "शुरू करें",
+        "pool_stats": "पूल आँकड़े",
+        "workers_stats": "कर्मचारी आँकड़े",
+        "tab_stats": "टैब आँकड़े",
+        "payments": "भुगतान",
+        "api": "API"
+    },
+    "ar": {
+        "getting_started": "البدء",
+        "pool_stats": "إحصائيات التجمع",
+        "workers_stats": "إحصائيات العمال",
+        "tab_stats": "إحصائيات التبويبات",
+        "payments": "المدفوعات",
+        "api": "API"
+    },
+    "pt": {
+        "getting_started": "Início",
+        "pool_stats": "Estat. Pool",
+        "workers_stats": "Estat. Trab.",
+        "tab_stats": "Estat. Abas",
+        "payments": "Pagamentos",
+        "api": "API"
+    },
+    "it": {
+        "getting_started": "Inizio",
+        "pool_stats": "Stat. Pool",
+        "workers_stats": "Stat. Lav.",
+        "tab_stats": "Stat. Schede",
+        "payments": "Pagamenti",
+        "api": "API"
+    },
+    "tl": {
+        "getting_started": "Simula",
+        "pool_stats": "Stats Pool",
+        "workers_stats": "Stats Mangg.",
+        "tab_stats": "Stats Tab",
+        "payments": "Bayad",
+        "api": "API"
+    },
+    "id": {
+        "getting_started": "Mulai",
+        "pool_stats": "Statistik Pool",
+        "workers_stats": "Statistik Pekerja",
+        "tab_stats": "Statistik Tab",
+        "payments": "Pembayaran",
+        "api": "API"
+    },
+    "ms": {
+        "getting_started": "Mula",
+        "pool_stats": "Statistik Kolam",
+        "workers_stats": "Statistik Pekerja",
+        "tab_stats": "Statistik Tab",
+        "payments": "Pembayaran",
+        "api": "API"
+    },
+    "ko": {
+        "getting_started": "시작하기",
+        "pool_stats": "풀 통계",
+        "workers_stats": "작업자 통계",
+        "tab_stats": "탭 통계",
+        "payments": "지불",
+        "api": "API"
+    },
+    "vi": {
+        "getting_started": "Bắt đầu",
+        "pool_stats": "Thống kê Pool",
+        "workers_stats": "Thống kê Công nhân",
+        "tab_stats": "Thống kê Tab",
+        "payments": "Thanh toán",
+        "api": "API"
+    },
+    "tr": {
+        "getting_started": "Başlarken",
+        "pool_stats": "Havuz İstatistikleri",
+        "workers_stats": "Çalışan İstatistikleri",
+        "tab_stats": "Sekme İstatistikleri",
+        "payments": "Ödemeler",
+        "api": "API"
+    }
+}

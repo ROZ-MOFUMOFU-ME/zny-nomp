@@ -18,6 +18,12 @@ RUN npm ci
 # App sources (config.json / pool_configs / coins are mounted at runtime).
 COPY . .
 
+# Build the Vite + React SPA that the website worker serves from web/dist.
+# (--legacy-peer-deps: react-i18next declares an optional TS ^5 peer; we use 6.)
+RUN cd web \
+    && npm ci --legacy-peer-deps --no-audit --no-fund \
+    && npm run build
+
 # Website (8080) and CLI listener (cliPort, 17117 in config_example.json).
 # These must match your config; stratum ports are per-pool, publish them in
 # docker-compose as needed.

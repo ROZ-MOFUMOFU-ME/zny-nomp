@@ -74,6 +74,46 @@ export default function (
                 res.header('Content-Type', 'application/json');
                 res.end(JSON.stringify(portalStats.statPoolHistory));
                 return;
+            case 'config': {
+                // Public runtime config the SPA needs (stratum host, enabled
+                // switching ports, per-pool coin/ports/explorer). No secrets.
+                var swCfg: any = portalConfig.switching || {};
+                var switching: any = {};
+                Object.keys(swCfg).forEach(function (k) {
+                    if (swCfg[k] && swCfg[k].enabled)
+                        switching[k] = {
+                            enabled: true,
+                            port: swCfg[k].port,
+                            algorithm: swCfg[k].algorithm,
+                            diff: swCfg[k].diff
+                        };
+                });
+                var pools: any = {};
+                Object.keys(poolConfigs).forEach(function (name) {
+                    var pc: any = poolConfigs[name];
+                    var coin: any = pc.coin || {};
+                    pools[name] = {
+                        coin: {
+                            name: coin.name,
+                            symbol: coin.symbol,
+                            algorithm: coin.algorithm,
+                            explorer: coin.explorer
+                        },
+                        ports: pc.ports
+                    };
+                });
+                res.header('Content-Type', 'application/json');
+                res.end(
+                    JSON.stringify({
+                        stratumHost:
+                            portalConfig.website &&
+                            portalConfig.website.stratumHost,
+                        switching: switching,
+                        pools: pools
+                    })
+                );
+                return;
+            }
             case 'prices':
                 res.header('Content-Type', 'application/json');
                 _this.getPrices(function (data: any) {

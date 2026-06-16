@@ -2,7 +2,6 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import async from 'async';
-import watch from 'node-watch';
 import { createRedisClient } from './redisUtil.ts';
 import dot from 'dot';
 import express from 'express';
@@ -11,6 +10,11 @@ import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/lib/util.ts';
 import api from './api.ts';
 import type { Logger } from './logUtil.ts';
+
+// Directory of the built Vite + React SPA (see web/). Served as static assets
+// with a catch-all fallback to index.html so client-side routes work.
+const SPA_DIR = path.resolve('web/dist');
+const SPA_INDEX = path.join(SPA_DIR, 'index.html');
 
 export default function (this: any, logger: Logger) {
     dot.templateSettings.strip = false;
@@ -25,108 +29,17 @@ export default function (this: any, logger: Logger) {
 
     var logSystem = 'Website';
 
-    var pageFiles: any = {
-        'index.html': 'index',
-        'home.html': '',
-        'getting_started.html': 'getting_started',
-        'stats.html': 'stats',
-        'tbs.html': 'tbs',
-        'workers.html': 'workers',
-        'api.html': 'api',
-        'admin.html': 'admin',
-        'mining_key.html': 'mining_key',
-        'miner_stats.html': 'miner_stats',
-        'payments.html': 'payments'
-    };
-
-    var pageTemplates: any = {};
-
-    var pageProcessed: any = {};
-    var indexesProcessed: any = {};
-
+    // The wallet/mining-key tool (website/key.html) is the one page still
+    // rendered server-side, because it needs per-coin version bytes injected.
     var keyScriptTemplate: any = '';
     var keyScriptProcessed: any = '';
 
-    var processTemplates = function () {
-        for (var pageName in pageTemplates) {
-            if (pageName === 'index') continue;
-            pageProcessed[pageName] = pageTemplates[pageName]({
-                poolsConfigs: poolConfigs,
-                stats: portalStats.stats,
-                portalConfig: portalConfig
-            });
-            indexesProcessed[pageName] = pageTemplates.index({
-                page: pageProcessed[pageName],
-                selected: pageName,
-                stats: portalStats.stats,
-                poolConfigs: poolConfigs,
-                portalConfig: portalConfig
-            });
-        }
-
-        //logger.debug(logSystem, 'Stats', 'Website updated to latest stats');
-    };
-
-    var readPageFiles = function (files: any) {
-        async.each(
-            files,
-            function (fileName: any, callback: any) {
-                var filePath =
-                    'website/' +
-                    (fileName === 'index.html' ? '' : 'pages/') +
-                    fileName;
-                fs.readFile(filePath, 'utf8', function (err, data) {
-                    if (err) {
-                        console.log('Error reading file:', filePath, err);
-                        return callback(err);
-                    }
-                    var pTemp = dot.template(data);
-                    pageTemplates[pageFiles[fileName]] = pTemp;
-                    callback();
-                });
-            },
-            function (err) {
-                if (err) {
-                    console.log(
-                        'error reading files for creating dot templates: ' +
-                            JSON.stringify(err)
-                    );
-                    return;
-                }
-                processTemplates();
-            }
-        );
-    };
-
-    // if an html file was changed reload it
-    /* requires node-watch 0.5.0 or newer */
-    (watch as any)(
-        ['./website', './website/pages'],
-        function (evt: any, filename: any) {
-            var basename;
-            // support older versions of node-watch automatically
-            if (!filename && evt) basename = path.basename(evt);
-            else basename = path.basename(filename);
-
-            if (basename in pageFiles) {
-                readPageFiles([basename]);
-                logger.special(
-                    logSystem,
-                    'Server',
-                    'Reloaded file ' + basename
-                );
-            }
-        }
-    );
-
-    portalStats.getGlobalStats(function () {
-        readPageFiles(Object.keys(pageFiles));
-    });
+    // Populate the stats snapshot once at startup so /api/stats has data before
+    // the first SSE tick, then push the live object to SSE clients on a timer.
+    portalStats.getGlobalStats(function () {});
 
     var buildUpdatedWebsite = function () {
         portalStats.getGlobalStats(function () {
-            processTemplates();
-
             var statData =
                 'data: ' + JSON.stringify(portalStats.stats) + '\n\n';
             for (var uid in portalApi.liveStatConnections) {
@@ -287,126 +200,15 @@ export default function (this: any, logger: Logger) {
         );
     };
 
-    var getPage = function (pageId: any) {
-        if (pageId in pageProcessed) {
-            var requestedPage = pageProcessed[pageId];
-            return requestedPage;
-        }
-    };
-
-    var minerpage = function (req: any, res: any, next: any) {
-        var address = req.params.address || null;
-        if (address != null) {
-            address = address.split('.')[0];
-            portalStats.getBalanceByAddress(address, function () {
-                processTemplates();
-                res.header('Content-Type', 'text/html');
-                res.end(indexesProcessed['miner_stats']);
-            });
-        } else next();
-    };
-
-    var payout = function (req: any, res: any, next: any) {
-        var address = req.params.address || null;
-        if (address != null) {
-            portalStats.getPayout(address, function (data: any) {
-                res.write(data.toString());
-                res.end();
-            });
-        } else next();
-    };
-
-    var shares = function (req: any, res: any, next: any) {
-        portalStats.getCoins(function () {
-            processTemplates();
-            res.end(indexesProcessed['user_shares']);
-        });
-    };
-
-    var usershares = function (req: any, res: any, next: any) {
-        var coin = req.params.coin || null;
-        if (coin != null) {
-            portalStats.getCoinTotals(coin, null, function () {
-                processTemplates();
-                res.end(indexesProcessed['user_shares']);
-            });
-        } else next();
-    };
-
-    var route = function (req: any, res: any, next: any) {
-        var pageId = req.params.page || '';
-        var acceptLanguage = req.headers['accept-language'];
-        let language = 'en';
-
-        if (acceptLanguage) {
-            const supportedLanguages = [
-                'en',
-                'en-US',
-                'ja',
-                'zh',
-                'zh-TW',
-                'zh-HK',
-                'fr',
-                'es',
-                'de',
-                'ru',
-                'hi',
-                'ar',
-                'pt',
-                'it',
-                'tl',
-                'id',
-                'ms',
-                'ko',
-                'vi',
-                'tr'
-            ];
-            const languages = acceptLanguage
-                .split(',')
-                .map((lang: any) => lang.split(';')[0].trim());
-
-            for (let lang of languages) {
-                if (supportedLanguages.includes(lang)) {
-                    language = lang;
-                    break;
-                }
-            }
-        }
-
-        if (pageId in indexesProcessed) {
-            res.header('Content-Type', 'text/html');
-
-            let pageContent = indexesProcessed[pageId].replace(
-                /<html lang=".*?">/,
-                `<html lang="${language}">`
-            );
-
-            res.end(pageContent);
-        } else next();
-    };
+    buildKeyScriptPage();
 
     var app = express();
 
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
-
-    app.get('/get_page', function (req, res, next) {
-        var requestedPage = getPage(req.query.id);
-        if (requestedPage) {
-            res.end(requestedPage);
-            return;
-        }
-        next();
-    });
-
-    //app.get('/stats/shares/:coin', usershares);
-    //app.get('/stats/shares', shares);
-    //app.get('/payout/:address', payout);
     app.use(compress());
-    app.get('/workers/:address', minerpage);
-    app.get('/:page', route);
-    app.get('/', route);
 
+    // JSON / SSE API.
     app.get('/api/:method', function (req, res, next) {
         portalApi.handleApiRequest(req, res, next);
     });
@@ -423,8 +225,24 @@ export default function (this: any, logger: Logger) {
         } else next();
     });
 
-    app.use(compress());
+    // Server-rendered wallet/mining-key tool (needs injected coin version
+    // bytes). Falls back to the raw file until the async build completes.
+    app.get('/key.html', function (req, res) {
+        res.header('Content-Type', 'text/html');
+        if (keyScriptProcessed) res.end(keyScriptProcessed);
+        else res.sendFile(path.resolve('website/key.html'));
+    });
+
+    // Legacy static assets (kept for key.html and any external references).
     app.use('/static', express.static('website/static'));
+
+    // Built SPA assets (index.html at /, hashed assets under /assets).
+    app.use(express.static(SPA_DIR));
+
+    // SPA fallback: any other GET serves the app shell for client-side routing.
+    app.use(function (req: any, res: any) {
+        res.sendFile(SPA_INDEX);
+    });
 
     app.use(function (err: any, req: any, res: any, next: any) {
         console.error(err.stack);
