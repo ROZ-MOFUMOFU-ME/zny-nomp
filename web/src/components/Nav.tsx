@@ -38,12 +38,16 @@ const LINKS: Array<{
 export default function Nav() {
     const { t } = useTranslation();
     return (
-        <nav className="site-nav">
+        <nav className="ml-auto flex flex-wrap items-center gap-1">
             {LINKS.map((l) => (
                 <NavLink
                     key={l.to}
                     to={l.to}
-                    className={({ isActive }) => (isActive ? 'active' : '')}
+                    className={({ isActive }) =>
+                        `inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm hover:bg-navhover hover:text-white hover:no-underline ${
+                            isActive ? 'bg-navhover text-white' : 'text-nav'
+                        }`
+                    }
                 >
                     <i className={`fas ${l.icon} fa-fw`} />
                     <span>{t(l.key, l.fallback)}</span>

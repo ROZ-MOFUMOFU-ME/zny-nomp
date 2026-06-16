@@ -1,374 +1,188 @@
-import { useLiveStats } from '../api/useLiveStats.tsx';
-import { getPoolHistory, getConfig } from '../api/client.ts';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import type { PoolEntry, PoolHistoryPoint, AppConfig } from '../api/types.ts';
-import {
-    toNum,
-    readableHashRateString,
-    parseBlockString,
-    formatTime,
-    explorerUrl
-} from '../lib/format.ts';
 import {
     LineChart,
     Line,
     XAxis,
     YAxis,
     Tooltip,
-    ResponsiveContainer,
     CartesianGrid,
+    ResponsiveContainer,
     PieChart,
     Pie,
-    Cell
+    Cell,
+    Legend
 } from 'recharts';
+import { useLiveStats } from '../api/useLiveStats.tsx';
+import { getPoolHistory, getConfig } from '../api/client.ts';
+import type { PoolEntry } from '../api/types.ts';
+import {
+    toNum,
+    readableHashRateString,
+    readableLuckTime,
+    readableDate,
+    parseBlockString,
+    explorerUrl
+} from '../lib/format.ts';
 
-// Small fixed palette reused across the per-pool line charts and pies.
-const PALETTE = [
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const COLORS = [
     '#0eafc7',
     '#b064e1',
     '#10bb9c',
-    '#f06350',
-    '#f5a623',
-    '#4a90d9',
-    '#7ed321',
-    '#bd10e0'
+    '#f0a90e',
+    '#e1646b',
+    '#646be1',
+    '#10bb6b',
+    '#bb1090',
+    '#39a0ed',
+    '#e07b39'
 ];
+const shortTime = (t: number) => new Date(t * 1000).toLocaleTimeString();
 
-const CONFIRMED_LIMIT = 25;
-
-// A row for recharts: { time, <poolName>: hashrate, ... } merged across pools.
-type ChartRow = Record<string, number>;
-
-function shortTime(unixSeconds: number): string {
-    const d = new Date(unixSeconds * 1000);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-// Flatten PoolHistoryPoint[] into recharts rows + the set of pool names seen.
-function buildHistoryRows(history: PoolHistoryPoint[]): {
-    poolNames: string[];
-    hashrateRows: ChartRow[];
-    pendingRows: ChartRow[];
-} {
-    const poolNameSet = new Set<string>();
-    const hashrateRows: ChartRow[] = [];
-    const pendingRows: ChartRow[] = [];
-    for (const point of history) {
-        const hashRow: ChartRow = { time: point.time };
-        const pendingRow: ChartRow = { time: point.time };
-        for (const [poolName, p] of Object.entries(point.pools)) {
-            poolNameSet.add(poolName);
-            hashRow[poolName] = toNum(p.hashrate);
-            pendingRow[poolName] = toNum(p.blocks?.pending);
-        }
-        hashrateRows.push(hashRow);
-        pendingRows.push(pendingRow);
-    }
-    return {
-        poolNames: Array.from(poolNameSet),
-        hashrateRows,
-        pendingRows
-    };
-}
-
-function HistoryCharts() {
-    const { data, isLoading, isError } = useQuery({
-        queryKey: ['poolHistory'],
-        queryFn: getPoolHistory
-    });
-
-    if (isLoading) return <div className="loading">Loading history…</div>;
-    if (isError || !data)
-        return <div className="error">Failed to load pool history.</div>;
-    if (data.length === 0)
-        return <div className="muted">No history data yet.</div>;
-
-    const { poolNames, hashrateRows, pendingRows } = buildHistoryRows(data);
-
-    return (
-        <div className="grid grid-2">
-            <div className="card">
-                <h2>Pool Hashrate (history)</h2>
-                <div className="chart-wrap">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={hashrateRows}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                                dataKey="time"
-                                tickFormatter={shortTime}
-                                minTickGap={24}
-                            />
-                            <YAxis
-                                tickFormatter={(v: number) =>
-                                    readableHashRateString(v)
-                                }
-                                width={80}
-                            />
-                            <Tooltip
-                                labelFormatter={(v: number) => formatTime(v)}
-                                formatter={(v: number, name: string) => [
-                                    readableHashRateString(v),
-                                    name
-                                ]}
-                            />
-                            {poolNames.map((poolName, i) => (
-                                <Line
-                                    key={poolName}
-                                    type="monotone"
-                                    dataKey={poolName}
-                                    stroke={PALETTE[i % PALETTE.length]}
-                                    dot={false}
-                                    isAnimationActive={false}
-                                />
-                            ))}
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            <div className="card">
-                <h2>Pending Blocks (history)</h2>
-                <div className="chart-wrap">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={pendingRows}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                                dataKey="time"
-                                tickFormatter={shortTime}
-                                minTickGap={24}
-                            />
-                            <YAxis allowDecimals={false} width={40} />
-                            <Tooltip
-                                labelFormatter={(v: number) => formatTime(v)}
-                            />
-                            {poolNames.map((poolName, i) => (
-                                <Line
-                                    key={poolName}
-                                    type="monotone"
-                                    dataKey={poolName}
-                                    stroke={PALETTE[i % PALETTE.length]}
-                                    dot={false}
-                                    isAnimationActive={false}
-                                />
-                            ))}
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function LivePrices({
-    stats
+function Row({
+    icon,
+    label,
+    value
 }: {
-    stats: NonNullable<ReturnType<typeof useLiveStats>>;
+    icon: string;
+    label: string;
+    value: ReactNode;
 }) {
-    const prices = stats.prices?.prices;
-    if (!prices) return null;
-    const entries = Object.entries(prices);
-    if (entries.length === 0) return null;
-
     return (
-        <div className="card">
-            <h2>Live Prices</h2>
-            <table className="data">
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th className="right">Price</th>
-                        <th>Currency</th>
-                        <th>Source</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {entries.map(([symbol, row]) => (
-                        <tr key={symbol}>
-                            <td className="nowrap">{symbol}</td>
-                            <td className="right">{row.price}</td>
-                            <td>{row.vsCurrency.toUpperCase()}</td>
-                            <td>{row.source}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+        <div className="whitespace-nowrap py-0.5 text-sm">
+            <i className={`fas ${icon} fa-fw text-black/40`} />{' '}
+            <span className="text-muted">{label}:</span>{' '}
+            <span className="font-medium">{value}</span>
         </div>
     );
 }
 
-function PoolCard({ pool }: { pool: PoolEntry }) {
-    const ps = pool.poolStats;
-    const networkHash =
-        ps?.networkHashString || readableHashRateString(ps?.networkHash);
-    return (
-        <div className="card">
-            <h2>{pool.name}</h2>
-
-            <h3>Pool</h3>
-            <div className="stat">
-                <span className="label">Miners</span>
-                <span className="value">{pool.minerCount ?? 0}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Workers</span>
-                <span className="value">{pool.workerCount ?? 0}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Hashrate</span>
-                <span className="value">
-                    {pool.hashrateString ||
-                        readableHashRateString(pool.hashrate)}
-                </span>
-            </div>
-
-            <h3>Network</h3>
-            <div className="stat">
-                <span className="label">Block height</span>
-                <span className="value">{toNum(ps?.networkBlocks)}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Network hashrate</span>
-                <span className="value">{networkHash}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Difficulty</span>
-                <span className="value">{toNum(ps?.networkDiff)}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Connections</span>
-                <span className="value">{toNum(ps?.networkConnections)}</span>
-            </div>
-
-            <h3>Blocks</h3>
-            <div className="stat">
-                <span className="label">Pending</span>
-                <span className="value">{pool.blocks?.pending ?? 0}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Confirmed</span>
-                <span className="value">{pool.blocks?.confirmed ?? 0}</span>
-            </div>
-            <div className="stat">
-                <span className="label">Orphaned</span>
-                <span className="value">{pool.blocks?.orphaned ?? 0}</span>
-            </div>
-        </div>
-    );
-}
-
-function BlockRow({
-    raw,
-    state,
+function PoolBlocks({
+    pool,
     blockURL
 }: {
-    raw: string;
-    state: string;
+    pool: PoolEntry;
     blockURL?: string;
 }) {
-    const b = parseBlockString(raw);
-    const linkValue = b.hash || b.height;
-    const url = explorerUrl(blockURL, linkValue);
-    return (
-        <tr>
-            <td className="nowrap">
-                {url ? (
-                    <a href={url} target="_blank" rel="noreferrer">
-                        {b.height}
-                    </a>
-                ) : (
-                    b.height
-                )}
-            </td>
-            <td>{state}</td>
-            <td>{b.worker}</td>
-            <td className="nowrap">{formatTime(b.time)}</td>
-        </tr>
-    );
-}
-
-function BlocksFound({
-    pool,
-    config
-}: {
-    pool: PoolEntry;
-    config: AppConfig | undefined;
-}) {
     const pending = pool.pending?.blocks ?? [];
-    const confirmed = (pool.confirmed?.blocks ?? []).slice(0, CONFIRMED_LIMIT);
-    if (pending.length === 0 && confirmed.length === 0) return null;
+    const confirms = pool.pending?.confirms ?? {};
+    const confirmed = (pool.confirmed?.blocks ?? []).slice(0, 8);
+    const ps = pool.poolStats ?? {};
 
-    const blockURL = config?.pools?.[pool.name]?.coin.explorer?.blockURL;
+    const render = (raw: string, paid: boolean) => {
+        const b = parseBlockString(raw);
+        const href = blockURL ? explorerUrl(blockURL, b.blockHash) : null;
+        const conf = confirms[b.blockHash];
+        const status = paid ? (
+            <span className="font-semibold text-green-600">*PAID*</span>
+        ) : conf != null ? (
+            <span className="font-semibold text-red-600">{conf} of 100</span>
+        ) : (
+            <span className="font-semibold text-red-600">*PENDING*</span>
+        );
+        return (
+            <div
+                key={(paid ? 'c' : 'p') + b.blockHash + b.height}
+                className="rounded-md bg-black/5 px-3 py-2 text-sm"
+            >
+                <div className="flex flex-wrap items-center gap-x-3">
+                    <span>
+                        <i className="fas fa-bars fa-fw text-black/40" />{' '}
+                        <span className="text-muted">Block:</span>{' '}
+                        {href ? (
+                            <a href={href} target="_blank" rel="noreferrer">
+                                {b.height}
+                            </a>
+                        ) : (
+                            b.height
+                        )}
+                    </span>
+                    {b.time && (
+                        <span className="text-muted">
+                            {readableDate(b.time)}
+                        </span>
+                    )}
+                    <span className="ml-auto">{status}</span>
+                </div>
+                <div className="mt-1">
+                    <i className="fas fa-gavel fa-fw text-black/40" />{' '}
+                    <span className="text-muted">Mined By:</span>{' '}
+                    <Link to={`/workers/${b.worker.split('.')[0]}`}>
+                        {b.worker}
+                    </Link>
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className="card">
-            <h3>Blocks Found — {pool.name}</h3>
-            <table className="data">
-                <thead>
-                    <tr>
-                        <th>Height</th>
-                        <th>State</th>
-                        <th>Worker</th>
-                        <th>Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {pending.map((raw, i) => (
-                        <BlockRow
-                            key={'pending-' + i}
-                            raw={raw}
-                            state="pending"
-                            blockURL={blockURL}
-                        />
-                    ))}
-                    {confirmed.map((raw, i) => (
-                        <BlockRow
-                            key={'confirmed-' + i}
-                            raw={raw}
-                            state="confirmed"
-                            blockURL={blockURL}
-                        />
-                    ))}
-                </tbody>
-            </table>
+        <div className="card mt-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-lg font-bold">
+                    {cap(pool.name)} Blocks Found
+                </span>
+                <span className="text-sm text-muted">
+                    <i className="fas fa-bars fa-fw" /> {toNum(ps.validBlocks)}{' '}
+                    Blocks &nbsp;&nbsp;
+                    <i className="fas fa-money-bill fa-fw" /> Paid:{' '}
+                    {toNum(ps.totalPaid).toFixed(8)} {pool.symbol}
+                </span>
+            </div>
+            <div className="space-y-2">
+                {pending.length || confirmed.length ? (
+                    <>
+                        {pending.map((b) => render(b, false))}
+                        {confirmed.map((b) => render(b, true))}
+                    </>
+                ) : (
+                    <div className="muted">No blocks found yet.</div>
+                )}
+            </div>
         </div>
     );
 }
 
 function FindersPie({ pool }: { pool: PoolEntry }) {
-    const pending = pool.pending?.blocks ?? [];
-    if (pending.length === 0) return null;
-
-    const counts: Record<string, number> = {};
-    for (const raw of pending) {
-        const worker = parseBlockString(raw).worker || 'unknown';
-        counts[worker] = (counts[worker] ?? 0) + 1;
+    const blocks = [
+        ...(pool.pending?.blocks ?? []),
+        ...(pool.confirmed?.blocks ?? [])
+    ];
+    const byWorker: Record<string, number> = {};
+    for (const raw of blocks) {
+        const w = parseBlockString(raw).worker;
+        if (w) byWorker[w] = (byWorker[w] ?? 0) + 1;
     }
-    const data = Object.entries(counts).map(([worker, value]) => ({
-        name: worker,
+    const data = Object.entries(byWorker).map(([name, value]) => ({
+        name,
         value
     }));
-
+    if (!data.length) return null;
     return (
-        <div className="card">
-            <h3>Pending Finders — {pool.name}</h3>
-            <div className="chart-wrap">
+        <div className="card mt-4">
+            <div className="mb-2 text-center font-semibold">
+                Finders of the last {blocks.length} blocks
+            </div>
+            <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
                             data={data}
                             dataKey="value"
                             nameKey="name"
-                            outerRadius="80%"
-                            label
+                            outerRadius={120}
+                            label={(e: any) => String(e.name).slice(0, 8)}
                         >
-                            {data.map((entry, i) => (
+                            {data.map((_, i) => (
                                 <Cell
-                                    key={entry.name}
-                                    fill={PALETTE[i % PALETTE.length]}
+                                    key={i}
+                                    fill={COLORS[i % COLORS.length]}
                                 />
                             ))}
                         </Pie>
                         <Tooltip />
+                        <Legend />
                     </PieChart>
                 </ResponsiveContainer>
             </div>
@@ -378,41 +192,271 @@ function FindersPie({ pool }: { pool: PoolEntry }) {
 
 export default function Stats() {
     const stats = useLiveStats();
-    const { data: config } = useQuery({
-        queryKey: ['config'],
-        queryFn: getConfig
+    const historyQuery = useQuery({
+        queryKey: ['poolHistory'],
+        queryFn: getPoolHistory
     });
+    const configQuery = useQuery({ queryKey: ['config'], queryFn: getConfig });
 
     if (!stats) return <div className="loading">Loading…</div>;
 
-    const pools = Object.values(stats.pools);
+    const poolNames = Object.keys(stats.pools);
+    const history = historyQuery.data ?? [];
+    const hashData = history.map((pt) => {
+        const row: any = { time: pt.time };
+        for (const n of poolNames) row[n] = pt.pools[n]?.hashrate ?? 0;
+        return row;
+    });
+    const pendData = history.map((pt) => {
+        const row: any = { time: pt.time };
+        for (const n of poolNames) row[n] = pt.pools[n]?.blocks?.pending ?? 0;
+        return row;
+    });
+    const prices = stats.prices?.prices ?? {};
+    const priceSyms = Object.keys(prices);
 
     return (
         <div>
             <h1 className="page-title">Pool Stats</h1>
 
-            <HistoryCharts />
-
-            <LivePrices stats={stats} />
-
-            <h2>Pools</h2>
-            <div className="grid grid-2">
-                {pools.map((pool) => (
-                    <PoolCard key={pool.name} pool={pool} />
-                ))}
+            <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
+                <div className="card">
+                    <div className="mb-2 text-center font-semibold">
+                        Pool Historical Hashrate
+                    </div>
+                    <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={hashData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis
+                                    dataKey="time"
+                                    tickFormatter={shortTime}
+                                    fontSize={11}
+                                />
+                                <YAxis
+                                    width={70}
+                                    fontSize={11}
+                                    tickFormatter={(v: number) =>
+                                        readableHashRateString(v)
+                                    }
+                                />
+                                <Tooltip
+                                    formatter={(v: any) =>
+                                        readableHashRateString(v)
+                                    }
+                                    labelFormatter={(t: any) => readableDate(t)}
+                                />
+                                {poolNames.map((n, i) => (
+                                    <Line
+                                        key={n}
+                                        type="monotone"
+                                        dataKey={n}
+                                        stroke={COLORS[i % COLORS.length]}
+                                        dot={false}
+                                        isAnimationActive={false}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+                <div className="card">
+                    <div className="mb-2 text-center font-semibold">
+                        Pool Pending Blocks
+                    </div>
+                    <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={pendData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis
+                                    dataKey="time"
+                                    tickFormatter={shortTime}
+                                    fontSize={11}
+                                />
+                                <YAxis
+                                    width={40}
+                                    fontSize={11}
+                                    allowDecimals={false}
+                                />
+                                <Tooltip
+                                    labelFormatter={(t: any) => readableDate(t)}
+                                />
+                                {poolNames.map((n, i) => (
+                                    <Line
+                                        key={n}
+                                        type="monotone"
+                                        dataKey={n}
+                                        stroke={COLORS[i % COLORS.length]}
+                                        dot={false}
+                                        isAnimationActive={false}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
 
-            <h2>Blocks Found</h2>
-            {pools.map((pool) => (
-                <BlocksFound key={pool.name} pool={pool} config={config} />
-            ))}
+            {priceSyms.length > 0 && (
+                <div className="card mt-4">
+                    <div className="mb-2 font-semibold">
+                        <i className="fas fa-coins fa-fw" /> Live Prices
+                        {stats.prices?.updated && (
+                            <span className="ml-2 text-xs text-muted">
+                                updated {readableDate(stats.prices.updated)}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-8 gap-y-2">
+                        {priceSyms.map((sym) => {
+                            const p = prices[sym];
+                            return (
+                                <div key={sym}>
+                                    <span className="font-bold">{sym}</span>{' '}
+                                    {p.price}{' '}
+                                    {(p.vsCurrency || '').toUpperCase()}
+                                    <span className="ml-1 text-xs text-muted">
+                                        via {p.source}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
-            <h2>Pending Finders</h2>
-            <div className="grid grid-2">
-                {pools.map((pool) => (
-                    <FindersPie key={pool.name} pool={pool} />
-                ))}
-            </div>
+            {Object.values(stats.pools).map((pool) => {
+                const ps = pool.poolStats ?? {};
+                const share =
+                    toNum(pool.hashrate) > 0 && toNum(ps.networkHash) > 0
+                        ? (
+                              (toNum(pool.hashrate) / toNum(ps.networkHash)) *
+                              100
+                          ).toFixed(5)
+                        : '0';
+                const blockURL =
+                    configQuery.data?.pools?.[pool.name]?.coin?.explorer
+                        ?.blockURL;
+                return (
+                    <section key={pool.name} className="mt-6">
+                        <h2 className="mb-3 text-xl font-bold">
+                            {cap(pool.name)}{' '}
+                            <span className="text-sm font-normal text-muted">
+                                [{pool.symbol}] · {cap(pool.algorithm ?? '')}
+                            </span>
+                        </h2>
+                        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
+                            <div className="card">
+                                <div className="mb-2 font-semibold text-accent2">
+                                    <i className="fas fa-server fa-fw" /> Pool
+                                    Stats
+                                </div>
+                                <Row
+                                    icon="fa-users"
+                                    label="Miners"
+                                    value={pool.minerCount ?? 0}
+                                />
+                                <Row
+                                    icon="fa-gears"
+                                    label="Workers"
+                                    value={pool.workerCount ?? 0}
+                                />
+                                <Row
+                                    icon="fa-gauge-simple-high"
+                                    label="Hashrate"
+                                    value={
+                                        pool.hashrateString ||
+                                        readableHashRateString(pool.hashrate)
+                                    }
+                                />
+                                <Row
+                                    icon="fa-clock"
+                                    label="Luck"
+                                    value={readableLuckTime(pool.luckDays)}
+                                />
+                                <Row
+                                    icon="fa-chart-pie"
+                                    label="Pool share"
+                                    value={`${share} %`}
+                                />
+                            </div>
+                            <div className="card">
+                                <div className="mb-2 font-semibold text-accent3">
+                                    <i className="fas fa-globe fa-fw" /> Network
+                                    Stats
+                                </div>
+                                <Row
+                                    icon="fa-bars"
+                                    label="Block height"
+                                    value={toNum(ps.networkBlocks)}
+                                />
+                                <Row
+                                    icon="fa-gauge-simple-high"
+                                    label="Network H/s"
+                                    value={
+                                        ps.networkHashString ||
+                                        readableHashRateString(ps.networkHash)
+                                    }
+                                />
+                                <Row
+                                    icon="fa-unlock"
+                                    label="Difficulty"
+                                    value={toNum(ps.networkDiff).toFixed(8)}
+                                />
+                                <Row
+                                    icon="fa-signal"
+                                    label="Connections"
+                                    value={toNum(ps.networkConnections)}
+                                />
+                                <Row
+                                    icon="fa-flask"
+                                    label="Algorithm"
+                                    value={cap(pool.algorithm ?? '')}
+                                />
+                            </div>
+                            <div className="card">
+                                <div className="mb-2 font-semibold text-accent">
+                                    <i className="fas fa-cubes fa-fw" /> Block
+                                    Stats
+                                </div>
+                                <Row
+                                    icon="fa-cubes"
+                                    label="Total blocks"
+                                    value={toNum(ps.validBlocks)}
+                                />
+                                <Row
+                                    icon="fa-hourglass-half"
+                                    label="Pending"
+                                    value={pool.blocks?.pending ?? 0}
+                                />
+                                <Row
+                                    icon="fa-gavel"
+                                    label="Confirmed"
+                                    value={pool.blocks?.confirmed ?? 0}
+                                />
+                                <Row
+                                    icon="fa-square-xmark"
+                                    label="Orphaned"
+                                    value={pool.blocks?.orphaned ?? 0}
+                                />
+                                <Row
+                                    icon="fa-square-check"
+                                    label="Valid shares"
+                                    value={toNum(ps.validShares)}
+                                />
+                                <Row
+                                    icon="fa-square-minus"
+                                    label="Invalid shares"
+                                    value={toNum(ps.invalidShares)}
+                                />
+                            </div>
+                        </div>
+
+                        <PoolBlocks pool={pool} blockURL={blockURL} />
+                        <FindersPie pool={pool} />
+                    </section>
+                );
+            })}
         </div>
     );
 }

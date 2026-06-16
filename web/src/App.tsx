@@ -14,9 +14,9 @@ import MiningKey from './pages/MiningKey.tsx';
 
 export default function App() {
     return (
-        <div className="app-frame">
+        <div className="mx-auto flex min-h-screen max-w-[1160px] flex-col">
             <Header />
-            <main className="app-main">
+            <main className="flex-1 bg-panel p-5">
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route

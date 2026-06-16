@@ -46,7 +46,9 @@
         "test": "node src/init.ts",
         "test:unit": "node --test test/*.test.ts test/*.test.mjs",
         "check:config": "node scripts/check-config.mjs",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "build": "npm --prefix web install --legacy-peer-deps && npm --prefix web run build",
+        "web:dev": "npm --prefix web run dev"
     },
     "dependencies": {
         "async": "^3.2.6",

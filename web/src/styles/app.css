@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+
+/* Design tokens (drive Tailwind color utilities: bg-accent, text-muted, …). */
+@theme {
+    --color-bg: #2d2d2d;
+    --color-panel: #ebf4fa;
+    --color-card: #f4f7fa;
+    --color-muted: #6b7785;
+    --color-nav: #b3b3b3;
+    --color-navhover: #444444;
+    --color-accent: #0eafc7;
+    --color-accent2: #b064e1;
+    --color-accent3: #10bb9c;
+    --color-link: #0b7fa3;
+    --color-danger: #f06350;
+    --font-sans:
+        'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+    html,
+    body {
+        margin: 0;
+    }
+    body {
+        background: var(--color-bg);
+        color: #222222;
+        font-family: var(--font-sans);
+    }
+    a {
+        color: var(--color-link);
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+}
+
+/* A few repeated building blocks; everything else uses utilities in the JSX. */
+@layer components {
+    .card {
+        @apply rounded-lg border border-black/10 bg-[#f4f7fa] p-4;
+    }
+    .page-title {
+        @apply mb-4 text-2xl font-bold;
+    }
+    .btn {
+        @apply inline-flex cursor-pointer items-center gap-2 rounded-md border-0 bg-accent px-4 py-2 text-white hover:brightness-95;
+    }
+    .field {
+        @apply rounded-md border border-black/15 px-3 py-2;
+    }
+    .muted {
+        @apply text-muted;
+    }
+    .loading {
+        @apply p-6 text-center text-muted;
+    }
+    .error {
+        @apply p-6 text-center text-danger;
+    }
+    .data-table {
+        @apply w-full border-collapse bg-white text-sm;
+    }
+    .data-table :is(th, td) {
+        @apply border border-black/10 px-2.5 py-1.5 text-left align-top;
+    }
+    .data-table th {
+        @apply bg-[#dfe7ee] font-semibold;
+    }
+    .data-table tbody tr:nth-child(even) td {
+        @apply bg-[#f3f7fa];
+    }
+}

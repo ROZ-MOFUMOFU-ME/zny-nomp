@@ -58,21 +58,21 @@ export function maskAddress(addr: string): string {
 }
 
 export interface ParsedBlock {
-    height: string;
-    hash: string;
+    blockHash: string;
     txHash: string;
+    height: string;
     worker: string;
     time: string;
 }
 
-// Pending/confirmed block strings are colon-joined:
-// height:blockHash:txHash:worker:time
+// Pending/confirmed block strings are colon-joined, in the order the share
+// processor stores them: blockHash:txHash:height:worker:time
 export function parseBlockString(raw: string): ParsedBlock {
     const p = String(raw).split(':');
     return {
-        height: p[0] ?? '',
-        hash: p[1] ?? '',
-        txHash: p[2] ?? '',
+        blockHash: p[0] ?? '',
+        txHash: p[1] ?? '',
+        height: p[2] ?? '',
         worker: p[3] ?? '',
         time: p[4] ?? ''
     };
@@ -83,6 +83,23 @@ export function formatTime(unixSecondsOrMs: unknown): string {
     if (!n) return '';
     const ms = n < 1e12 ? n * 1000 : n;
     return new Date(ms).toLocaleString();
+}
+
+// "YYYY/MM/DD HH:MM:SS UTC±HHMM (local tz)" — matches the legacy stats page.
+export function readableDate(msOrSec: unknown): string {
+    const n = toNum(msOrSec);
+    if (!n) return '';
+    const d = new Date(n < 1e12 ? n * 1000 : n);
+    const p = (x: number) => x.toString().padStart(2, '0');
+    const s = d.toString();
+    const off = s.match(/GMT([+-]\d{4})/);
+    const tz = s.match(/\(([^)]+)\)$/);
+    return (
+        `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ` +
+        `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
+        (off ? ' ' + off[0].replace('GMT', 'UTC') : '') +
+        (tz ? ` (${tz[1]})` : '')
+    );
 }
 
 export function explorerUrl(
