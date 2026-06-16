@@ -1,3 +1,5 @@
 # Ignore HTML template files
 website/pages/**/*.html
+# Vendored wallet/bignum tool shipped as a static asset (not our code to format)
+web/public/key.html
 # Add other patterns as needed

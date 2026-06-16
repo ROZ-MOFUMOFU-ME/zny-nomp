@@ -10,43 +10,49 @@
 # the REDIS_HOST/REDIS_PORT env vars (set below) to reach the redis service.
 
 services:
-  redis:
-    image: redis:7-alpine
-    # Dev defaults; harden (password/ACL, no exposed port) for production.
-    command: ['redis-server', '--save', '60', '1']
-    volumes:
-      - redis-data:/data
-    restart: unless-stopped
+    redis:
+        image: redis:7-alpine
+        # Dev defaults; harden (password/ACL, no exposed port) for production.
+        command: ['redis-server', '--save', '60', '1']
+        volumes:
+            - redis-data:/data
+        restart: unless-stopped
 
-  portal:
-    build: .
-    depends_on:
-      - redis
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-    # Probe the website's /api/health (node has global fetch; the image has
-    # node). 8080 must match website.port in the mounted config. A degraded
-    # snapshot returns 503 => unhealthy.
-    healthcheck:
-      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:8080/api/health').then(function(r){process.exit(r.ok?0:1)}).catch(function(){process.exit(1)})"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
-    # Mount your real configs (gitignored). Without config.json the portal
-    # falls back to config_example.json baked into the image.
-    volumes:
-      - ./config.json:/app/config.json:ro
-      - ./pool_configs:/app/pool_configs:ro
-      - ./coins:/app/coins:ro
-    ports:
-      - '8080:8080' # website (portalConfig.website.port)
-      # CLI listener — must match cliPort in the config you mount (17117 in
-      # config_example.json). Update both sides if your config.json differs.
-      - '17117:17117'
-      # Add your stratum ports here, e.g. - '3333:3333'
-    restart: unless-stopped
+    portal:
+        build: .
+        depends_on:
+            - redis
+        environment:
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+        # Probe the website's /api/health (node has global fetch; the image has
+        # node). 8080 must match website.port in the mounted config. A degraded
+        # snapshot returns 503 => unhealthy.
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:8080/api/health').then(function(r){process.exit(r.ok?0:1)}).catch(function(){process.exit(1)})"
+                ]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 40s
+        # Mount your real configs (gitignored). Without config.json the portal
+        # falls back to config_example.json baked into the image.
+        volumes:
+            - ./config.json:/app/config.json:ro
+            - ./pool_configs:/app/pool_configs:ro
+            - ./coins:/app/coins:ro
+        ports:
+            - '8080:8080' # website (portalConfig.website.port)
+            # CLI listener — must match cliPort in the config you mount (17117 in
+            # config_example.json). Update both sides if your config.json differs.
+            - '17117:17117'
+            # Add your stratum ports here, e.g. - '3333:3333'
+        restart: unless-stopped
 
 volumes:
-  redis-data:
+    redis-data:
