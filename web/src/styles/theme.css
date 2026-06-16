@@ -29,7 +29,13 @@ body {
 body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Noto Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-family:
+        'Noto Sans',
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        sans-serif;
     font-size: 15px;
     line-height: 1.5;
 }
@@ -231,9 +237,116 @@ table.data tr:nth-child(even) td {
     color: var(--danger);
 }
 
+/* nav icons */
+.site-nav a i {
+    opacity: 0.85;
+}
+
+/* ---- Home page ---- */
+.home-hero {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.hero-logo {
+    width: 200px;
+    max-width: 40%;
+    height: auto;
+}
+.hero-body {
+    flex: 1 1 320px;
+}
+.hero-title {
+    font-size: 2.2rem;
+    margin: 0 0 12px;
+    font-weight: 700;
+}
+.hero-bullets {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 1.1rem;
+    line-height: 2;
+    opacity: 0.95;
+}
+.hero-bullets li::before {
+    content: '✦';
+    margin-right: 10px;
+    opacity: 0.8;
+}
+
+.home-boxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+}
+.stat-box {
+    color: #fff;
+    border-radius: 10px;
+    padding: 16px 18px;
+}
+.stat-box.algos {
+    background: var(--accent2);
+}
+.stat-box.pools {
+    background: var(--accent3);
+}
+.stat-box-header {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.stat-box-list {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 10px 24px;
+}
+.stat-box-item {
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    min-width: 150px;
+}
+.stat-box-item > div {
+    padding: 3px 0;
+    white-space: nowrap;
+}
+.stat-box-item i {
+    width: 20px;
+    text-align: center;
+    opacity: 0.9;
+}
+.stat-box .muted {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---- Footer (rich) ---- */
+.footer-donate,
+.footer-contact {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    line-height: 1.9;
+    word-break: break-all;
+}
+.footer-contact {
+    word-break: normal;
+}
+.site-footer i {
+    opacity: 0.9;
+}
+
 @media (max-width: 47.999em) {
     .site-nav {
         width: 100%;
         margin-left: 0;
+    }
+    .hero-title {
+        font-size: 1.6rem;
     }
 }

@@ -336,6 +336,12 @@ export default function (
                 res.write('\n');
                 var uid = Math.random().toString();
                 _this.liveStatConnections[uid] = res;
+                // Push the current snapshot immediately so clients render right
+                // away instead of waiting for the next updateInterval tick.
+                if (portalStats.stats)
+                    res.write(
+                        'data: ' + JSON.stringify(portalStats.stats) + '\n\n'
+                    );
                 (res as any).flush();
                 req.on('close', function () {
                     delete _this.liveStatConnections[uid];

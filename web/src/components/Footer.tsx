@@ -2,11 +2,82 @@ export default function Footer() {
     return (
         <footer className="site-footer">
             <div>
-                powered by{' '}
-                <a href="https://github.com/ROZ-MOFUMOFU-ME/zny-nomp">
+                This site is powered by{' '}
+                <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href="https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/"
+                >
                     zny-nomp
                 </a>{' '}
-                · MIT License
+                project forked by{' '}
+                <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href="https://github.com/ROZ-MOFUMOFU-ME/"
+                >
+                    ROZ
+                </a>
+                , created by Joshua Yabut and the Zclassic Community and
+                yoshuki43 originally and is licensed under the{' '}
+                <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href="https://en.wikipedia.org/wiki/MIT_License"
+                >
+                    MIT License
+                </a>
+                .
+            </div>
+
+            <div className="footer-donate">
+                <i className="fas fa-heart fa-fw" /> Donating&nbsp;&nbsp;
+                <i className="fab fa-bitcoin fa-fw" /> BTC:
+                3FpbJ5cotwPZQn9fcdZrPv4h72XquzEvez&nbsp;&nbsp;
+                <i className="fab fa-ethereum fa-fw" /> ETH:
+                0xc664a0416c23b1b13a18e86cb5fdd1007be375ae&nbsp;&nbsp; LTC:
+                Lh96WZ7Rw9Wf4GDX2KXpzieneZFV5Xe5ou
+                <br />
+                <i className="fab fa-bitcoin fa-fw" /> BCH:
+                pzdsppue8uwc20x35psaqq8sgchkenr49c0qxzazxu&nbsp;&nbsp;
+                <i className="fab fa-ethereum fa-fw" /> ETC:
+                0xc664a0416c23b1b13a18e86cb5fdd1007be375ae&nbsp;&nbsp;
+                <i className="fas fa-cat fa-fw" /> MONA:
+                MLEqE3vi11j4ZguMjkvMn5rUtze6kXbAzQ
+            </div>
+
+            <div className="footer-contact">
+                <i className="fas fa-comments fa-fw" /> Contact:&nbsp;&nbsp;
+                <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href="https://twitter.com/ROZ_mofumofu_me"
+                    aria-label="X / Twitter"
+                >
+                    <i className="fab fa-x-twitter fa-fw" />
+                </a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="mailto:mail@mofumofu.me" aria-label="Email">
+                    <i className="fas fa-envelope fa-fw" />
+                </a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href="https://discord.gg/zHUdQy2NzU"
+                    aria-label="Discord"
+                >
+                    <i className="fab fa-discord fa-fw" />
+                </a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <iframe
+                    src="https://ghbtns.com/github-btn.html?user=ROZ-MOFUMOFU-ME&repo=zny-nomp&type=star&count=true"
+                    frameBorder="0"
+                    scrolling="0"
+                    width="150"
+                    height="20"
+                    title="zny-nomp on GitHub"
+                />
             </div>
         </footer>
     );
