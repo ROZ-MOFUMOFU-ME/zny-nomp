@@ -1,6 +1,6 @@
 export default function Footer() {
     return (
-        <footer className="site-footer">
+        <footer className="bg-bg p-4 text-center text-[0.85rem] text-nav [&_a]:text-white [&_i]:opacity-90">
             <div>
                 This site is powered by{' '}
                 <a
@@ -30,7 +30,7 @@ export default function Footer() {
                 .
             </div>
 
-            <div className="footer-donate">
+            <div className="mt-2.5 break-all text-xs leading-[1.9]">
                 <i className="fas fa-heart fa-fw" /> Donating&nbsp;&nbsp;
                 <i className="fab fa-bitcoin fa-fw" /> BTC:
                 3FpbJ5cotwPZQn9fcdZrPv4h72XquzEvez&nbsp;&nbsp;
@@ -46,7 +46,7 @@ export default function Footer() {
                 MLEqE3vi11j4ZguMjkvMn5rUtze6kXbAzQ
             </div>
 
-            <div className="footer-contact">
+            <div className="mt-2.5 text-xs leading-[1.9]">
                 <i className="fas fa-comments fa-fw" /> Contact:&nbsp;&nbsp;
                 <a
                     target="_blank"
@@ -77,6 +77,7 @@ export default function Footer() {
                     width="150"
                     height="20"
                     title="zny-nomp on GitHub"
+                    className="ml-1 inline-block align-middle"
                 />
             </div>
         </footer>

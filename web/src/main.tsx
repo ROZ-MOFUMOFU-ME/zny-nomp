@@ -6,9 +6,6 @@ import App from './App.tsx';
 import { LiveStatsProvider } from './api/useLiveStats.tsx';
 import './i18n/index.ts';
 import './styles/app.css';
-// Legacy styles for pages not yet migrated to Tailwind utilities (removed once
-// every page is converted).
-import './styles/theme.css';
 
 const queryClient = new QueryClient({
     defaultOptions: {

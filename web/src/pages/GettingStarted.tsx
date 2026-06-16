@@ -4,6 +4,8 @@ import { getConfig } from '../api/client.ts';
 import type { AppConfig, AppConfigPool } from '../api/types.ts';
 import { toNum } from '../lib/format.ts';
 
+const code = 'whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5';
+
 // /getting_started — step-by-step mining instructions. Reads GET /api/config so
 // the listed coins, stratum host and (auto-switching) ports always match the
 // running pool. Numeric config fields may arrive as strings, so values that are
@@ -39,12 +41,15 @@ export default function GettingStarted() {
     );
 
     return (
-        <div>
-            <h1 className="page-title">Getting Started</h1>
+        <div className="space-y-4">
+            <h1 className="page-title">
+                <i className="fas fa-rocket fa-fw text-accent" /> Getting
+                Started
+            </h1>
 
             <div className="card">
-                <h2>How to start mining</h2>
-                <ol>
+                <h2 className="mb-3 text-lg font-bold">How to start mining</h2>
+                <ol className="list-decimal space-y-1 pl-5">
                     <li>
                         Get a wallet address for the coin you want to mine — see
                         the <a href="/mining_key">Mining Key</a> page for how
@@ -59,42 +64,45 @@ export default function GettingStarted() {
                         and use your wallet address as the username.
                     </li>
                 </ol>
-                <p className="muted">
+                <p className="muted mt-3">
                     Tip: the stratum host is{' '}
-                    <code className="nowrap">{host}</code>. Replace it with the
+                    <code className={code}>{host}</code>. Replace it with the
                     actual pool hostname if it shows a placeholder.
                 </p>
             </div>
 
             <div className="card">
-                <h2>Choose a coin</h2>
+                <h2 className="mb-3 text-lg font-bold">Choose a coin</h2>
                 {poolEntries.length === 0 ? (
                     <div className="muted">No pools are configured.</div>
                 ) : (
-                    <div className="grid grid-3">
+                    <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
                         {poolEntries.map(([name, pool]) => {
                             const isActive = name === selected;
                             return (
                                 <button
                                     type="button"
                                     key={name}
-                                    className="btn"
                                     aria-pressed={isActive}
                                     onClick={() =>
                                         setSelected(isActive ? null : name)
                                     }
+                                    className={`rounded-lg border p-3 text-left transition ${
+                                        isActive
+                                            ? 'border-accent bg-accent/10'
+                                            : 'border-black/10 bg-card hover:border-accent/50'
+                                    }`}
                                 >
-                                    <span className="stat">
-                                        <span className="label">
-                                            {pool.coin.name}
-                                            {pool.coin.symbol
-                                                ? ` (${pool.coin.symbol})`
-                                                : ''}
-                                        </span>
-                                        <span className="value muted">
-                                            {pool.coin.algorithm ?? 'unknown'}
-                                        </span>
-                                    </span>
+                                    <div className="font-semibold">
+                                        <i className="fas fa-coins fa-fw text-accent" />{' '}
+                                        {pool.coin.name}
+                                        {pool.coin.symbol
+                                            ? ` (${pool.coin.symbol})`
+                                            : ''}
+                                    </div>
+                                    <div className="text-sm text-muted">
+                                        {pool.coin.algorithm ?? 'unknown'}
+                                    </div>
                                 </button>
                             );
                         })}
@@ -104,21 +112,26 @@ export default function GettingStarted() {
 
             {selectedPool && (
                 <div className="card">
-                    <h2>
+                    <h2 className="mb-3 text-lg font-bold">
+                        <i className="fas fa-plug fa-fw text-accent3" />{' '}
                         Connection — {selectedPool.coin.name}
                         {selectedPool.coin.symbol
                             ? ` (${selectedPool.coin.symbol})`
                             : ''}
                     </h2>
-                    <div className="stat">
-                        <span className="label">Algorithm</span>
-                        <span className="value">
-                            {selectedPool.coin.algorithm ?? 'unknown'}
-                        </span>
-                    </div>
-                    <div className="stat">
-                        <span className="label">Username</span>
-                        <span className="value">Your wallet address</span>
+                    <div className="mb-3 max-w-md">
+                        <div className="flex justify-between border-b border-dashed border-black/10 py-1">
+                            <span className="text-muted">Algorithm</span>
+                            <span className="font-semibold">
+                                {selectedPool.coin.algorithm ?? 'unknown'}
+                            </span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                            <span className="text-muted">Username</span>
+                            <span className="font-semibold">
+                                Your wallet address
+                            </span>
+                        </div>
                     </div>
 
                     {Object.keys(selectedPool.ports ?? {}).length === 0 ? (
@@ -126,30 +139,35 @@ export default function GettingStarted() {
                             No stratum ports are configured for this coin.
                         </div>
                     ) : (
-                        <table className="data">
-                            <thead>
-                                <tr>
-                                    <th>Port</th>
-                                    <th>Stratum URL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Object.keys(selectedPool.ports ?? {}).map(
-                                    (port) => (
-                                        <tr key={port}>
-                                            <td className="nowrap">{port}</td>
-                                            <td>
-                                                <code className="nowrap">
-                                                    stratum+tcp://{host}:{port}
-                                                </code>
-                                            </td>
-                                        </tr>
-                                    )
-                                )}
-                            </tbody>
-                        </table>
+                        <div className="overflow-x-auto">
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Port</th>
+                                        <th>Stratum URL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Object.keys(selectedPool.ports ?? {}).map(
+                                        (port) => (
+                                            <tr key={port}>
+                                                <td className="whitespace-nowrap">
+                                                    {port}
+                                                </td>
+                                                <td>
+                                                    <code className={code}>
+                                                        stratum+tcp://{host}:
+                                                        {port}
+                                                    </code>
+                                                </td>
+                                            </tr>
+                                        )
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
-                    <p className="muted">
+                    <p className="muted mt-3">
                         Select the port that matches your hardware/difficulty,
                         then connect with the URL above.
                     </p>
@@ -157,8 +175,11 @@ export default function GettingStarted() {
             )}
 
             <div className="card">
-                <h2>Coin-Switching Ports</h2>
-                <p className="muted">
+                <h2 className="mb-3 text-lg font-bold">
+                    <i className="fas fa-shuffle fa-fw text-accent2" />{' '}
+                    Coin-Switching Ports
+                </h2>
+                <p className="muted mb-3">
                     These ports automatically switch to the most profitable coin
                     for a given algorithm — point your miner here to always mine
                     the best-paying coin.
@@ -168,30 +189,36 @@ export default function GettingStarted() {
                         No coin-switching ports are enabled.
                     </div>
                 ) : (
-                    <table className="data">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Algorithm</th>
-                                <th>Stratum URL</th>
-                                <th>Difficulty</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {switchEntries.map(([name, s]) => (
-                                <tr key={name}>
-                                    <td className="nowrap">{name}</td>
-                                    <td>{s.algorithm ?? 'unknown'}</td>
-                                    <td>
-                                        <code className="nowrap">
-                                            stratum+tcp://{host}:{s.port}
-                                        </code>
-                                    </td>
-                                    <td>{toNum(s.diff)}</td>
+                    <div className="overflow-x-auto">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Algorithm</th>
+                                    <th>Stratum URL</th>
+                                    <th className="text-right">Difficulty</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {switchEntries.map(([name, s]) => (
+                                    <tr key={name}>
+                                        <td className="whitespace-nowrap">
+                                            {name}
+                                        </td>
+                                        <td>{s.algorithm ?? 'unknown'}</td>
+                                        <td>
+                                            <code className={code}>
+                                                stratum+tcp://{host}:{s.port}
+                                            </code>
+                                        </td>
+                                        <td className="text-right">
+                                            {toNum(s.diff)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>

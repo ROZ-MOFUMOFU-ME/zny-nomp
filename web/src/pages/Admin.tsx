@@ -40,16 +40,19 @@ export default function Admin() {
     if (result === null) {
         return (
             <div>
-                <h1 className="page-title">Admin</h1>
+                <h1 className="page-title">
+                    <i className="fas fa-lock fa-fw text-accent" /> Admin
+                </h1>
                 <div className="card">
                     <form
-                        className="lookup-form"
+                        className="flex flex-wrap gap-2"
                         onSubmit={(e) => {
                             e.preventDefault();
                             login();
                         }}
                     >
                         <input
+                            className="field min-w-[240px] flex-1"
                             type="password"
                             placeholder="Admin password"
                             value={password}
@@ -60,13 +63,14 @@ export default function Admin() {
                             type="submit"
                             disabled={loading}
                         >
+                            <i className="fas fa-right-to-bracket fa-fw" />{' '}
                             {loading ? 'Logging in…' : 'Login'}
                         </button>
                     </form>
                     {loginError !== null && (
                         <div className="error">{loginError}</div>
                     )}
-                    <p className="muted">
+                    <p className="muted mt-3">
                         The admin center must be enabled in the portal config
                         before you can log in.
                     </p>
@@ -79,26 +83,30 @@ export default function Admin() {
 
     return (
         <div>
-            <h1 className="page-title">Admin</h1>
+            <h1 className="page-title">
+                <i className="fas fa-lock-open fa-fw text-accent" /> Admin
+            </h1>
             <div className="card">
                 <button className="btn" type="button" onClick={logout}>
-                    Log out
+                    <i className="fas fa-right-from-bracket fa-fw" /> Log out
                 </button>
-                <p className="muted">
+                <p className="muted mt-3">
                     Pool configuration (read-only). This reflects the live
                     pool_configs as seen by the portal.
                 </p>
             </div>
 
             {Object.keys(pools).length === 0 ? (
-                <div className="card">
+                <div className="card mt-4">
                     <p className="muted">No pools configured.</p>
                 </div>
             ) : (
                 Object.entries(pools).map(([poolKey, value]) => (
-                    <div className="card" key={poolKey}>
-                        <h2>{poolKey}</h2>
-                        <pre>{JSON.stringify(value, null, 2)}</pre>
+                    <div className="card mt-4" key={poolKey}>
+                        <h2 className="mb-2 text-lg font-bold">{poolKey}</h2>
+                        <pre className="overflow-x-auto rounded-md bg-black/5 p-3 text-xs">
+                            {JSON.stringify(value, null, 2)}
+                        </pre>
                     </div>
                 ))
             )}

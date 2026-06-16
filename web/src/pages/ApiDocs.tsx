@@ -27,31 +27,37 @@ const ENDPOINTS: Array<{ path: string; desc: string }> = [
 export default function ApiDocs() {
     return (
         <div>
-            <h1 className="page-title">API</h1>
-            <p className="muted">
+            <h1 className="page-title">
+                <i className="fas fa-code fa-fw text-accent" /> API
+            </h1>
+            <p className="muted mb-4">
                 The pool exposes a JSON API. All endpoints are read-only GETs
                 (except the password-gated admin API).
             </p>
-            <table className="data">
-                <thead>
-                    <tr>
-                        <th>Endpoint</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {ENDPOINTS.map((e) => (
-                        <tr key={e.path}>
-                            <td className="nowrap">
-                                <a href={e.path}>
-                                    <code>{e.path}</code>
-                                </a>
-                            </td>
-                            <td>{e.desc}</td>
+            <div className="overflow-x-auto">
+                <table className="data-table">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Description</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {ENDPOINTS.map((e) => (
+                            <tr key={e.path}>
+                                <td className="whitespace-nowrap">
+                                    <a href={e.path}>
+                                        <code className="rounded bg-black/5 px-1.5 py-0.5">
+                                            {e.path}
+                                        </code>
+                                    </a>
+                                </td>
+                                <td>{e.desc}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
