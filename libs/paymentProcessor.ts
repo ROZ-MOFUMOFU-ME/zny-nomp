@@ -1,5 +1,4 @@
 import fs from 'fs';
-import request from 'axios';
 import { createRedisClient, execCommands } from './redisUtil.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
@@ -113,7 +112,6 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     var pplntEnabled = processingConfig.paymentMode === 'pplnt' || false;
     var pplntTimeQualify = processingConfig.pplnt || 0.51; // 51%
 
-    var getMarketStats = poolOptions.coin.getMarketStats === true;
     var requireShielding = poolOptions.coin.requireShielding === true;
     var fee = parseFloat(poolOptions.coin.txfee) || parseFloat(0.0004 as any);
     var maxUnshieldAmount = processingConfig.maxUnshieldAmount || 100.0;
@@ -550,60 +548,6 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         });
     }
 
-    function cacheMarketStats() {
-        var marketStatsUpdate: any = [];
-        var coin = logComponent.replace('_testnet', '').toLowerCase();
-        if (coin == 'zen') coin = 'zencash';
-
-        (request as any)(
-            'https://api.coinmarketcap.com/v1/ticker/' + coin + '/',
-            function (error: any, response: any, body: any) {
-                if (error) {
-                    logger.error(
-                        logSystem,
-                        logComponent,
-                        'Error with http request to https://api.coinmarketcap.com/ ' +
-                            JSON.stringify(error)
-                    );
-                    return;
-                }
-                if (response && response.statusCode) {
-                    if (response.statusCode == 200) {
-                        if (body) {
-                            var data = JSON.parse(body);
-                            if (data.length > 0) {
-                                marketStatsUpdate.push([
-                                    'hset',
-                                    logComponent + ':stats',
-                                    'coinmarketcap',
-                                    JSON.stringify(data)
-                                ]);
-                                execCommands(
-                                    redisClient,
-                                    marketStatsUpdate
-                                ).catch(function (err: any) {
-                                    logger.error(
-                                        logSystem,
-                                        logComponent,
-                                        'Error with redis during call to cacheMarketStats() ' +
-                                            JSON.stringify(err.message)
-                                    );
-                                });
-                            }
-                        }
-                    } else {
-                        logger.error(
-                            logSystem,
-                            logComponent,
-                            'Error, unexpected http status code during call to cacheMarketStats() ' +
-                                JSON.stringify(response.statusCode)
-                        );
-                    }
-                }
-            }
-        );
-    }
-
     function cacheNetworkStats() {
         var params: any = null;
         daemon.cmd('getmininginfo', params, function (result: any) {
@@ -768,15 +712,6 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         // update network stats using coin daemon
         cacheNetworkStats();
     }, stats_interval);
-
-    // market stats caching every 5 minutes
-    if (getMarketStats === true) {
-        var market_stats_interval = 300 * 1000;
-        var marketStatsInterval = setInterval(function () {
-            // update market stats using coinmarketcap
-            cacheMarketStats();
-        }, market_stats_interval);
-    }
 
     // check operation statuses every 57 seconds
     var opid_interval = 57 * 1000;

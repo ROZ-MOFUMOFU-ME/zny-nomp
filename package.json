@@ -50,17 +50,14 @@
     },
     "dependencies": {
         "async": "^3.2.6",
-        "axios": "^1.17.0",
         "colors": "^1.4.0",
         "compression": "^1.8.1",
         "dateformat": "^5.0.3",
-        "dot": "^1.1.3",
         "express": "^5.2.1",
         "extend": "^3.0.2",
         "mysql": "^2.18.1",
         "node-json-minify": "^3.0.0",
         "node-watch": "^0.7.4",
-        "nonce": "^1.0.4",
         "redis": "^6.0.0",
         "stratum-pool": "https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#main"
     },
