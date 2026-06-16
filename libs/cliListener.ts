@@ -1,28 +1,28 @@
 import { EventEmitter } from 'events';
 import net from 'net';
 
-var listener = function listener(port) {
-    var _this = this;
+const listener = function (this: any, port: number) {
+    const _this = this;
 
-    var emitLog = function (text) {
+    const emitLog = function (text: string) {
         _this.emit('log', text);
     };
 
     this.start = function () {
         net.createServer(function (c) {
-            var data = '';
+            let data = '';
             try {
                 c.on('data', function (d) {
                     data += d;
                     if (data.slice(-1) === '\n') {
-                        var message = JSON.parse(data);
+                        const message = JSON.parse(data);
                         _this.emit(
                             'command',
                             message.command,
                             message.params,
                             message.options,
-                            function (message) {
-                                c.end(message);
+                            function (reply: string) {
+                                c.end(reply);
                             }
                         );
                     }
@@ -38,6 +38,6 @@ var listener = function listener(port) {
     };
 };
 
-listener.prototype.__proto__ = EventEmitter.prototype;
+(listener as any).prototype.__proto__ = EventEmitter.prototype;
 
 export default listener;

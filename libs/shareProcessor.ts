@@ -1,4 +1,5 @@
 import { createRedisClient, execCommands } from './redisUtil.ts';
+import type { Logger } from './logUtil.ts';
 
 /*
 This module deals with handling shares when in internal payment processing mode. It connects to a redis
@@ -10,16 +11,16 @@ value: a hash with..
 
  */
 
-export default function (logger, poolConfig) {
-    var redisConfig = poolConfig.redis;
-    var coin = poolConfig.coin.name;
+export default function (this: any, logger: Logger, poolConfig: any) {
+    const redisConfig = poolConfig.redis;
+    const coin = poolConfig.coin.name;
 
-    var forkId = process.env.forkId;
-    var logSystem = 'Pool';
-    var logComponent = coin;
-    var logSubCat = 'Thread ' + (parseInt(forkId) + 1);
+    const forkId = process.env.forkId;
+    const logSystem = 'Pool';
+    const logComponent = coin;
+    const logSubCat = 'Thread ' + (parseInt(forkId as string) + 1);
 
-    var connection = createRedisClient(redisConfig, function (err) {
+    const connection = createRedisClient(redisConfig, function (err: any) {
         logger.error(
             logSystem,
             logComponent,
@@ -50,12 +51,12 @@ export default function (logger, poolConfig) {
     connection
         .info()
         .then(function (response) {
-            var parts = response.split('\r\n');
-            var version;
-            var versionString;
-            for (var i = 0; i < parts.length; i++) {
+            const parts = response.split('\r\n');
+            let version;
+            let versionString;
+            for (let i = 0; i < parts.length; i++) {
                 if (parts[i].indexOf(':') !== -1) {
-                    var valParts = parts[i].split(':');
+                    const valParts = parts[i].split(':');
                     if (valParts[0] === 'redis_version') {
                         versionString = valParts[1];
                         version = parseFloat(versionString);
@@ -90,8 +91,12 @@ export default function (logger, poolConfig) {
             );
         });
 
-    this.handleShare = function (isValidShare, isValidBlock, shareData) {
-        var redisCommands = [];
+    this.handleShare = function (
+        isValidShare: boolean,
+        isValidBlock: boolean,
+        shareData: any
+    ) {
+        const redisCommands: Array<Array<string | number>> = [];
 
         if (isValidShare) {
             redisCommands.push([
@@ -113,8 +118,8 @@ export default function (logger, poolConfig) {
         /* Stores share diff, worker, and unique value with a score that is the timestamp. Unique value ensures it
            doesn't overwrite an existing entry, and timestamp as score lets us query shares from last X minutes to
            generate hashrate for each worker and pool. */
-        var dateNow = Date.now();
-        var hashrateData = [
+        const dateNow = Date.now();
+        const hashrateData = [
             isValidShare ? shareData.difficulty : -shareData.difficulty,
             shareData.worker,
             dateNow
@@ -156,19 +161,19 @@ export default function (logger, poolConfig) {
             ]);
         }
 
-        var logMultiError = function (err) {
-            var detail = (err && err.message) || String(err);
+        const logMultiError = function (err: any) {
+            let detail = (err && err.message) || String(err);
             // node-redis throws an aggregate when some MULTI commands fail; name
             // the offending command(s) instead of the opaque "N commands failed".
             if (err && Array.isArray(err.errorIndexes)) {
                 detail +=
                     ' [' +
                     err.errorIndexes
-                        .map(function (i) {
-                            var cmd = redisCommands[i]
+                        .map(function (i: number) {
+                            const cmd = redisCommands[i]
                                 ? redisCommands[i].join(' ')
                                 : 'cmd#' + i;
-                            var reply = err.replies && err.replies[i];
+                            const reply = err.replies && err.replies[i];
                             return (
                                 cmd +
                                 ' -> ' +

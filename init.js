@@ -5,7 +5,7 @@ import cluster from 'cluster';
 import extend from 'extend';
 import { createRedisClient, execCommands } from './libs/redisUtil.ts';
 import PoolLogger from './libs/logUtil.ts';
-import CliListener from './libs/cliListener.js';
+import CliListener from './libs/cliListener.ts';
 import PoolWorker from './libs/poolWorker.js';
 import PaymentProcessor from './libs/paymentProcessor.js';
 import Website from './libs/website.js';

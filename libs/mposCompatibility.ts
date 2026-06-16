@@ -1,10 +1,11 @@
 import mysql from 'mysql';
+import type { Logger } from './logUtil.ts';
 
-export default function (logger, poolConfig) {
-    var mposConfig = poolConfig.mposMode;
-    var coin = poolConfig.coin.name;
+export default function (this: any, logger: Logger, poolConfig: any) {
+    const mposConfig = poolConfig.mposMode;
+    const coin = poolConfig.coin.name;
 
-    var connection = mysql.createPool({
+    const connection = mysql.createPool({
         host: mposConfig.host,
         port: mposConfig.port,
         user: mposConfig.user,
@@ -12,10 +13,14 @@ export default function (logger, poolConfig) {
         database: mposConfig.database
     });
 
-    var logIdentify = 'MySQL';
-    var logComponent = coin;
+    const logIdentify = 'MySQL';
+    const logComponent = coin;
 
-    this.handleAuth = function (workerName, password, authCallback) {
+    this.handleAuth = function (
+        workerName: string,
+        password: string,
+        authCallback: (authorized: boolean) => void
+    ) {
         if (
             poolConfig.validateWorkerUsername !== true &&
             mposConfig.autoCreateWorker !== true
@@ -38,7 +43,7 @@ export default function (logger, poolConfig) {
                     authCallback(false);
                 } else if (!result[0]) {
                     if (mposConfig.autoCreateWorker) {
-                        var account = workerName.split('.')[0];
+                        const account = workerName.split('.')[0];
                         connection.query(
                             'SELECT id,username FROM accounts WHERE username = LOWER(?)',
                             [account.toLowerCase()],
@@ -91,8 +96,12 @@ export default function (logger, poolConfig) {
         );
     };
 
-    this.handleShare = function (isValidShare, isValidBlock, shareData) {
-        var dbData = [
+    this.handleShare = function (
+        isValidShare: boolean,
+        isValidBlock: boolean,
+        shareData: any
+    ) {
+        const dbData = [
             shareData.ip,
             shareData.worker,
             isValidShare ? 'Y' : 'N',
@@ -120,7 +129,7 @@ export default function (logger, poolConfig) {
         );
     };
 
-    this.handleDifficultyUpdate = function (workerName, diff) {
+    this.handleDifficultyUpdate = function (workerName: string, diff: number) {
         connection.query(
             'UPDATE `pool_worker` SET `difficulty` = ' +
                 diff +
