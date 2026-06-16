@@ -4,7 +4,6 @@ import { SUPPORTED_LANGUAGES } from '../i18n/index.ts';
 const LANG_LABELS: Record<string, string> = {
     en: '🇬🇧 English',
     'en-US': '🇺🇸 English (US)',
-    'en-GB': '🇬🇧 English (UK)',
     ja: '🇯🇵 日本語',
     zh: '🇨🇳 中文',
     'zh-TW': '🇹🇼 中文 (繁)',
