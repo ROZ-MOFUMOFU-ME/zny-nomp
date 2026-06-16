@@ -7,7 +7,7 @@ import {
     decideSwitches,
     type Ranking,
     type SwitchEntry
-} from '../libs/profitSwitchLogic.ts';
+} from '../src/profitSwitchLogic.ts';
 
 test('rankProfitability scores reward*price/difficulty and picks the best', () => {
     const table = {

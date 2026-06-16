@@ -13,7 +13,7 @@ import {
     readableHashRateString,
     sortBlocks,
     sortWorkersByHashrate
-} from '../libs/statsUtil.ts';
+} from '../src/statsUtil.ts';
 
 test('roundTo rounds to the requested decimal digits', () => {
     // default digits === 0

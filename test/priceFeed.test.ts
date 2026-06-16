@@ -14,7 +14,7 @@ import {
     PROVIDERS,
     collectPrices,
     parsePriceHash
-} from '../libs/priceProviders.ts';
+} from '../src/priceProviders.ts';
 
 const jsonResponse = (obj: any, ok = true, status = 200) => ({
     ok,

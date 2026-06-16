@@ -2,7 +2,7 @@
 // Run: node --test test/metrics.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderMetrics } from '../libs/metrics.ts';
+import { renderMetrics } from '../src/metrics.ts';
 
 const sample = {
     time: 1700000000,

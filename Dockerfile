@@ -33,4 +33,4 @@ EXPOSE 8080 17117
 ENV REDIS_HOST=redis \
     REDIS_PORT=6379
 
-CMD ["node", "init.ts"]
+CMD ["node", "src/init.ts"]

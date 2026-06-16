@@ -2,7 +2,7 @@
 // Run: node --test test/health.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHealth } from '../libs/health.ts';
+import { buildHealth } from '../src/health.ts';
 
 test('buildHealth: ok on a fresh snapshot', () => {
     const h = buildHealth(

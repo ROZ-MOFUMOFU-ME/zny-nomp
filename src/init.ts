@@ -3,15 +3,15 @@ import path from 'path';
 import os from 'os';
 import cluster from 'cluster';
 import extend from 'extend';
-import { createRedisClient, execCommands } from './libs/redisUtil.ts';
-import PoolLogger from './libs/logUtil.ts';
-import CliListener from './libs/cliListener.ts';
-import PoolWorker from './libs/poolWorker.ts';
-import PaymentProcessor from './libs/paymentProcessor.ts';
-import Website from './libs/website.ts';
-import ProfitSwitch from './libs/profitSwitch.ts';
-import PriceFeed from './libs/priceFeed.ts';
-import algos from 'stratum-pool/lib/algoProperties.ts';
+import { createRedisClient, execCommands } from './redisUtil.ts';
+import PoolLogger from './logUtil.ts';
+import CliListener from './cliListener.ts';
+import PoolWorker from './poolWorker.ts';
+import PaymentProcessor from './paymentProcessor.ts';
+import Website from './website.ts';
+import ProfitSwitch from './profitSwitch.ts';
+import PriceFeed from './priceFeed.ts';
+import algos from 'stratum-pool/src/algoProperties.ts';
 import jsonMinify from 'node-json-minify';
 
 // Set JSON.minify for backward compatibility

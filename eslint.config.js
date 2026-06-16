@@ -4,8 +4,8 @@ import prettier from 'eslint-config-prettier';
 
 export default [
     {
-        // Entry point only (the libs are covered by `tsc --noEmit` + prettier).
-        files: ['init.ts'],
+        // Entry point only (the rest of src/ is covered by `tsc --noEmit` + prettier).
+        files: ['src/init.ts'],
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
@@ -60,9 +60,8 @@ export default [
             'build/**',
             'newrelic_agent.log',
             'pool_configs/**',
-            'libs/**',
             'scripts/**',
-            'website/**',
+            'web/**',
             '*.log',
             'logs/**',
             'config.json',
