@@ -1,5 +1,5 @@
 import stats from './stats.js';
-import { createRedisClient } from './redisUtil.js';
+import { createRedisClient } from './redisUtil.ts';
 import { parsePriceHash } from './priceProviders.ts';
 import { renderMetrics } from './metrics.ts';
 import { buildHealth } from './health.ts';

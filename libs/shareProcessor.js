@@ -1,4 +1,4 @@
-import { createRedisClient, execCommands } from './redisUtil.js';
+import { createRedisClient, execCommands } from './redisUtil.ts';
 
 /*
 This module deals with handling shares when in internal payment processing mode. It connects to a redis

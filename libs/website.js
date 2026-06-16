@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import async from 'async';
 import watch from 'node-watch';
-import { createRedisClient } from './redisUtil.js';
+import { createRedisClient } from './redisUtil.ts';
 import dot from 'dot';
 import express from 'express';
 import compress from 'compression';

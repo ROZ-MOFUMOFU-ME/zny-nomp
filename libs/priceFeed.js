@@ -1,4 +1,4 @@
-import { createRedisClient, execCommands } from './redisUtil.js';
+import { createRedisClient, execCommands } from './redisUtil.ts';
 import {
     PROVIDERS,
     DEFAULT_PROVIDER_ORDER,

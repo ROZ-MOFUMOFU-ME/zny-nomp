@@ -1,7 +1,7 @@
 import * as Stratum from 'stratum-pool';
 import net from 'net';
 
-import { createRedisClient } from './redisUtil.js';
+import { createRedisClient } from './redisUtil.ts';
 
 import MposCompatibility from './mposCompatibility.js';
 import ShareProcessor from './shareProcessor.js';
