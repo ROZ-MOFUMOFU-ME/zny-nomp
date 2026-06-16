@@ -30,6 +30,24 @@ and the stack as a whole.
   `src/website.ts` with an index.html fallback for client-side routes and a new
   `GET /api/config` endpoint exposing public runtime config. The old `dot`
   templates + jQuery/nvd3 were removed.
+- **Web UX & operator features (2026-06-17)**:
+    - The stats page again shows each coin's **daemon version**. For old
+      getinfo-only wallets that don't expose a P2P `subversion` (e.g. KumaCoin,
+      whose `getinfo.version` is a git build string), the payment processor
+      reconstructs it from an optional per-coin `subVersion` template in
+      `coins/*.json` (e.g. `"/Antenna:{version}/"` → `/Antenna:0.8.9.9/`).
+    - **Admin-editable home announcement** — set or clear a banner shown at the
+      top of the home page from the password-gated admin center (public
+      `GET /api/announcement`, admin `POST /api/admin/announcement`, stored in
+      Redis; rendered as escaped plain text).
+    - **Per-coin mining-software links** — an optional `miningTools` array in
+      each `coins/*.json` (`{name, url}` entries) is surfaced through
+      `GET /api/config` and listed on the Getting Started page when a coin is
+      selected.
+    - Live-price display fixes: small prices format without exponential notation
+      (`5.8079e-7` → `0.00000058079`), and the CoinGecko provider runs keyless
+      by default (a stray `apiKey` value had caused intermittent HTTP 401). The
+      feed also drives a JPY/other-fiat price ticker.
 - CI green on GitHub Actions and CircleCI (Node 22/24).
 - **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
   node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
@@ -64,6 +82,14 @@ and the stack as a whole.
   (`src/init.ts` still used the v3 `multi().exec(cb)` API, a silent no-op, so
   `timesCurrent` was never written) — now uses `execCommands`, so PPLNT time
   data is recorded again.
+- **Recently fixed (KumaCoin payouts)**: payouts silently stalled because the
+  per-block tx-fee reserve (`coin.txfee`, default `0.0004`) was far below the
+  wallet's real `paytxfee` (`0.01`), so each payout drained the wallet slightly
+  below what it owed until `paymentProcessor` deferred everything with
+  "Insufficient funds … possibly waiting for txs" (blocks pile up `pending`
+  with confirmations far past the threshold). Setting a realistic
+  `coins/kumacoin.json` `txfee` (`0.03`) clears the backlog and stops the drift;
+  modern coins are unaffected (their real fee is well under the default reserve).
 
 ## Known issues & limitations
 

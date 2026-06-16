@@ -196,7 +196,8 @@ Explanation for each field:
         }
     },
 
-    /* This is the front-end. Its not finished. When it is finished, this comment will say so. */
+    /* Web frontend — the Vite + React + TypeScript SPA in web/, served by the
+       portal from web/dist. */
     "website": {
         "enabled": true,
         /* If you are using a reverse-proxy like nginx to display the website then set this to
@@ -214,7 +215,8 @@ Explanation for each field:
             /* How many seconds worth of shares should be gathered to generate hashrate. */
             "hashrateWindow": 300
         },
-        /* Not done yet. */
+        /* Password-gated admin center at /admin: view the live pool config and
+           edit the home-page announcement banner. */
         "adminCenter": {
             "enabled": true,
             "password": "password"
@@ -328,6 +330,16 @@ Here is an example of the required fields:
     //"txMessages": false, //options - defaults to false
 }
 ```
+
+Optional per-coin fields the portal also recognizes (see the complete,
+CI-validated templates in `coins/coins-examples{,-testnet}/`):
+
+- `explorer` (`{ "txURL": ..., "blockURL": ... }`) — block-explorer links shown on the stats/blocks pages.
+- `mainnet` / `testnet` — address→script network params (`pubKeyHash`, `scriptHash`, `bech32`, `bip32.public` as **hex strings**); required for bech32/P2SH coins.
+- `getInfo` / `noNetworkInfo` / `noGetnetworkhashps` — daemon-compatibility flags for older wallets that lack `getnetworkinfo`/`getblockchaininfo`/`getnetworkhashps`.
+- `txfee` — per-block transaction-fee reserve for payouts (default `0.0004`). Raise it to match an old wallet's real `paytxfee` so payouts don't stall on "Insufficient funds".
+- `subVersion` — template (e.g. `"/Antenna:{version}/"`) to reconstruct the daemon's P2P user-agent for getinfo-only wallets that don't return `subversion` (shown as the Daemon version on the stats page).
+- `miningTools` — an array of `{ "name": ..., "url": ... }` mining-software links surfaced on the Getting Started page when the coin is selected.
 
 For additional documentation how to configure coins and their different algorithms
 see [these instructions](//github.com/AoD-Technologies/cryptocurrency-stratum-pool#module-usage).
@@ -489,9 +501,14 @@ portal's container healthcheck probes `/api/health`.
 
 Besides the stats endpoints (see `/api`), the portal exposes:
 
+- `GET /api/config` — public runtime config the SPA consumes (stratum host,
+  enabled coin-switching ports, and per-pool coin / ports / explorer /
+  `miningTools`).
 - `GET /api/prices` — latest coin prices from the price feed (enable the
   `priceFeed` block in the config; supports CoinGecko + CoinPaprika with
   per-symbol fallback).
+- `GET /api/announcement` — the home-page announcement banner text; set it from
+  the admin center (`POST /api/admin/announcement`, password-gated).
 - `GET /api/metrics` — Prometheus exposition-format metrics (pool/algo
   hashrate, shares, blocks, network stats, prices).
 - `GET /api/health` — readiness probe (`200` ok / `503` degraded).
