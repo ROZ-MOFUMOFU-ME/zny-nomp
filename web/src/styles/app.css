@@ -1,5 +1,17 @@
 @import 'tailwindcss';
 
+/* Flag emoji (regional-indicator pairs) have no glyphs on some platforms
+   (notably Windows), so the language menu shows letter boxes. This webfont
+   supplies them, scoped to the flag code-point range via unicode-range so it
+   never affects normal text. */
+@font-face {
+    font-family: 'Twemoji Country Flags';
+    unicode-range: U+1F1E6-1F1FF;
+    src: url('https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1.8/dist/TwemojiCountryFlags.woff2')
+        format('woff2');
+    font-display: swap;
+}
+
 /* Design tokens (drive Tailwind color utilities: bg-accent, text-muted, …). */
 @theme {
     --color-bg: #2d2d2d;
@@ -14,7 +26,8 @@
     --color-link: #0b7fa3;
     --color-danger: #f06350;
     --font-sans:
-        'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        'Twemoji Country Flags', 'Noto Sans', 'Noto Sans JP', system-ui,
+        -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 @layer base {
