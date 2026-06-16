@@ -473,7 +473,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 var opid = result.response || result[0].response;
                 opidCount++;
                 opids.push(opid);
-                logger.special(
+                logger.debug(
                     logSystem,
                     logComponent,
                     'Shield balance ' + amount + ' ' + opid
@@ -537,7 +537,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 var opid = result.response || result[0].response;
                 opidCount++;
                 opids.push(opid);
-                logger.special(
+                logger.debug(
                     logSystem,
                     logComponent,
                     'Unshield funds for payout ' + amount + ' ' + opid
@@ -675,10 +675,14 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         });
     }
 
-    // run shielding process every x minutes
+    // run shielding process every x minutes (walletInterval). Default is a
+    // moderate 10 min: z_sendmany is slow/fee-bearing, so a 1-minute cadence
+    // just spams tiny shields and the code below even warns when the interval is
+    // shorter than an operation's execution time. Override per coin in the
+    // pool config (the koto example uses 2.5).
     var shieldIntervalState = 0; // do not send ZtoT and TtoZ and same time, this results in operation failed!
     var shielding_interval =
-        Math.max(parseInt(poolOptions.walletInterval || 1), 1) * 60 * 1000; // run every x minutes
+        Math.max(parseInt(poolOptions.walletInterval || 10), 1) * 60 * 1000; // run every x minutes
     // shielding not required for some equihash coins
     if (requireShielding === true) {
         var shieldInterval = setInterval(function () {
@@ -768,7 +772,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                 );
                             }
                         } else {
-                            logger.special(
+                            logger.debug(
                                 logSystem,
                                 logComponent,
                                 'Shielding operation success ' +
@@ -778,7 +782,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                             );
                         }
                     } else if (op.status == 'executing') {
-                        logger.special(
+                        logger.debug(
                             logSystem,
                             logComponent,
                             'Shielding operation in progress ' + op.id
