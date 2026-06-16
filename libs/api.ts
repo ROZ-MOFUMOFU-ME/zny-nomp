@@ -120,6 +120,19 @@ export default function (
                     res.end(JSON.stringify(data));
                 });
                 return;
+            case 'coin_bytes':
+                // Per-coin "pubByte,privByte" version-byte pairs for the
+                // key.html wallet tool, from the redis coinVersionBytes hash.
+                res.header('Content-Type', 'application/json');
+                priceClient
+                    .hGetAll('coinVersionBytes')
+                    .then(function (data: any) {
+                        res.end(JSON.stringify(data || {}));
+                    })
+                    .catch(function () {
+                        res.end('{}');
+                    });
+                return;
             case 'metrics':
                 res.header('Content-Type', 'text/plain; version=0.0.4');
                 res.end(renderMetrics(portalStats.stats));

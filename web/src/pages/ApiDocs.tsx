@@ -17,7 +17,11 @@ const ENDPOINTS: Array<{ path: string; desc: string }> = [
     { path: '/api/prices', desc: 'Latest coin prices from the price feed.' },
     { path: '/api/metrics', desc: 'Prometheus exposition metrics.' },
     { path: '/api/health', desc: 'Health check (200 ok / 503 degraded).' },
-    { path: '/api/config', desc: 'Public runtime config for the frontend.' }
+    { path: '/api/config', desc: 'Public runtime config for the frontend.' },
+    {
+        path: '/api/coin_bytes',
+        desc: 'Per-coin version bytes for the key.html wallet tool.'
+    }
 ];
 
 export default function ApiDocs() {

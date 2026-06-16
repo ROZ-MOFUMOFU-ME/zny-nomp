@@ -1,21 +1,19 @@
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
-import { createRedisClient } from './redisUtil.ts';
-import dot from 'dot';
 import express from 'express';
 import compress from 'compression';
 import api from './api.ts';
 import type { Logger } from './logUtil.ts';
 
-// Directory of the built Vite + React SPA (see web/). Served as static assets
-// with a catch-all fallback to index.html so client-side routes work.
+// Directory of the built Vite + React SPA (see web/). Everything the browser
+// loads — the app, its assets, and the static key.html wallet tool (web/public/
+// key.html) — is served from here, with a catch-all fallback to index.html so
+// client-side routes work.
 const SPA_DIR = path.resolve('web/dist');
 const SPA_INDEX = path.join(SPA_DIR, 'index.html');
 
 export default function (this: any, logger: Logger) {
-    dot.templateSettings.strip = false;
-
     var portalConfig: any = JSON.parse(process.env.portalConfig as string);
     var poolConfigs: any = JSON.parse(process.env.pools as string);
 
@@ -25,12 +23,6 @@ export default function (this: any, logger: Logger) {
     var portalStats = portalApi.stats;
 
     var logSystem = 'Website';
-
-    // The wallet/mining-key tool (website/key.html) is the one page still
-    // rendered server-side, injecting the per-coin version bytes cached in
-    // redis (coinVersionBytes).
-    var keyScriptTemplate: any = '';
-    var keyScriptProcessed: any = '';
 
     // Populate the stats snapshot once at startup so /api/stats has data before
     // the first SSE tick, then push the live object to SSE clients on a timer.
@@ -48,48 +40,6 @@ export default function (this: any, logger: Logger) {
     };
 
     setInterval(buildUpdatedWebsite, websiteConfig.stats.updateInterval * 1000);
-
-    // Render key.html once at startup with whatever per-coin version bytes are
-    // cached in redis. We deliberately do NOT derive version bytes here (the old
-    // code's dumpprivkey + bs58check path): many coins (koto and other
-    // Zcash-style / non-base58check chains) legitimately don't use
-    // bitcoinjs-lib/bs58check, so forcing a derivation on them is wrong. The
-    // tool degrades gracefully for any coin missing from the cache.
-    var buildKeyScriptPage = function () {
-        var client = createRedisClient(portalConfig.redis);
-        client
-            .hGetAll('coinVersionBytes')
-            .then(function (coinBytes: any) {
-                client.destroy();
-                try {
-                    keyScriptTemplate = dot.template(
-                        fs.readFileSync('website/key.html', {
-                            encoding: 'utf8'
-                        })
-                    );
-                    keyScriptProcessed = keyScriptTemplate({
-                        coins: coinBytes || {}
-                    });
-                } catch (e) {
-                    logger.error(
-                        logSystem,
-                        'Init',
-                        'Failed to read/render key.html'
-                    );
-                }
-            })
-            .catch(function (err: any) {
-                client.destroy();
-                logger.error(
-                    logSystem,
-                    'Init',
-                    'Failed grabbing coin version bytes from redis ' +
-                        JSON.stringify(err && err.message)
-                );
-            });
-    };
-
-    buildKeyScriptPage();
 
     var app = express();
 
@@ -114,15 +64,8 @@ export default function (this: any, logger: Logger) {
         } else next();
     });
 
-    // Server-rendered wallet/mining-key tool. Falls back to the raw file until
-    // the startup render completes (or if redis was unavailable).
-    app.get('/key.html', function (req, res) {
-        res.header('Content-Type', 'text/html');
-        if (keyScriptProcessed) res.end(keyScriptProcessed);
-        else res.sendFile(path.resolve('website/key.html'));
-    });
-
-    // Built SPA assets (index.html at /, hashed assets under /assets).
+    // Built SPA assets + static files (index.html at /, hashed assets under
+    // /assets, the wallet tool at /key.html — all from web/dist via web/public).
     app.use(express.static(SPA_DIR));
 
     // SPA fallback: any other GET serves the app shell for client-side routing.

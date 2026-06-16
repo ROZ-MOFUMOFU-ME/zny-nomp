@@ -158,9 +158,7 @@
                 <div class="heading">Coin formatted keys</div>
                 <select id="coinSelect">
                     <option value="">Select a coin</option>
-                    {{ for(var coin in it.coins) { }}
-                    <option value="{{=it.coins[coin]}}">{{=coin}}</option>
-                    {{ } }}
+                    <!-- options populated at runtime from /api/coin_bytes -->
                 </select>
 
                 <div class="heading">
@@ -3967,6 +3965,26 @@
 
                 global['BigInteger'] = BigInteger;
             })(this);
+        </script>
+        <script>
+            // Populate the coin dropdown with per-coin version-byte pairs the
+            // pool exposes at /api/coin_bytes (replaces the old server-side dot
+            // template injection).
+            fetch('/api/coin_bytes')
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (coins) {
+                    var sel = document.getElementById('coinSelect');
+                    if (!sel) return;
+                    Object.keys(coins || {}).forEach(function (coin) {
+                        var o = document.createElement('option');
+                        o.value = coins[coin];
+                        o.textContent = coin;
+                        sel.appendChild(o);
+                    });
+                })
+                .catch(function () {});
         </script>
     </body>
 </html>
