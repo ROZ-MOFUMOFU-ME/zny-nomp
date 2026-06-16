@@ -410,3 +410,7 @@ dist/
 # Local logs
 *.log
 .bootlog
+
+# Claude
+claude-*.log
+.claude/
