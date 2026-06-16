@@ -5,9 +5,7 @@
  * these. (`dot` is only used by the legacy website templates and will be
  * dropped once the Vite + React SPA lands.)
  */
-declare module 'dot';
 declare module 'node-json-minify';
-declare module 'nonce';
 
 // Optional runtime add-ons loaded via dynamic import() in init.ts; not declared
 // dependencies, so make their bare specifiers resolvable as `any`.

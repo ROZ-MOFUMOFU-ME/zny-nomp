@@ -28,8 +28,8 @@ and the stack as a whole.
   stack (`cd web && npm run build` → `web/dist`); the portal serves it from
   `libs/website.ts` with an index.html fallback for client-side routes and a new
   `GET /api/config` endpoint exposing public runtime config. The old `dot`
-  templates + jQuery/nvd3 were removed (only the self-contained `website/key.html`
-  wallet/mining-key tool remains, served at `/key.html`).
+  templates + jQuery/nvd3 were removed; the self-contained wallet/mining-key
+  tool now lives at `web/public/key.html`, served statically at `/key.html`.
 - CI green on GitHub Actions and CircleCI (Node 20/22/24).
 - **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
   node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
