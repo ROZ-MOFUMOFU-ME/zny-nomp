@@ -3,7 +3,6 @@ import net from 'net';
 
 import { createRedisClient } from './redisUtil.ts';
 
-import MposCompatibility from './mposCompatibility.ts';
 import ShareProcessor from './shareProcessor.ts';
 
 import type { Logger } from './logUtil.ts';
@@ -148,74 +147,39 @@ export default function (this: any, logger: Logger) {
             diff: function () {}
         };
 
-        //Functions required for MPOS compatibility
-        if (poolOptions.mposMode && poolOptions.mposMode.enabled) {
-            var mposCompat = new (MposCompatibility as any)(
-                logger,
-                poolOptions
-            );
+        //Internal share / payment processing (shares are written to Redis).
+        var shareProcessor = new (ShareProcessor as any)(logger, poolOptions);
 
-            handlers.auth = function (
-                port: any,
-                workerName: any,
-                password: any,
-                authCallback: any
-            ) {
-                mposCompat.handleAuth(workerName, password, authCallback);
-            };
+        handlers.auth = function (
+            port: any,
+            workerName: any,
+            password: any,
+            authCallback: any
+        ) {
+            if (poolOptions.validateWorkerUsername !== true) authCallback(true);
+            else {
+                pool.daemon.cmd(
+                    'validateaddress',
+                    [String(workerName).split('.')[0]],
+                    function (results: any) {
+                        var isValid =
+                            results.filter(function (r: any) {
+                                if (r.response) return r.response.isvalid;
+                                return false;
+                            }).length > 0;
+                        authCallback(isValid);
+                    }
+                );
+            }
+        };
 
-            handlers.share = function (
-                isValidShare: any,
-                isValidBlock: any,
-                data: any
-            ) {
-                mposCompat.handleShare(isValidShare, isValidBlock, data);
-            };
-
-            handlers.diff = function (workerName: any, diff: any) {
-                mposCompat.handleDifficultyUpdate(workerName, diff);
-            };
-        }
-
-        //Functions required for internal payment processing
-        else {
-            var shareProcessor = new (ShareProcessor as any)(
-                logger,
-                poolOptions
-            );
-
-            handlers.auth = function (
-                port: any,
-                workerName: any,
-                password: any,
-                authCallback: any
-            ) {
-                if (poolOptions.validateWorkerUsername !== true)
-                    authCallback(true);
-                else {
-                    pool.daemon.cmd(
-                        'validateaddress',
-                        [String(workerName).split('.')[0]],
-                        function (results: any) {
-                            var isValid =
-                                results.filter(function (r: any) {
-                                    if (r.response) return r.response.isvalid;
-                                    return false;
-                                }).length > 0;
-                            authCallback(isValid);
-                        }
-                    );
-                }
-            };
-
-            handlers.share = function (
-                isValidShare: any,
-                isValidBlock: any,
-                data: any
-            ) {
-                shareProcessor.handleShare(isValidShare, isValidBlock, data);
-            };
-        }
+        handlers.share = function (
+            isValidShare: any,
+            isValidBlock: any,
+            data: any
+        ) {
+            shareProcessor.handleShare(isValidShare, isValidBlock, data);
+        };
 
         var authorizeFN = function (
             ip: any,
