@@ -657,6 +657,28 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                             'networkSubVersion',
                             result[0].response.subversion
                         ]);
+                    } else if (
+                        poolOptions.coin.subVersion &&
+                        result[0].response.version != null
+                    ) {
+                        // Old wallets (getInfo + noNetworkInfo, e.g. KumaCoin)
+                        // expose no `subversion` over RPC — only a git build
+                        // string in `version` (e.g. "v0.8.9.9-c60962c-dirty").
+                        // Rebuild the P2P user-agent the daemon reports
+                        // ("/Antenna:0.8.9.9/") from the coin's `subVersion`
+                        // template, with {version} = the cleaned version.
+                        var cleanVersion = String(result[0].response.version)
+                            .replace(/^v/i, '')
+                            .replace(/-.*$/, '');
+                        finalRedisCommands.push([
+                            'hset',
+                            coin + ':stats',
+                            'networkSubVersion',
+                            poolOptions.coin.subVersion.replace(
+                                '{version}',
+                                cleanVersion
+                            )
+                        ]);
                     }
                     if (finalRedisCommands.length <= 0) return;
 

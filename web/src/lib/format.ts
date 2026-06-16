@@ -59,6 +59,17 @@ export function formatAmount(coins: unknown, digits = 8): string {
     return toNum(coins).toFixed(digits);
 }
 
+// Crypto prices span many orders of magnitude (BTC ~66000 down to ~5e-7). The
+// JSON serializes sub-1e-6 numbers in exponential form (e.g. "5.8079e-7"), and
+// rendering {price} raw shows that to users. Intl 'standard' notation never uses
+// exponential, so significant-digit formatting yields "0.00000058079" while
+// keeping "66,120" and "0.073697" intact.
+export function formatPrice(value: unknown): string {
+    const n = toNum(value);
+    if (n === 0) return '0';
+    return n.toLocaleString('en-US', { maximumSignificantDigits: 8 });
+}
+
 export function maskAddress(addr: string): string {
     if (!addr || addr.length <= 12) return addr;
     return addr.slice(0, 4) + '****' + addr.slice(-4);

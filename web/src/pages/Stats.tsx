@@ -24,7 +24,8 @@ import {
     readableDate,
     shortTime,
     parseBlockString,
-    explorerUrl
+    explorerUrl,
+    formatPrice
 } from '../lib/format.ts';
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
@@ -313,7 +314,7 @@ export default function Stats() {
                             return (
                                 <div key={sym}>
                                     <span className="font-bold">{sym}</span>{' '}
-                                    {p.price}{' '}
+                                    {formatPrice(p.price)}{' '}
                                     {(p.vsCurrency || '').toUpperCase()}
                                     <span className="ml-1 text-xs text-muted">
                                         via {p.source}
@@ -407,6 +408,11 @@ export default function Stats() {
                                     icon="fa-signal"
                                     label="Connections"
                                     value={toNum(ps.networkConnections)}
+                                />
+                                <Row
+                                    icon="fa-code-fork"
+                                    label="Daemon"
+                                    value={ps.networkVersion || '—'}
                                 />
                                 <Row
                                     icon="fa-flask"
