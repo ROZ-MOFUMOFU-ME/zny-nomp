@@ -2,7 +2,7 @@
 
 This portal is the top of a three-repo stack developed together:
 
-- **zny-nomp** (this repo) — the mining portal (ESM, Node `^20.19 || >=22.12`, Node 24 recommended)
+- **zny-nomp** (this repo) — the mining portal (ESM, Node `>=22.18` for native type-stripping, Node 24 recommended)
 - [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) — the Stratum poolserver library
 - [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing) — the native hashing addon
 
@@ -11,9 +11,10 @@ and the stack as a whole.
 
 ## Current state
 
-- Runs on Node `^20.19 || >=22.12` (Node 24 recommended; ESM) with the
-  node-redis v6 client (Redis 6.2+). Older Node fails to load the ESM
-  `@exodus/crypto` dependency with `ERR_REQUIRE_ESM`.
+- Runs on Node `>=22.18` (Node 24 recommended; ESM) with the node-redis v6
+  client (Redis 6.2+). `>=22.18` is required for unflagged native TypeScript
+  type-stripping; older Node also fails to load the ESM `@exodus/crypto`
+  dependency with `ERR_REQUIRE_ESM`.
 - **TypeScript migration complete (all three repos, buildless)**: the portal
   (`src/init.ts`, `scripts/cli.ts`, `src/*.ts`) and node-stratum-pool (`src/*.ts`,
   main `src/index.ts`) are now TypeScript, run directly via Node's native
@@ -30,7 +31,7 @@ and the stack as a whole.
   `GET /api/config` endpoint exposing public runtime config. The old `dot`
   templates + jQuery/nvd3 were removed; the self-contained wallet/mining-key
   tool now lives at `web/public/key.html`, served statically at `/key.html`.
-- CI green on GitHub Actions and CircleCI (Node 20/22/24).
+- CI green on GitHub Actions and CircleCI (Node 22/24).
 - **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
   node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
   dependencies are pinned to those release commits in `package-lock.json`.
