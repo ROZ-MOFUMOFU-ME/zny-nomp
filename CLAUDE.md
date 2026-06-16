@@ -23,7 +23,8 @@ cd ../node-stratum-pool  && npm link multi-hashing && npm link
 cd ../zny-nomp           && npm link stratum-pool
 ```
 
-  `stratum-pool` をリンクすると、`multi-hashing` は `../node-stratum-pool/node_modules` 経由でローカルクローンに解決されます — 本リポジトリの `node_modules` 内の GitHub コピーは使われません。解除は `npm unlink stratum-pool && npm install`。
+`stratum-pool` をリンクすると、`multi-hashing` は `../node-stratum-pool/node_modules` 経由でローカルクローンに解決されます — 本リポジトリの `node_modules` 内の GitHub コピーは使われません。解除は `npm unlink stratum-pool && npm install`。
+
 - `npm install` が git 版 multi-hashing のコンパイルで失敗する場合（例: GitHub の `main` がまだ対応していない Node バージョン）は、`npm install --ignore-scripts` を使い、リンクチェーンに任せてください — 他の依存はすべて純粋な JS です。
 - リリースフロー: `node-multi-hashing` の main を更新 → `node-stratum-pool` の main を更新（PR）→ ここで `npm update stratum-pool multi-hashing` を実行してロックされたコミットを進めます。タグ（`v*`、例 `v1.4.0-beta.0`）を push すると `.github/workflows/release.yml` が package.json のバージョンとの一致を検証したうえで GitHub Release を自動作成します（ハイフン付き semver はプレリリース扱い、リリースノートは自動生成）。タグは CI 通過済みの main コミットから切ってください（ビルド／Lint ワークフローはタグ push では走りません）。
 - **リンクは npm install で消える**: このリポジトリで何かしら `npm install` / `npm update` を実行すると、`node_modules/stratum-pool` のシンボリックリンクが GitHub クローンに置き換えられます。インストール後は必ず `npm link stratum-pool` を再実行してください（リンクされているかは `ls -la node_modules/stratum-pool` で確認できます）。ローカル修正をテストしたのに反映されていない場合は、まずこれを疑ってください。
@@ -36,8 +37,8 @@ cd ../zny-nomp           && npm link stratum-pool
 
 ```bash
 npm install        # GitHub から git 依存もクローンされる（上記 --ignore-scripts の注意を参照）
-npm start          # = node init.ts（Redis とコインデーモンの起動が必要）
-npm run lint       # eslint init.ts（typescript-eslint）
+npm start          # = node src/init.ts（Redis とコインデーモンの起動が必要）
+npm run lint       # eslint src/init.ts（typescript-eslint）
 npm run lint:fix
 npm run format     # prettier --write .
 npm run format:check
@@ -47,28 +48,28 @@ npm run check:config  # config_example.json / config.json / coins/*・coins/coin
 node scripts/cli.ts <command>   # 稼働中のポータルに CLI ポート経由でコマンド送信（例: blocknotify）
 ```
 
-`npm test` は `node init.ts` を実行するだけの起動スモークで、テストスイートではありません。実体のあるユニットテストは `npm run test:unit`（`test/*.test.ts`・`*.test.mjs`）にあります。`node --test test/`（ディレクトリ指定）はこの Node ではバグるため、glob/ファイル指定を使ってください。
+`npm test` は `node src/init.ts` を実行するだけの起動スモークで、テストスイートではありません。実体のあるユニットテストは `npm run test:unit`（`test/*.test.ts`・`*.test.mjs`）にあります。`node --test test/`（ディレクトリ指定）はこの Node ではバグるため、glob/ファイル指定を使ってください。
 
-Web フロントエンド（SPA）は `web/`（Vite + React + TypeScript）にあり、独自の `package.json`／`tsconfig`／`vite.config` を持つこのスタック唯一のビルド工程です（バックエンドはビルドレス）。初回は `cd web && npm install --legacy-peer-deps`、開発は `npm run dev`（Vite 開発サーバーが :5173 で起動し `/api` を :8080 のポータルへプロキシ。`/key.html` は `web/public` の静的アセット）、本番ビルドは `npm run build`（成果物は `web/dist`、`libs/website.ts` が配信）。Dockerfile はイメージビルド時に `web/` をビルドします。
+Web フロントエンド（SPA）は `web/`（Vite + React + TypeScript）にあり、独自の `package.json`／`tsconfig`／`vite.config` を持つこのスタック唯一のビルド工程です（バックエンドはビルドレス）。初回は `cd web && npm install --legacy-peer-deps`、開発は `npm run dev`（Vite 開発サーバーが :5173 で起動し `/api` を :8080 のポータルへプロキシ。`/key.html` は `web/public` の静的アセット）、本番ビルドは `npm run build`（成果物は `web/dist`、`src/website.ts` が配信）。Dockerfile はイメージビルド時に `web/` をビルドします。
 
-設定: `init.ts` は `config.json`（ポータル設定）を読み込み、存在しない場合は `config_example.json` にフォールバックします。プールは `pool_configs/*.json` でファイルごとに有効化し、それぞれ `coins/*.json` のコイン定義を参照します。
+設定: `src/init.ts` は `config.json`（ポータル設定）を読み込み、存在しない場合は `config_example.json` にフォールバックします。プールは `pool_configs/*.json` でファイルごとに有効化し、それぞれ `coins/*.json` のコイン定義を参照します。
 
 コイン定義（`coins/*.json`）はアドレス→スクリプト変換用の `mainnet`／`testnet`（`pubKeyHash`／`scriptHash`／`bech32`／`bip32.public` を **16進文字列**で指定。bech32/P2SH を使うコインは必須。`addressToScript` は network 未指定だと「バージョンバイトを無視した base58 P2PKH」へフォールバックする。koto は `kotoAddressToScript` を使うため network ブロック不要、kumacoin は旧 Peercoin 系で BIP32 が無いため省略）と、デーモン互換フラグ `getInfo`／`noNetworkInfo`／`noGetnetworkhashps` を持ちます。各コインの雛形は `coins/coins-examples{,-testnet}/` と `pool_configs/examples/` にあり、CI（check:config）で検証されます。`config.json`／`pool_configs/*.json`／`coins/*.json` は `.gitignore` 済み（実運用設定）で、コミットされるのは例のみです。
 
 ## アーキテクチャ
 
-ESM（`"type": "module"`）。**TypeScript への移行は完了**しており、Node のネイティブ型除去（Node 22.18+/24、`engines` でも要求）により `.ts` を**ビルド工程なしのまま**直接実行し、`npm run typecheck`（`tsc --noEmit`）で型のみ検査します（`tsconfig.json`: strict・nodenext・erasableSyntaxOnly・allowImportingTsExtensions・allowJs）。`init.ts`・`scripts/cli.ts`・`libs/*.ts` がすべて TypeScript で、import 指定子は実拡張子＝`./foo.ts` のように書きます（唯一 `eslint.config.js` だけは ESLint フラット設定のため JS のまま）。型のないライブラリは `@types/*` の devDependencies と `types/shims.d.ts`（node-json-minify／newrelic／posix・グローバル `JSON.minify`・`@exodus/bitcoinjs-lib-zcash`／`multi-hashing` をアンビエント宣言）で補い、Lint は `typescript-eslint` を使います。`init.ts` がクラスタのマスターで、ポータル設定と有効な全プール設定を読み込み、役割ごとにワーカープロセスを fork します:
+ESM（`"type": "module"`）。**TypeScript への移行は完了**しており、Node のネイティブ型除去（Node 22.18+/24、`engines` でも要求）により `.ts` を**ビルド工程なしのまま**直接実行し、`npm run typecheck`（`tsc --noEmit`）で型のみ検査します（`tsconfig.json`: strict・nodenext・erasableSyntaxOnly・allowImportingTsExtensions・allowJs）。`src/init.ts`・`scripts/cli.ts`・`src/*.ts` がすべて TypeScript で、import 指定子は実拡張子＝`./foo.ts` のように書きます（唯一 `eslint.config.js` だけは ESLint フラット設定のため JS のまま）。型のないライブラリは `@types/*` の devDependencies と `types/shims.d.ts`（node-json-minify／newrelic／posix・グローバル `JSON.minify`・`@exodus/bitcoinjs-lib-zcash`／`multi-hashing` をアンビエント宣言）で補い、Lint は `typescript-eslint` を使います。`src/init.ts` がクラスタのマスターで、ポータル設定と有効な全プール設定を読み込み、役割ごとにワーカープロセスを fork します:
 
-- **プールワーカー** (`libs/poolWorker.ts`) — `clustering.forks` 数だけ fork され、各 fork が有効なプールごとに `stratum-pool` インスタンスを1つ実行します。シェア／ブロックはプールの `share` イベント経由で届き、`libs/shareProcessor.ts` が Redis に書き込みます。プール設定で MPOS モードを有効にした場合は `libs/mposCompatibility.ts` 経由で MySQL に書き込みます。
-- **支払い処理** (`libs/paymentProcessor.ts`) — 最大のモジュール。一定間隔で Redis からシェアデータを読み、デーモン RPC でブロックの承認を確認し、支払いを送金します。
-- **Website** (`libs/website.ts`) — Express 5 サーバー。フロントエンドは `web/` の Vite + React + TypeScript SPA（React Router v7・@tanstack/react-query・recharts・react-i18next による 21 言語 i18n〔旧 translations.json から移植〕）で、ビルド済み成果物を `web/dist` から配信し、クライアントサイドルーティング用に index.html へフォールバックします（旧 `dot` テンプレート＋jQuery/nvd3 と旧 `website/` フォルダ（index.html・pages・static・key.html）は撤去し、フロントエンドは `web/` に一本化。自己完結のウォレット／マイニングキーツールは `web/public/key.html` に置かれ `/key.html` で**静的配信**され、コインのバージョンバイトは実行時に `GET /api/coin_bytes` から取得します（サーバ側 dot レンダリングは廃止）。JSON API は `libs/api.ts`（統計系・`/api/admin` に加え `/api/prices`・`/api/metrics`〔Prometheus, `libs/metrics.ts`〕・`/api/health`〔`libs/health.ts`〕、さらに SPA が消費する公開ランタイム設定〔stratumHost・有効な切替ポート・プールごとの coin/ports/explorer〕を返す `GET /api/config`、key.html 用の `GET /api/coin_bytes`）と `libs/workerapi.ts`、Redis からの統計集計は `libs/stats.ts`（最新価格を `stats.prices` に付与）。
-- **価格フィード** (`libs/priceFeed.ts`) — CoinGecko / CoinPaprika から定期的に価格を取得し（`libs/priceProviders.ts` のプラガブルなプロバイダ群＋シンボル単位フォールバック）、Redis の `priceFeed:prices` に格納します。Node のグローバル `fetch` を使用（新規依存なし）。デフォルト無効（`priceFeed.enabled`）。
-- **プロフィットスイッチャー** (`libs/profitSwitch.ts`) — 同一アルゴリズムのコイン間でハッシュパワーを切り替えます。価格は Redis の `priceFeed:prices` から読み、`reward × price / difficulty` で最良コインを選び、CLI の `coinswitch` 経路（`scripts/cli.ts` と同形式）で切り替えます。純粋な選定ロジックは `libs/profitSwitchLogic.ts` に分離（テスト可能）。デフォルト無効・価格フィード前提。
-- **CLI リスナー** (`libs/cliListener.ts`) — `scripts/cli.ts` からのコマンドを受け付ける TCP ポート（例: デーモンの `blocknotify` フックからのブロック通知）。
+- **プールワーカー** (`src/poolWorker.ts`) — `clustering.forks` 数だけ fork され、各 fork が有効なプールごとに `stratum-pool` インスタンスを1つ実行します。シェア／ブロックはプールの `share` イベント経由で届き、`src/shareProcessor.ts` が Redis に書き込みます。プール設定で MPOS モードを有効にした場合は `src/mposCompatibility.ts` 経由で MySQL に書き込みます。
+- **支払い処理** (`src/paymentProcessor.ts`) — 最大のモジュール。一定間隔で Redis からシェアデータを読み、デーモン RPC でブロックの承認を確認し、支払いを送金します。
+- **Website** (`src/website.ts`) — Express 5 サーバー。フロントエンドは `web/` の Vite + React + TypeScript SPA（React Router v7・@tanstack/react-query・recharts・react-i18next による 21 言語 i18n〔旧 translations.json から移植〕）で、ビルド済み成果物を `web/dist` から配信し、クライアントサイドルーティング用に index.html へフォールバックします（旧 `dot` テンプレート＋jQuery/nvd3 と旧 `website/` フォルダ（index.html・pages・static・key.html）は撤去し、フロントエンドは `web/` に一本化。自己完結のウォレット／マイニングキーツールは `web/public/key.html` に置かれ `/key.html` で**静的配信**され、コインのバージョンバイトは実行時に `GET /api/coin_bytes` から取得します（サーバ側 dot レンダリングは廃止）。JSON API は `src/api.ts`（統計系・`/api/admin` に加え `/api/prices`・`/api/metrics`〔Prometheus, `src/metrics.ts`〕・`/api/health`〔`src/health.ts`〕、さらに SPA が消費する公開ランタイム設定〔stratumHost・有効な切替ポート・プールごとの coin/ports/explorer〕を返す `GET /api/config`、key.html 用の `GET /api/coin_bytes`）と `src/workerapi.ts`、Redis からの統計集計は `src/stats.ts`（最新価格を `stats.prices` に付与）。
+- **価格フィード** (`src/priceFeed.ts`) — CoinGecko / CoinPaprika から定期的に価格を取得し（`src/priceProviders.ts` のプラガブルなプロバイダ群＋シンボル単位フォールバック）、Redis の `priceFeed:prices` に格納します。Node のグローバル `fetch` を使用（新規依存なし）。デフォルト無効（`priceFeed.enabled`）。
+- **プロフィットスイッチャー** (`src/profitSwitch.ts`) — 同一アルゴリズムのコイン間でハッシュパワーを切り替えます。価格は Redis の `priceFeed:prices` から読み、`reward × price / difficulty` で最良コインを選び、CLI の `coinswitch` 経路（`scripts/cli.ts` と同形式）で切り替えます。純粋な選定ロジックは `src/profitSwitchLogic.ts` に分離（テスト可能）。デフォルト無効・価格フィード前提。
+- **CLI リスナー** (`src/cliListener.ts`) — `scripts/cli.ts` からのコマンドを受け付ける TCP ポート（例: デーモンの `blocknotify` フックからのブロック通知）。
 
-Redis が主要データストアです（シェア・ブロック・残高・統計）。プロセス間通信はすべて `init.ts` が処理するクラスタ IPC メッセージ経由です。Redis クライアントは node-redis v6（Promise API）で、接続生成・MULTI 実行の共通処理は `libs/redisUtil.ts` に集約されています — 生の `[コマンド, 引数...]` 配列で MULTI を組む場合は `execCommands()` を使い、HGETALL のようにオブジェクト形状の応答が必要な読み取りはクライアントの camelCase メソッド（`hGetAll` など）をチェーンした typed multi を使ってください（raw `addCommand` の HGETALL はフラット配列を返すため）。
+Redis が主要データストアです（シェア・ブロック・残高・統計）。プロセス間通信はすべて `src/init.ts` が処理するクラスタ IPC メッセージ経由です。Redis クライアントは node-redis v6（Promise API）で、接続生成・MULTI 実行の共通処理は `src/redisUtil.ts` に集約されています — 生の `[コマンド, 引数...]` 配列で MULTI を組む場合は `execCommands()` を使い、HGETALL のようにオブジェクト形状の応答が必要な読み取りはクライアントの camelCase メソッド（`hGetAll` など）をチェーンした typed multi を使ってください（raw `addCommand` の HGETALL はフラット配列を返すため）。
 
-このリポジトリはパッケージルートに加えて `stratum-pool/lib/algoProperties.ts` と `stratum-pool/lib/util.ts` をディープインポートしています。プール設定の `coin` ファイルで指定する `algorithm` は algoProperties に存在する必要があります — 新アルゴリズムの追加は node-multi-hashing（実装）と node-stratum-pool（登録）の作業であり、このリポジトリでは行いません。
+このリポジトリはパッケージルートに加えて `stratum-pool/src/algoProperties.ts` と `stratum-pool/src/util.ts` をディープインポートしています。プール設定の `coin` ファイルで指定する `algorithm` は algoProperties に存在する必要があります — 新アルゴリズムの追加は node-multi-hashing（実装）と node-stratum-pool（登録）の作業であり、このリポジトリでは行いません。
 
 `dist/`・`.next/`・`tsconfig.tsbuildinfo` は追跡されていないビルドの残骸で、アプリの一部ではありません。
 

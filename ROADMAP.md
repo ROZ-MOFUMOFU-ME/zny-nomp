@@ -15,8 +15,8 @@ and the stack as a whole.
   node-redis v6 client (Redis 6.2+). Older Node fails to load the ESM
   `@exodus/crypto` dependency with `ERR_REQUIRE_ESM`.
 - **TypeScript migration complete (all three repos, buildless)**: the portal
-  (`init.ts`, `scripts/cli.ts`, `libs/*.ts`) and node-stratum-pool (`lib/*.ts`,
-  main `lib/index.ts`) are now TypeScript, run directly via Node's native
+  (`src/init.ts`, `scripts/cli.ts`, `src/*.ts`) and node-stratum-pool (`src/*.ts`,
+  main `src/index.ts`) are now TypeScript, run directly via Node's native
   type-stripping (Node 22.18+/24, no build step), and are type-checked with
   `tsc --noEmit`. node-multi-hashing's `index.js` stays JavaScript on purpose —
   the `bindings` resolver can't locate the native `multihashing.node` addon when
@@ -26,7 +26,7 @@ and the stack as a whole.
   Router v7, @tanstack/react-query, recharts, react-i18next with the 21-language
   i18n ported from the old `translations.json`). It is the one build step in the
   stack (`cd web && npm run build` → `web/dist`); the portal serves it from
-  `libs/website.ts` with an index.html fallback for client-side routes and a new
+  `src/website.ts` with an index.html fallback for client-side routes and a new
   `GET /api/config` endpoint exposing public runtime config. The old `dot`
   templates + jQuery/nvd3 were removed; the self-contained wallet/mining-key
   tool now lives at `web/public/key.html`, served statically at `/key.html`.
@@ -42,12 +42,12 @@ and the stack as a whole.
 - **Mining + payout verified**: BitZeny, Koto, Monacoin, Bellcoin,
   Sugarchain, KumaCoin.
 - **In progress** (pool_configs enabled but not production-ready):
-  - VIPSTARCOIN — verified end-to-end on regtest; mainnet config still has
-    placeholder address/RPC credentials and needs a payout run.
-  - Yenten — developer-fee coinbase output is implemented and source-verified
-    against yenten 6.1, but untested against a live mainnet daemon.
-  - Susucoin — the daemon now builds and runs and its pool_config is enabled
-    (sha256d); pending an end-to-end payout verification.
+    - VIPSTARCOIN — verified end-to-end on regtest; mainnet config still has
+      placeholder address/RPC credentials and needs a payout run.
+    - Yenten — developer-fee coinbase output is implemented and source-verified
+      against yenten 6.1, but untested against a live mainnet daemon.
+    - Susucoin — the daemon now builds and runs and its pool_config is enabled
+      (sha256d); pending an end-to-end payout verification.
 - **Recently fixed (Koto)**: blocks that carried shielded mempool transactions
   were being found (valid PoW) but rejected by the daemon with
   `hashMerkleRoot mismatch` — the Stratum library now builds the merkle root
@@ -61,17 +61,17 @@ and the stack as a whole.
   absent (it previously failed that one command and logged a spurious
   "1 commands failed"; the block itself was always recorded). And the master's
   PPLNT per-worker time tracking — dead since the node-redis v6 migration
-  (`init.ts` still used the v3 `multi().exec(cb)` API, a silent no-op, so
+  (`src/init.ts` still used the v3 `multi().exec(cb)` API, a silent no-op, so
   `timesCurrent` was never written) — now uses `execCommands`, so PPLNT time
   data is recorded again.
 
 ## Known issues & limitations
 
-- **Limited test coverage** — `npm test` just boots `init.ts`; `npm run test:unit`
+- **Limited test coverage** — `npm test` just boots `src/init.ts`; `npm run test:unit`
   covers only pure logic helpers, with no coverage for the share/payment/stats
   Redis logic.
 - **Profit switching** is now driven by the live price feed
-  (`profitSwitch.js`, gated off by default), but its coin-switch path has not
+  (`src/profitSwitch.ts`, gated off by default), but its coin-switch path has not
   been validated on a running multi-coin pool yet.
 - **MySQL path** (MPOS compatibility) still uses the legacy `mysql` package.
 
@@ -82,35 +82,38 @@ and the stack as a whole.
 ## Roadmap
 
 ### Near-term
+
 - Complete the VIPSTARCOIN mainnet config and verify a real payout.
 - Verify Susucoin end-to-end (mining + payout); the daemon now builds and the
   pool is enabled.
 - Verify Yenten dev-fee payouts on mainnet (height ≥ 2,030,000).
-- Add a CI step that does more than boot `init.ts` (e.g. lint + a headless
+- Add a CI step that does more than boot `src/init.ts` (e.g. lint + a headless
   config-parse / Redis round-trip check).
 
 ### Mid-term
+
 - Add unit tests for `shareProcessor`, `paymentProcessor` and `stats` against
   a local Redis.
 - Replace `mysql` with `mysql2`, or drop MPOS mode if unused.
 - **Real-time price feeds** _(implemented)_ — a `priceFeed` worker polls
   CoinGecko and CoinPaprika with per-symbol fallback (more providers are
-  pluggable via `libs/priceProviders.ts`) and stores prices in Redis under
+  pluggable via `src/priceProviders.ts`) and stores prices in Redis under
   `priceFeed:prices`, served by the JSON API at `/api/prices`, shown as a
   live ticker on the stats page, and consumed by profit switching
   (`profitSwitch.ts`). Remaining: record the coin price at payout time.
 
 ### Long-term
+
 - **Consolidate the three repos into a single monorepo** — the portal, the
   Stratum library and the hashing addon are developed as one unit, so a
   monorepo (e.g. npm workspaces) would remove the cross-repo git-dependency
   pinning, the `npm link` chain, the per-repo CI duplication, and the
   three-way release dance. This is the intended end state of the stack.
 - **Modern web UI** _(implemented)_ — a Vite + React + TypeScript SPA in `web/`
-  consuming the existing JSON API (`libs/api.ts`).
+  consuming the existing JSON API (`src/api.ts`).
 - **Metrics endpoint (Prometheus)** _(implemented)_ — pool/worker/algo
   hashrate, shares, blocks, network stats and live prices are exposed in the
-  exposition format at `/api/metrics` (`libs/metrics.ts`).
+  exposition format at `/api/metrics` (`src/metrics.ts`).
 - **Tagged-release workflow** _(implemented)_ — pushing a `vX.Y.Z` tag runs
   `.github/workflows/release.yml`, which checks the tag matches `package.json`
   and publishes a GitHub Release with auto-generated notes (a hyphenated semver
@@ -125,7 +128,7 @@ and the stack as a whole.
 ## Architecture & robustness
 
 Beyond individual features, a deeper modernization of the application
-*structure* itself — to make it more robust and easier to work with. The
+_structure_ itself — to make it more robust and easier to work with. The
 portal still follows the original NOMP shape (a `cluster` master forking
 workers that talk over IPC, modules issuing raw Redis commands). The frontend
 is now a React/Vite SPA and the codebase is TypeScript, but the layering and
@@ -133,6 +136,7 @@ test-coverage items below remain. Several Focus-area items below are facets of
 this.
 
 ### Type safety & layering
+
 - ~~Migrate the portal and the sibling libraries to **TypeScript**~~ _(done —
   portal + node-stratum-pool are TypeScript; node-multi-hashing's native binding
   stays JS)._
@@ -143,6 +147,7 @@ this.
 - Use dependency injection so each component is unit-testable in isolation.
 
 ### Configuration & process model
+
 - **Schema-validated configuration** (e.g. zod) with helpful errors,
   12-factor environment overrides, and hot reload — replacing the
   hand-parsed JSON config.
@@ -151,6 +156,7 @@ this.
   out and scaled independently.
 
 ### Robustness
+
 - Process-wide **error boundaries** and graceful shutdown; a supervised
   worker-restart strategy driven by health checks.
 - **Idempotent, transactional payment processing** so a retry can never
@@ -161,6 +167,7 @@ this.
   (mock daemon + Redis), and end-to-end (regtest).
 
 ### Developer & operator experience
+
 - A **one-command dev environment** (docker-compose / devcontainer).
 - **Architecture docs and ADRs**, plus a setup wizard / CLI that scaffolds and
   validates first-time configuration.
@@ -171,9 +178,10 @@ Cross-cutting improvement themes that span the near/mid/long-term items above.
 Monorepo consolidation is deferred; these are the active priorities.
 
 ### Modernization
+
 - ~~Replace the `dot`-template frontend with a modern SPA built on the existing
   JSON API~~ _(done — `web/` is a Vite + React + TypeScript SPA consuming
-  `libs/api.ts` / `libs/workerapi.ts` and the new `/api/config`)._
+  `src/api.ts` / `src/workerapi.ts` and the new `/api/config`)._
 - ~~Evaluate TypeScript for the portal and the sibling libraries~~ _(done —
   migrated; see "Type safety & layering")._
 - Keep the toolchain current (ESLint/Prettier, Node LTS, routine dependency
@@ -191,6 +199,7 @@ Monorepo consolidation is deferred; these are the active priorities.
   support.
 
 ### Security hardening
+
 - Keep dependencies patched (Dependabot + `npm audit`); dev-only advisories
   are already pinned via package.json `overrides`.
 - Move daemon RPC credentials out of plaintext `pool_configs/*.json` into
@@ -204,6 +213,7 @@ Monorepo consolidation is deferred; these are the active priorities.
   server's banning/vardiff in node-stratum-pool).
 
 ### Observability
+
 - Prometheus-compatible metrics endpoint (pool/worker hashrate, valid and
   invalid shares, blocks found, payment totals, per-daemon reachability).
 - Structured (JSON) logging plus health / readiness endpoints.
@@ -213,6 +223,7 @@ Monorepo consolidation is deferred; these are the active priorities.
   into the PWA).
 
 ### Containerization
+
 - A `Dockerfile` for the portal (multi-stage; compiles the native addon with
   GCC 10+).
 - A `docker-compose` stack wiring the portal, Redis, and coin daemons for
@@ -220,6 +231,7 @@ Monorepo consolidation is deferred; these are the active priorities.
 - Kubernetes manifests / a Helm chart for production.
 
 ### Miner experience
+
 - Additional reward schemes (PPS, PPLNS, solo) on top of the current
   PROP/PPLNT modes.
 - Per-worker minimum-payout threshold and payout address configurable by the
@@ -227,7 +239,9 @@ Monorepo consolidation is deferred; these are the active priorities.
 - Richer hashrate-history graphs and custom worker labels.
 
 ### Price & profitability services
+
 Built on the real-time price feeds above:
+
 - Fiat-denominated (USD / JPY / ...) earnings and balances on the dashboard.
 - A profitability calculator (hashrate → estimated reward / day) and a
   price ticker / chart.
@@ -244,18 +258,21 @@ Built on the real-time price feeds above:
   optimization and per-algorithm dashboards.
 
 ### Operations & reliability
+
 - Hot-reload of pool configs (add or change pools without restarting workers).
 - Automated CD (tag → deploy) and a documented backup/restore procedure for
   the Redis data (shares, balances, stats).
 - A public status page.
 
 ### Documentation
+
 - An "add a coin" guide covering the steps to wire a new coin through the
   three repos (coin definition, algorithm, daemon, pool config).
 - An operations runbook (incident response, daemon-desync recovery, payout
   reconciliation).
 
 ### Mining clients & onboarding
+
 - **Browser mining** — an opt-in, WebAssembly-based in-browser miner: Web
   Workers hashing through a WASM build of node-multi-hashing, connected via a
   WebSocket→stratum bridge (tracked in node-stratum-pool). Zero-install and
