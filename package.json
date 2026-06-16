@@ -38,12 +38,12 @@
         "url": "git+https://github.com/ROZ-MOFUMOFU-ME/zny-nomp.git"
     },
     "scripts": {
-        "start": "node src/init.ts",
+        "start": "node --import tsx src/init.ts",
         "lint": "eslint src/init.ts",
         "lint:fix": "eslint src/init.ts --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "test": "node src/init.ts",
+        "test": "node --import tsx src/init.ts",
         "test:unit": "node --test test/*.test.ts test/*.test.mjs",
         "check:config": "node scripts/check-config.mjs",
         "typecheck": "tsc --noEmit",
@@ -60,7 +60,8 @@
         "node-json-minify": "^3.0.0",
         "node-watch": "^0.7.4",
         "redis": "^6.0.0",
-        "stratum-pool": "https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#develop"
+        "stratum-pool": "https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool.git#develop",
+        "tsx": "^4.22.4"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

@@ -4,7 +4,7 @@
 
 This is a Yescrypt, YesPoWer, YesPoWerSUGAR, YescryptR8G, Lyra2REv2, sha256d, Quark, x11, vipstar and more algo mining pool based off of Node Open Mining Portal. Coins known to work include BitZeny, Koto, Monacoin, Bellcoin, Sugarchain, KumaCoin, Yenten (dev-fee aware) and VIPSTARCOIN.
 
-The backend is written in **TypeScript** and runs **buildless** via Node's native type-stripping (no compile step — `.ts` runs directly), and the web frontend is a **React + Vite** single-page app (in `web/`) that consumes the portal's JSON API.
+The backend is written in **TypeScript** and runs **buildless** — `.ts` runs directly with no compile step, launched through the **`tsx`** loader (Node's built-in type-stripping refuses the TypeScript `stratum-pool`/`multi-hashing` git dependencies that sit under `node_modules`, so `tsx` transforms them at runtime). The web frontend is a **React + Vite** single-page app (in `web/`) that consumes the portal's JSON API.
 
 **Roadmap:** see [ROADMAP.md](ROADMAP.md) for current status, known issues, and planned improvements (this portal is developed together with [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) and [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing), which have their own roadmaps).
 
@@ -476,8 +476,18 @@ are commented in [scripts/blocknotify.c](scripts/blocknotify.c).
 #### 3) Start the portal
 
 ```bash
-npm start
+npm start          # = node --import tsx src/init.ts
 ```
+
+`npm start` launches the portal through the **`tsx`** loader. The
+`stratum-pool` / `multi-hashing` dependencies ship TypeScript, and Node's
+built-in type-stripping refuses `.ts` files under `node_modules`
+(`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`); `tsx` transforms them at
+runtime, and since the cluster master forks workers with the same `execArgv`,
+every worker inherits the loader. This means a plain `npm install` (or `npm ci`
+/ Docker) just works — no `npm link` needed. If startup instead fails with
+`Cannot find module .../stratum-pool/src/util.ts`, your lockfile is pinned to
+an older `stratum-pool` commit; run `npm update stratum-pool` to advance it.
 
 #### Running with Docker
 
