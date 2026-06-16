@@ -28,22 +28,22 @@
         "TheSeven",
         "Yoshuki43"
     ],
-    "main": "init.js",
+    "main": "init.ts",
     "type": "module",
     "bin": {
-        "block-notify": "./scripts/cli.js"
+        "block-notify": "./scripts/cli.ts"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ROZ-MOFUMOFU-ME/zny-nomp.git"
     },
     "scripts": {
-        "start": "node init.js",
-        "lint": "eslint init.js",
-        "lint:fix": "eslint init.js --fix",
+        "start": "node init.ts",
+        "lint": "eslint init.ts",
+        "lint:fix": "eslint init.ts --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "test": "node init.js",
+        "test": "node init.ts",
         "test:unit": "node --test test/*.test.ts test/*.test.mjs",
         "check:config": "node scripts/check-config.mjs",
         "typecheck": "tsc --noEmit"
@@ -76,7 +76,8 @@
         "eslint": "^10.5.0",
         "eslint-config-prettier": "^10.1.8",
         "prettier": "^3.8.4",
-        "typescript": "^6.0.3"
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.61.1"
     },
     "engines": {
         "node": ">=22.18.0",

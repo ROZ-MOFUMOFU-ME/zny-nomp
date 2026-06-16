@@ -1,11 +1,13 @@
 import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default [
-    js.configs.recommended,
     {
-        files: ['init.js'], // Only lint init.js
+        // Entry point only (the libs are covered by `tsc --noEmit` + prettier).
+        files: ['init.ts'],
         languageOptions: {
+            parser: tseslint.parser,
             parserOptions: {
                 ecmaVersion: 2022,
                 sourceType: 'module'
@@ -26,22 +28,19 @@ export default [
                 setTimeout: 'readonly',
                 clearTimeout: 'readonly',
                 setInterval: 'readonly',
-                clearInterval: 'readonly',
-                // Browser globals for website files
-                window: 'readonly',
-                document: 'readonly',
-                navigator: 'readonly',
-                // jQuery and other common libraries
-                $: 'readonly',
-                jQuery: 'readonly',
-                d3: 'readonly',
-                nv: 'readonly'
+                clearInterval: 'readonly'
             }
         },
+        plugins: {
+            '@typescript-eslint': tseslint.plugin
+        },
         rules: {
+            ...js.configs.recommended.rules,
             'no-var': 'error',
             'prefer-const': 'error',
-            'no-unused-vars': [
+            // core no-unused-vars is not TS-aware; use the typescript-eslint one
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': [
                 'warn',
                 {
                     varsIgnorePattern: '^_',
@@ -49,7 +48,7 @@ export default [
                     caughtErrorsIgnorePattern: '^_'
                 }
             ],
-            'no-undef': 'off', // Disable for now as many legacy globals
+            'no-undef': 'off', // TS handles name resolution
             'no-redeclare': 'error'
         }
     },

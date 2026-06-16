@@ -45,7 +45,7 @@ if (
     process.env.REDIS_PORT ||
     process.env.REDIS_PASSWORD !== undefined
 ) {
-    const applyRedisEnv = function (redis) {
+    const applyRedisEnv = function (redis: any) {
         if (!redis) return;
         if (process.env.REDIS_HOST) redis.host = process.env.REDIS_HOST;
         if (process.env.REDIS_PORT)
@@ -58,7 +58,7 @@ if (
         applyRedisEnv(portalConfig.defaultPoolConfigs.redis);
 }
 
-let poolConfigs;
+let poolConfigs: any;
 
 const logger = new PoolLogger({
     logLevel: portalConfig.logLevel,
@@ -91,15 +91,15 @@ async function init() {
             }
         } finally {
             // Find out which user used sudo through the environment variable
-            const uid = parseInt(process.env.SUDO_UID);
+            const uid = parseInt(process.env.SUDO_UID as string);
             // Set our server's uid to that user
             if (uid) {
-                process.setuid(uid);
+                (process as any).setuid(uid);
                 logger.debug(
                     'POSIX',
                     'Connection Limit',
                     'Raised to 100K concurrent connections, now running as non-root user: ' +
-                        process.getuid()
+                        (process as any).getuid()
                 );
             }
         }
@@ -116,19 +116,19 @@ async function init() {
     if (cluster.isWorker) {
         switch (process.env.workerType) {
             case 'pool':
-                new PoolWorker(logger);
+                new (PoolWorker as any)(logger);
                 break;
             case 'paymentProcessor':
-                new PaymentProcessor(logger);
+                new (PaymentProcessor as any)(logger);
                 break;
             case 'website':
-                new Website(logger);
+                new (Website as any)(logger);
                 break;
             case 'profitSwitch':
-                new ProfitSwitch(logger);
+                new (ProfitSwitch as any)(logger);
                 break;
             case 'priceFeed':
-                new PriceFeed(logger);
+                new (PriceFeed as any)(logger);
                 break;
         }
         return;
@@ -145,13 +145,13 @@ async function init() {
 
 //Read all pool configs from pool_configs and join them with their coin profile
 const buildPoolConfigs = function () {
-    const configs = {};
+    const configs: any = {};
     const configDir = 'pool_configs/';
 
-    const poolConfigFiles = [];
+    const poolConfigFiles: any[] = [];
 
     /* Get filenames of pool config json files that are enabled */
-    fs.readdirSync(configDir).forEach(function (file) {
+    fs.readdirSync(configDir).forEach(function (file: string) {
         if (
             !fs.existsSync(configDir + file) ||
             path.extname(configDir + file) !== '.json'
@@ -202,7 +202,7 @@ const buildPoolConfigs = function () {
         }
     }
 
-    poolConfigFiles.forEach(function (poolOptions) {
+    poolConfigFiles.forEach(function (poolOptions: any) {
         poolOptions.coinFileName = poolOptions.coin;
 
         const coinFilePath = 'coins/' + poolOptions.coinFileName;
@@ -303,7 +303,7 @@ const buildPoolConfigs = function () {
     return configs;
 };
 
-function roundTo(n, digits) {
+function roundTo(n: number, digits?: number) {
     if (digits === undefined) {
         digits = 0;
     }
@@ -313,14 +313,14 @@ function roundTo(n, digits) {
     return +test.toFixed(digits);
 }
 
-const _lastStartTimes = [];
-const _lastShareTimes = [];
+const _lastStartTimes: any = [];
+const _lastShareTimes: any = [];
 
 const spawnPoolWorkers = function () {
-    let redisConfig;
-    let connection;
+    let redisConfig: any;
+    let connection: any;
 
-    Object.keys(poolConfigs).forEach(function (coin) {
+    Object.keys(poolConfigs).forEach(function (coin: string) {
         const pcfg = poolConfigs[coin];
         if (!Array.isArray(pcfg.daemons) || pcfg.daemons.length < 1) {
             logger.error(
@@ -331,7 +331,7 @@ const spawnPoolWorkers = function () {
             delete poolConfigs[coin];
         } else if (!connection) {
             redisConfig = pcfg.redis;
-            connection = createRedisClient(redisConfig, function (err) {
+            connection = createRedisClient(redisConfig, function (err: any) {
                 logger.error(
                     'PPLNT',
                     coin,
@@ -375,10 +375,10 @@ const spawnPoolWorkers = function () {
         return portalConfig.clustering.forks;
     })();
 
-    const poolWorkers = {};
+    const poolWorkers: any = {};
 
-    const createPoolWorker = function (forkId) {
-        const worker = cluster.fork({
+    const createPoolWorker = function (forkId: number) {
+        const worker: any = cluster.fork({
             workerType: 'pool',
             forkId: forkId,
             pools: serializedConfigs,
@@ -388,7 +388,7 @@ const spawnPoolWorkers = function () {
         worker.type = 'pool';
         poolWorkers[forkId] = worker;
         worker
-            .on('exit', function (_code, _signal) {
+            .on('exit', function (_code: any, _signal: any) {
                 logger.error(
                     'Master',
                     'PoolSpawner',
@@ -398,12 +398,14 @@ const spawnPoolWorkers = function () {
                     createPoolWorker(forkId);
                 }, 2000);
             })
-            .on('message', function (msg) {
+            .on('message', function (msg: any) {
                 switch (msg.type) {
                     case 'banIP':
-                        Object.keys(cluster.workers).forEach(function (id) {
-                            if (cluster.workers[id].type === 'pool') {
-                                cluster.workers[id].send({
+                        Object.keys(cluster.workers as any).forEach(function (
+                            id: string
+                        ) {
+                            if ((cluster.workers as any)[id].type === 'pool') {
+                                (cluster.workers as any)[id].send({
                                     type: 'banIP',
                                     ip: msg.ip
                                 });
@@ -470,7 +472,7 @@ const spawnPoolWorkers = function () {
                                 ]);
                                 //logger.debug('PPLNT', msg.coin, 'Thread '+msg.thread, workerAddress+':{totalTimeSec:'+timeChangeTotal+', timeChangeSec:'+timeChangeSec+'}');
                                 execCommands(connection, redisCommands).catch(
-                                    function (err) {
+                                    function (err: any) {
                                         logger.error(
                                             'PPLNT',
                                             msg.coin,
@@ -526,48 +528,59 @@ const spawnPoolWorkers = function () {
 const startCliListener = function () {
     const cliPort = portalConfig.cliPort;
 
-    const listener = new CliListener(cliPort);
+    const listener = new (CliListener as any)(cliPort);
     listener
-        .on('log', function (text) {
+        .on('log', function (text: any) {
             logger.debug('Master', 'CLI', text);
         })
-        .on('command', function (command, params, options, reply) {
-            switch (command) {
-                case 'blocknotify':
-                    Object.keys(cluster.workers).forEach(function (id) {
-                        cluster.workers[id].send({
-                            type: 'blocknotify',
-                            coin: params[0],
-                            hash: params[1]
+        .on(
+            'command',
+            function (command: any, params: any, options: any, reply: any) {
+                switch (command) {
+                    case 'blocknotify':
+                        Object.keys(cluster.workers as any).forEach(function (
+                            id: string
+                        ) {
+                            (cluster.workers as any)[id].send({
+                                type: 'blocknotify',
+                                coin: params[0],
+                                hash: params[1]
+                            });
                         });
-                    });
-                    reply('Pool workers notified');
-                    break;
-                case 'coinswitch':
-                    processCoinSwitchCommand(params, options, reply);
-                    break;
-                case 'reloadpool':
-                    Object.keys(cluster.workers).forEach(function (id) {
-                        cluster.workers[id].send({
-                            type: 'reloadpool',
-                            coin: params[0]
+                        reply('Pool workers notified');
+                        break;
+                    case 'coinswitch':
+                        processCoinSwitchCommand(params, options, reply);
+                        break;
+                    case 'reloadpool':
+                        Object.keys(cluster.workers as any).forEach(function (
+                            id: string
+                        ) {
+                            (cluster.workers as any)[id].send({
+                                type: 'reloadpool',
+                                coin: params[0]
+                            });
                         });
-                    });
-                    reply('reloaded pool ' + params[0]);
-                    break;
-                default:
-                    reply('unrecognized command "' + command + '"');
-                    break;
+                        reply('reloaded pool ' + params[0]);
+                        break;
+                    default:
+                        reply('unrecognized command "' + command + '"');
+                        break;
+                }
             }
-        })
+        )
         .start();
 };
 
-const processCoinSwitchCommand = function (params, options, reply) {
+const processCoinSwitchCommand = function (
+    params: any,
+    options: any,
+    reply: any
+) {
     const logSystem = 'CLI';
     const logComponent = 'coinswitch';
 
-    const replyError = function (msg) {
+    const replyError = function (msg: any) {
         reply(msg);
         logger.error(logSystem, logComponent, msg);
     };
@@ -587,7 +600,7 @@ const processCoinSwitchCommand = function (params, options, reply) {
         return;
     } else if (
         options.algorithm &&
-        !Object.keys(portalConfig.switching).filter(function (s) {
+        !Object.keys(portalConfig.switching).filter(function (s: any) {
             return portalConfig.switching[s].algorithm === options.algorithm;
         })[0]
     ) {
@@ -598,7 +611,7 @@ const processCoinSwitchCommand = function (params, options, reply) {
     }
 
     const messageCoin = params[0].toLowerCase();
-    const newCoin = Object.keys(poolConfigs).filter(function (p) {
+    const newCoin = Object.keys(poolConfigs).filter(function (p: any) {
         return p.toLowerCase() === messageCoin;
     })[0];
 
@@ -623,7 +636,7 @@ const processCoinSwitchCommand = function (params, options, reply) {
         }
     }
 
-    switchNames.forEach(function (name) {
+    switchNames.forEach(function (name: any) {
         if (
             poolConfigs[newCoin].coin.algorithm !==
             portalConfig.switching[name].algorithm
@@ -640,8 +653,8 @@ const processCoinSwitchCommand = function (params, options, reply) {
             return;
         }
 
-        Object.keys(cluster.workers).forEach(function (id) {
-            cluster.workers[id].send({
+        Object.keys(cluster.workers as any).forEach(function (id: string) {
+            (cluster.workers as any)[id].send({
                 type: 'coinswitch',
                 coin: newCoin,
                 switchName: name
@@ -670,7 +683,7 @@ const startPaymentProcessor = function () {
         workerType: 'paymentProcessor',
         pools: JSON.stringify(poolConfigs)
     });
-    worker.on('exit', function (_code, _signal) {
+    worker.on('exit', function (_code: any, _signal: any) {
         logger.error(
             'Master',
             'Payment Processor',
@@ -690,7 +703,7 @@ const startWebsite = function () {
         pools: JSON.stringify(poolConfigs),
         portalConfig: JSON.stringify(portalConfig)
     });
-    worker.on('exit', function (_code, _signal) {
+    worker.on('exit', function (_code: any, _signal: any) {
         logger.error(
             'Master',
             'Website',
@@ -713,7 +726,7 @@ const startProfitSwitch = function () {
         pools: JSON.stringify(poolConfigs),
         portalConfig: JSON.stringify(portalConfig)
     });
-    worker.on('exit', function (_code, _signal) {
+    worker.on('exit', function (_code: any, _signal: any) {
         logger.error(
             'Master',
             'Profit',
@@ -735,7 +748,7 @@ const startPriceFeed = function () {
         pools: JSON.stringify(poolConfigs),
         portalConfig: JSON.stringify(portalConfig)
     });
-    worker.on('exit', function (_code, _signal) {
+    worker.on('exit', function (_code: any, _signal: any) {
         logger.error(
             'Master',
             'PriceFeed',

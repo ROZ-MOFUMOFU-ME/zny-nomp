@@ -1,20 +1,20 @@
 import net from 'node:net';
 
-var defaultPort = 17117;
-var defaultHost = '127.0.0.1';
+const defaultPort = 17117;
+const defaultHost = '127.0.0.1';
 
-var args = process.argv.slice(2);
-var params = [];
-var options = {};
+const args = process.argv.slice(2);
+const params: string[] = [];
+const options: any = {};
 
-for (var i = 0; i < args.length; i++) {
+for (let i = 0; i < args.length; i++) {
     if (args[i].indexOf('-') === 0 && args[i].indexOf('=') !== -1) {
-        var s = args[i].substr(1).split('=');
+        const s = args[i].substr(1).split('=');
         options[s[0]] = s[1];
     } else params.push(args[i]);
 }
 
-var command = params.shift();
+const command = params.shift();
 
 var client = net
     .connect(
@@ -30,7 +30,7 @@ var client = net
             );
         }
     )
-    .on('error', function (error) {
+    .on('error', function (error: any) {
         if (error.code === 'ECONNREFUSED')
             console.log(
                 'Could not connect to NOMP instance at ' +
