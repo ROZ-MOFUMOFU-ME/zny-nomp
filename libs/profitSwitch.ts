@@ -5,6 +5,7 @@ import * as StratumUtil from 'stratum-pool/lib/util.js';
 import { createRedisClient } from './redisUtil.ts';
 import { parsePriceHash } from './priceProviders.ts';
 import { rankProfitability, decideSwitches } from './profitSwitchLogic.ts';
+import type { Logger } from './logUtil.ts';
 
 /*
  * Profit switching, driven by the live price feed.
@@ -25,9 +26,9 @@ const DIFF1 = BigInt(
     '0x00000000ffff0000000000000000000000000000000000000000000000000000'
 );
 
-export default function (logger) {
-    const portalConfig = JSON.parse(process.env.portalConfig);
-    const poolConfigs = JSON.parse(process.env.pools);
+export default function (this: any, logger: Logger) {
+    const portalConfig = JSON.parse(process.env.portalConfig as string);
+    const poolConfigs = JSON.parse(process.env.pools as string);
     const logSystem = 'Profit';
     const cfg = portalConfig.profitSwitch || {};
 
@@ -48,8 +49,8 @@ export default function (logger) {
     }
 
     // Candidate coins = pool coins whose algorithm is switchable.
-    const coinsByAlgo = {};
-    const coinMeta = {};
+    const coinsByAlgo: any = {};
+    const coinMeta: any = {};
     Object.keys(poolConfigs).forEach(function (name) {
         const coin = poolConfigs[name].coin;
         if (!coin || !switchAlgos.has(coin.algorithm)) return;
@@ -80,7 +81,7 @@ export default function (logger) {
         portalConfig.redis ||
         (portalConfig.defaultPoolConfigs &&
             portalConfig.defaultPoolConfigs.redis);
-    const redis = createRedisClient(redisConfig, function (err) {
+    const redis = createRedisClient(redisConfig, function (err: any) {
         logger.error(
             logSystem,
             'Redis',
@@ -92,22 +93,22 @@ export default function (logger) {
     const threshold = cfg.threshold || 1.0;
     const cliPort = portalConfig.cliPort;
 
-    const getDaemonInfo = function (name, callback) {
+    const getDaemonInfo = function (name: string, callback: any) {
         const meta = coinMeta[name];
         if (!meta.daemon) {
             callback(null, null);
             return;
         }
         const daemon = new Stratum.daemon.interface([meta.daemon], function (
-            severity,
-            message
+            severity: string,
+            message: string
         ) {
-            logger[severity](logSystem, name, message);
+            (logger as any)[severity](logSystem, name, message);
         });
         daemon.cmd(
             'getblocktemplate',
             [{ capabilities: ['coinbasetxn', 'workid', 'coinbase/append'] }],
-            function (result) {
+            function (result: any) {
                 if (
                     !result ||
                     !result[0] ||
@@ -149,7 +150,7 @@ export default function (logger) {
 
     // Trigger a switch through the validated CLI path (processCoinSwitchCommand
     // in init.js broadcasts the coinswitch IPC to the pool workers).
-    const sendSwitch = function (coin, algo) {
+    const sendSwitch = function (coin: string, algo: string) {
         const payload =
             JSON.stringify({
                 command: 'coinswitch',
@@ -159,7 +160,7 @@ export default function (logger) {
         const client = net.connect(cliPort, '127.0.0.1', function () {
             client.write(payload);
         });
-        client.on('data', function (d) {
+        client.on('data', function (d: any) {
             logger.debug(
                 logSystem,
                 'Switch',
@@ -167,7 +168,7 @@ export default function (logger) {
             );
             client.end();
         });
-        client.on('error', function (e) {
+        client.on('error', function (e: any) {
             logger.error(
                 logSystem,
                 'Switch',
@@ -176,19 +177,19 @@ export default function (logger) {
         });
     };
 
-    const roundScores = function (scores) {
-        const o = {};
+    const roundScores = function (scores: any) {
+        const o: any = {};
         Object.keys(scores).forEach(function (k) {
             o[k] = Number(scores[k].toPrecision(6));
         });
         return o;
     };
 
-    this.runOnce = function (done) {
+    this.runOnce = function (done?: any) {
         done = done || function () {};
         redis
             .hGetAll('priceFeed:prices')
-            .then(function (raw) {
+            .then(function (raw: any) {
                 const prices = parsePriceHash(raw);
                 if (Object.keys(prices).length === 0)
                     logger.warning(
@@ -196,24 +197,24 @@ export default function (logger) {
                         'Prices',
                         'priceFeed:prices is empty — is the priceFeed worker enabled?'
                     );
-                return redis.hGetAll('proxyState').then(function (state) {
+                return redis.hGetAll('proxyState').then(function (state: any) {
                     const currentByAlgo = state || {};
-                    const names = [];
+                    const names: any[] = [];
                     activeAlgos.forEach(function (a) {
-                        coinsByAlgo[a].forEach(function (n) {
+                        coinsByAlgo[a].forEach(function (n: string) {
                             names.push(n);
                         });
                     });
                     async.map(
                         names,
-                        function (name, cb) {
-                            getDaemonInfo(name, function (_e, info) {
+                        function (name: string, cb: any) {
+                            getDaemonInfo(name, function (_e: any, info: any) {
                                 cb(null, { name: name, info: info });
                             });
                         },
-                        function (_err, results) {
-                            const table = {};
-                            results.forEach(function (r) {
+                        function (_err: any, results: any) {
+                            const table: any = {};
+                            results.forEach(function (r: any) {
                                 if (!r.info) return;
                                 const meta = coinMeta[r.name];
                                 const row = meta.symbol
@@ -261,7 +262,7 @@ export default function (logger) {
                                 );
                             } else {
                                 actions.forEach(function (a) {
-                                    logger.info(
+                                    (logger as any).info(
                                         logSystem,
                                         'Switch',
                                         'Switching ' +
@@ -279,7 +280,7 @@ export default function (logger) {
                     );
                 });
             })
-            .catch(function (err) {
+            .catch(function (err: any) {
                 logger.error(
                     logSystem,
                     'Redis',

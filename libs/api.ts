@@ -1,13 +1,20 @@
-import stats from './stats.js';
+import stats from './stats.ts';
 import { createRedisClient } from './redisUtil.ts';
 import { parsePriceHash } from './priceProviders.ts';
 import { renderMetrics } from './metrics.ts';
 import { buildHealth } from './health.ts';
+import type { Logger } from './logUtil.ts';
+import type { Request, Response, NextFunction } from 'express';
 
-export default function (logger, portalConfig, poolConfigs) {
+export default function (
+    this: any,
+    logger: Logger,
+    portalConfig: any,
+    poolConfigs: any
+) {
     var _this = this;
 
-    var portalStats = (this.stats = new stats(
+    var portalStats = (this.stats = new (stats as any)(
         logger,
         portalConfig,
         poolConfigs
@@ -17,26 +24,33 @@ export default function (logger, portalConfig, poolConfigs) {
 
     // Read-only client for the price feed the priceFeed worker publishes to
     // Redis (priceFeed:prices / priceFeed:lastUpdated). Empty until enabled.
-    var priceClient = createRedisClient(portalConfig.redis, function (err) {
-        logger.error('API', 'prices', 'Redis error: ' + (err && err.message));
-    });
+    var priceClient = createRedisClient(
+        portalConfig.redis,
+        function (err: any) {
+            logger.error(
+                'API',
+                'prices',
+                'Redis error: ' + (err && err.message)
+            );
+        }
+    );
 
-    this.getPrices = function (callback) {
+    this.getPrices = function (callback: (data: any) => void) {
         priceClient
             .hGetAll('priceFeed:prices')
-            .then(function (raw) {
+            .then(function (raw: any) {
                 var prices = parsePriceHash(raw);
-                return priceClient
-                    .get('priceFeed:lastUpdated')
-                    .then(function (ts) {
-                        callback({
-                            updated: ts ? parseInt(ts, 10) : null,
-                            count: Object.keys(prices).length,
-                            prices: prices
-                        });
+                return priceClient.get('priceFeed:lastUpdated').then(function (
+                    ts: any
+                ) {
+                    callback({
+                        updated: ts ? parseInt(ts, 10) : null,
+                        count: Object.keys(prices).length,
+                        prices: prices
                     });
+                });
             })
-            .catch(function (err) {
+            .catch(function (err: any) {
                 logger.error(
                     'API',
                     'prices',
@@ -46,7 +60,11 @@ export default function (logger, portalConfig, poolConfigs) {
             });
     };
 
-    this.handleApiRequest = function (req, res, next) {
+    this.handleApiRequest = function (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
         switch (req.params.method) {
             case 'stats':
                 res.header('Content-Type', 'application/json');
@@ -58,7 +76,7 @@ export default function (logger, portalConfig, poolConfigs) {
                 return;
             case 'prices':
                 res.header('Content-Type', 'application/json');
-                _this.getPrices(function (data) {
+                _this.getPrices(function (data: any) {
                     res.end(JSON.stringify(data));
                 });
                 return;
@@ -84,7 +102,7 @@ export default function (logger, portalConfig, poolConfigs) {
             }
             case 'blocks':
             case 'getblocksstats':
-                portalStats.getBlocks(function (data) {
+                portalStats.getBlocks(function (data: any) {
                     res.header('Content-Type', 'application/json');
                     res.end(JSON.stringify(data));
                 });
@@ -106,9 +124,9 @@ export default function (logger, portalConfig, poolConfigs) {
                 if (req.url.indexOf('?') > 0) {
                     var url_parms = req.url.split('?');
                     if (url_parms.length > 0) {
-                        var history = {};
-                        var workers = {};
-                        var address = url_parms[1] || null;
+                        var history: any = {};
+                        var workers: any = {};
+                        var address: any = url_parms[1] || null;
                         //res.end(portalStats.getWorkerStats(address));
                         if (address != null && address.length > 0) {
                             // make sure it is just the miners address
@@ -116,12 +134,14 @@ export default function (logger, portalConfig, poolConfigs) {
                             // get miners balance along with worker balances
                             portalStats.getBalanceByAddress(
                                 address,
-                                function (balances) {
+                                function (balances: any) {
                                     // get current round share total
                                     portalStats.getTotalSharesByAddress(
                                         address,
-                                        function (shares) {
-                                            var totalHash = parseFloat(0.0);
+                                        function (shares: any) {
+                                            var totalHash = parseFloat(
+                                                0.0 as any
+                                            );
                                             var totalShares = shares;
                                             var networkHash = 0;
                                             for (var h in portalStats.statHistory) {
@@ -263,7 +283,7 @@ export default function (logger, portalConfig, poolConfigs) {
                 res.write('\n');
                 var uid = Math.random().toString();
                 _this.liveStatConnections[uid] = res;
-                res.flush();
+                (res as any).flush();
                 req.on('close', function () {
                     delete _this.liveStatConnections[uid];
                 });
@@ -273,7 +293,11 @@ export default function (logger, portalConfig, poolConfigs) {
         }
     };
 
-    this.handleAdminApiRequest = function (req, res, next) {
+    this.handleAdminApiRequest = function (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
         switch (req.params.method) {
             case 'pools': {
                 res.end(JSON.stringify({ result: poolConfigs }));

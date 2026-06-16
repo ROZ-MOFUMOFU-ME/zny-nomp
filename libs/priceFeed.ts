@@ -8,6 +8,7 @@ import {
     buildIdMaps,
     collectPrices
 } from './priceProviders.ts';
+import type { Logger } from './logUtil.ts';
 
 /*
  * Real-time price feed worker.
@@ -24,10 +25,10 @@ import {
  * config. Coins map to provider ids via priceFeed.coins or a provider-named
  * field on a coin profile (coin.coingecko / coin.coinpaprika).
  */
-export default function (logger) {
+export default function (this: any, logger: Logger) {
     const _this = this;
-    const portalConfig = JSON.parse(process.env.portalConfig);
-    const poolConfigs = JSON.parse(process.env.pools);
+    const portalConfig = JSON.parse(process.env.portalConfig as string);
+    const poolConfigs = JSON.parse(process.env.pools as string);
     const logSystem = 'PriceFeed';
     const cfg = portalConfig.priceFeed || {};
 
@@ -37,7 +38,7 @@ export default function (logger) {
         Array.isArray(cfg.providers) && cfg.providers.length
             ? cfg.providers
             : DEFAULT_PROVIDER_ORDER
-    ).filter(function (n) {
+    ).filter(function (n: any) {
         const p = PROVIDERS[n];
         if (!p) {
             logger.warning(
@@ -67,13 +68,13 @@ export default function (logger) {
     }
 
     // SYMBOL -> coin profile (so coin.coingecko / coin.coinpaprika are usable).
-    const coinProfiles = {};
+    const coinProfiles: any = {};
     Object.keys(poolConfigs).forEach(function (coin) {
         const c = poolConfigs[coin] && poolConfigs[coin].coin;
         if (c && c.symbol) coinProfiles[String(c.symbol).toUpperCase()] = c;
     });
 
-    const coinsCfg = upperKeyMap(cfg.coins);
+    const coinsCfg: any = upperKeyMap(cfg.coins);
     const vsList = parseVsCurrencies(cfg.vsCurrency || 'usd');
     const symbols = gatherSymbols(order, coinsCfg, coinProfiles);
     if (symbols.length === 0) {
@@ -85,7 +86,7 @@ export default function (logger) {
         return;
     }
     const idMaps = buildIdMaps(order, symbols, coinsCfg, coinProfiles);
-    const orderedProviders = order.map(function (n) {
+    const orderedProviders = order.map(function (n: any) {
         return PROVIDERS[n];
     });
 
@@ -96,7 +97,7 @@ export default function (logger) {
         portalConfig.redis ||
         (portalConfig.defaultPoolConfigs &&
             portalConfig.defaultPoolConfigs.redis);
-    const redis = createRedisClient(redisConfig, function (err) {
+    const redis = createRedisClient(redisConfig, function (err: any) {
         logger.error(
             logSystem,
             'Redis',
@@ -111,14 +112,14 @@ export default function (logger) {
             timeout: timeout,
             fetchImpl: globalThis.fetch,
             providerOpts: cfg,
-            onProviderError: function (name, e) {
+            onProviderError: function (name: any, e: any) {
                 logger.warning(
                     logSystem,
                     name,
                     'Provider request failed: ' + (e && e.message)
                 );
             },
-            onItemError: function (name, sym, e) {
+            onItemError: function (name: any, sym: any, e: any) {
                 logger.debug(
                     logSystem,
                     name,
@@ -137,7 +138,7 @@ export default function (logger) {
                     (result.errors.length
                         ? ' (' +
                           result.errors
-                              .map(function (e) {
+                              .map(function (e: any) {
                                   return e.provider;
                               })
                               .join(', ') +
@@ -147,7 +148,7 @@ export default function (logger) {
             return;
         }
 
-        const hset = ['hset', 'priceFeed:prices'];
+        const hset: any[] = ['hset', 'priceFeed:prices'];
         syms.forEach(function (s) {
             hset.push(s, JSON.stringify(rows[s]));
         });
@@ -156,7 +157,7 @@ export default function (logger) {
                 hset,
                 ['set', 'priceFeed:lastUpdated', String(now)]
             ]);
-        } catch (e) {
+        } catch (e: any) {
             logger.error(
                 logSystem,
                 'Redis',
@@ -166,12 +167,12 @@ export default function (logger) {
         }
 
         // Summarise: how many from each provider, and anything still missing.
-        const bySrc = {};
+        const bySrc: any = {};
         syms.forEach(function (s) {
             const src = result.servedBy[s];
             (bySrc[src] = bySrc[src] || []).push(s);
         });
-        const unresolved = symbols.filter(function (s) {
+        const unresolved = symbols.filter(function (s: any) {
             return !rows[s];
         });
         logger.debug(

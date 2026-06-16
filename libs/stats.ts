@@ -1,5 +1,6 @@
 import async from 'async';
 import algos from 'stratum-pool/lib/algoProperties.js';
+import type { Logger } from './logUtil.ts';
 import { createRedisClient } from './redisUtil.ts';
 import { parsePriceHash } from './priceProviders.ts';
 import {
@@ -11,13 +12,18 @@ import {
     sortWorkersByHashrate
 } from './statsUtil.ts';
 
-export default function (logger, portalConfig, poolConfigs) {
-    var _this = this;
+export default function (
+    this: any,
+    logger: Logger,
+    portalConfig: any,
+    poolConfigs: any
+) {
+    var _this: any = this;
 
     var logSystem = 'Stats';
 
-    var redisClients = [];
-    var redisStats;
+    var redisClients: any[] = [];
+    var redisStats: any;
 
     this.statHistory = [];
     this.statPoolHistory = [];
@@ -36,19 +42,19 @@ export default function (logger, portalConfig, poolConfigs) {
     this.updatePriceData = function () {
         redisStats
             .hGetAll('priceFeed:prices')
-            .then(function (raw) {
-                return redisStats
-                    .get('priceFeed:lastUpdated')
-                    .then(function (ts) {
-                        var prices = parsePriceHash(raw);
-                        _this.priceData = {
-                            updated: ts ? parseInt(ts, 10) : null,
-                            count: Object.keys(prices).length,
-                            prices: prices
-                        };
-                    });
+            .then(function (raw: any) {
+                return redisStats.get('priceFeed:lastUpdated').then(function (
+                    ts: any
+                ) {
+                    var prices = parsePriceHash(raw);
+                    _this.priceData = {
+                        updated: ts ? parseInt(ts, 10) : null,
+                        count: Object.keys(prices).length,
+                        prices: prices
+                    };
+                });
             })
-            .catch(function (err) {
+            .catch(function (err: any) {
                 logger.error(
                     logSystem,
                     'Prices',
@@ -90,7 +96,7 @@ export default function (logger, portalConfig, poolConfigs) {
             coins: [coin],
             host: redisConfig.host,
             port: redisConfig.port,
-            client: createRedisClient(redisConfig, function (err) {
+            client: createRedisClient(redisConfig, function (err: any) {
                 logger.error(
                     logSystem,
                     'Redis',
@@ -101,7 +107,7 @@ export default function (logger, portalConfig, poolConfigs) {
     });
 
     function setupStatsRedis() {
-        redisStats = createRedisClient(portalConfig.redis, function (err) {
+        redisStats = createRedisClient(portalConfig.redis, function (err: any) {
             logger.error(
                 logSystem,
                 'Historics',
@@ -110,11 +116,11 @@ export default function (logger, portalConfig, poolConfigs) {
         });
     }
 
-    this.getBlocks = function (cback) {
-        var allBlocks = {};
+    this.getBlocks = function (cback: (data: any) => void) {
+        var allBlocks: any = {};
         async.each(
             _this.stats.pools,
-            function (pool, pcb) {
+            function (pool: any, pcb: any) {
                 if (
                     _this.stats.pools[pool.name].pending &&
                     _this.stats.pools[pool.name].pending.blocks
@@ -152,7 +158,7 @@ export default function (logger, portalConfig, poolConfigs) {
 
                 pcb();
             },
-            function (err) {
+            function (err: any) {
                 cback(allBlocks);
             }
         );
@@ -166,18 +172,21 @@ export default function (logger, portalConfig, poolConfigs) {
         ).toString();
         redisStats
             .zRangeByScore('statHistory', retentionTime, '+inf')
-            .then(function (replies) {
+            .then(function (replies: any) {
                 for (var i = 0; i < replies.length; i++) {
                     _this.statHistory.push(JSON.parse(replies[i]));
                 }
-                _this.statHistory = _this.statHistory.sort(function (a, b) {
+                _this.statHistory = _this.statHistory.sort(function (
+                    a: any,
+                    b: any
+                ) {
                     return a.time - b.time;
                 });
-                _this.statHistory.forEach(function (stats) {
+                _this.statHistory.forEach(function (stats: any) {
                     addStatPoolHistory(stats);
                 });
             })
-            .catch(function (err) {
+            .catch(function (err: any) {
                 logger.error(
                     logSystem,
                     'Historics',
@@ -187,7 +196,12 @@ export default function (logger, portalConfig, poolConfigs) {
             });
     }
 
-    function getWorkerStats(address) {
+    function getWorkerStats(address: any) {
+        // NOTE: `statHistory`, `history`, `workers` and `stats` are referenced
+        // below but never declared in scope — this function is dead code (never
+        // assigned to `this`/called). Declared here as `any` so the file
+        // type-checks under strict mode without altering runtime behavior.
+        var statHistory: any, history: any, workers: any, stats: any;
         address = address.split('.')[0];
         if (address.length > 0 && address.startsWith('t')) {
             for (var h in statHistory) {
@@ -226,8 +240,8 @@ export default function (logger, portalConfig, poolConfigs) {
         return null;
     }
 
-    function addStatPoolHistory(stats) {
-        var data = {
+    function addStatPoolHistory(stats: any) {
+        var data: any = {
             time: stats.time,
             pools: {}
         };
@@ -244,39 +258,42 @@ export default function (logger, portalConfig, poolConfigs) {
     var magnitude = 100000000;
     var coinPrecision = magnitude.toString().length - 1;
 
-    var satoshisToCoins = function (satoshis) {
+    var satoshisToCoins = function (satoshis: any) {
         return roundTo(satoshis / magnitude, coinPrecision);
     };
 
-    var coinsToSatoshies = function (coins) {
+    var coinsToSatoshies = function (coins: any) {
         return Math.round(coins * magnitude);
     };
 
-    function coinsRound(number) {
+    function coinsRound(number: any) {
         return roundTo(number, coinPrecision);
     }
 
-    this.getCoins = function (cback) {
+    this.getCoins = function (cback: () => void) {
         _this.stats.coins = redisClients[0].coins;
         cback();
     };
 
-    this.getPayout = function (address, cback) {
+    this.getPayout = function (address: any, cback: (data: any) => void) {
         async.waterfall(
             [
-                function (callback) {
+                function (callback: any) {
                     _this.getBalanceByAddress(address, function () {
                         callback(null, 'test');
                     });
                 }
             ],
-            function (err, total) {
+            function (err: any, total: any) {
                 cback(coinsRound(total).toFixed(8));
             }
         );
     };
 
-    this.getTotalSharesByAddress = function (address, cback) {
+    this.getTotalSharesByAddress = function (
+        address: any,
+        cback: (data: any) => void
+    ) {
         var a = address.split('.')[0];
         var client = redisClients[0].client;
 
@@ -287,19 +304,19 @@ export default function (logger, portalConfig, poolConfigs) {
             return;
         }
 
-        var totalShares = parseFloat(0);
+        var totalShares = parseFloat('0' as any);
         async.each(
             pools,
-            function (pool, pcb) {
+            function (pool: any, pcb: any) {
                 var coin = String(pools[pool.name].name);
                 client
                     .hScan(coin + ':shares:roundCurrent', '0', {
                         MATCH: a + '*',
                         COUNT: 1000
                     })
-                    .then(function (result) {
+                    .then(function (result: any) {
                         var shares = 0;
-                        result.entries.forEach(function (entry) {
+                        result.entries.forEach(function (entry: any) {
                             shares += parseFloat(entry.value);
                         });
                         if (shares > 0) {
@@ -307,11 +324,11 @@ export default function (logger, portalConfig, poolConfigs) {
                         }
                         pcb();
                     })
-                    .catch(function (error) {
+                    .catch(function (error: any) {
                         pcb(error);
                     });
             },
-            function (err) {
+            function (err: any) {
                 // Always invoke the callback — even on error or when no pool had
                 // shares — otherwise the worker_stats request hangs and the page
                 // never populates.
@@ -320,15 +337,18 @@ export default function (logger, portalConfig, poolConfigs) {
         );
     };
 
-    this.getBalanceByAddress = function (address, cback) {
+    this.getBalanceByAddress = function (
+        address: any,
+        cback: (data: any) => void
+    ) {
         var a = address.split('.')[0];
 
         var client = redisClients[0].client,
-            balances = [];
+            balances: any[] = [];
 
-        var totalHeld = parseFloat(0);
-        var totalPaid = parseFloat(0);
-        var totalImmature = parseFloat(0);
+        var totalHeld = parseFloat('0' as any);
+        var totalPaid = parseFloat('0' as any);
+        var totalImmature = parseFloat('0' as any);
 
         var pools = _this.stats.pools;
         if (!pools || Object.keys(pools).length === 0) {
@@ -345,7 +365,7 @@ export default function (logger, portalConfig, poolConfigs) {
 
         async.each(
             pools,
-            function (pool, pcb) {
+            function (pool: any, pcb: any) {
                 var coin = String(pools[pool.name].name);
                 var scanOptions = { MATCH: a + '*', COUNT: 10000 };
                 Promise.all([
@@ -354,28 +374,28 @@ export default function (logger, portalConfig, poolConfigs) {
                     client.hScan(coin + ':balances', '0', scanOptions),
                     client.hScan(coin + ':payouts', '0', scanOptions)
                 ])
-                    .then(function (results) {
+                    .then(function (results: any) {
                         var pends = results[0].entries;
                         var bals = results[1].entries;
                         var pays = results[2].entries;
 
-                        var workers = {};
+                        var workers: any = {};
 
-                        pays.forEach(function (entry) {
+                        pays.forEach(function (entry: any) {
                             var workerName = String(entry.field);
                             workers[workerName] = workers[workerName] || {};
                             var paidAmount = parseFloat(entry.value);
                             workers[workerName].paid = coinsRound(paidAmount);
                             totalPaid += paidAmount;
                         });
-                        bals.forEach(function (entry) {
+                        bals.forEach(function (entry: any) {
                             var workerName = String(entry.field);
                             workers[workerName] = workers[workerName] || {};
                             var balAmount = parseFloat(entry.value);
                             workers[workerName].balance = coinsRound(balAmount);
                             totalHeld += balAmount;
                         });
-                        pends.forEach(function (entry) {
+                        pends.forEach(function (entry: any) {
                             var workerName = String(entry.field);
                             workers[workerName] = workers[workerName] || {};
                             var pendingAmount = parseFloat(entry.value);
@@ -395,11 +415,11 @@ export default function (logger, portalConfig, poolConfigs) {
 
                         pcb();
                     })
-                    .catch(function (error) {
+                    .catch(function (error: any) {
                         pcb(error);
                     });
             },
-            function (err) {
+            function (err: any) {
                 // Read by the miner_stats template to render the page — always set.
                 _this.stats.address = address;
 
@@ -428,14 +448,14 @@ export default function (logger, portalConfig, poolConfigs) {
         );
     };
 
-    this.getGlobalStats = function (callback) {
+    this.getGlobalStats = function (callback: () => void) {
         var statGatherTime = (Date.now() / 1000) | 0;
 
-        var allCoinStats = {};
+        var allCoinStats: any = {};
 
         async.each(
             redisClients,
-            function (client, callback) {
+            function (client: any, callback: any) {
                 var windowTime = (
                     (Date.now() / 1000 -
                         portalConfig.website.stats.hashrateWindow) |
@@ -446,7 +466,7 @@ export default function (logger, portalConfig, poolConfigs) {
                 var commandsPerCoin = 12;
 
                 var multi = client.client.multi();
-                client.coins.forEach(function (coin) {
+                client.coins.forEach(function (coin: any) {
                     multi
                         .zRemRangeByScore(
                             coin + ':hashrate',
@@ -468,7 +488,7 @@ export default function (logger, portalConfig, poolConfigs) {
 
                 multi
                     .exec()
-                    .catch(function (err) {
+                    .catch(function (err: any) {
                         logger.error(
                             logSystem,
                             'Global',
@@ -478,7 +498,7 @@ export default function (logger, portalConfig, poolConfigs) {
                         callback(err);
                         return null;
                     })
-                    .then(function (replies) {
+                    .then(function (replies: any) {
                         if (replies) {
                             for (
                                 var i = 0;
@@ -487,7 +507,7 @@ export default function (logger, portalConfig, poolConfigs) {
                             ) {
                                 var coinName =
                                     client.coins[(i / commandsPerCoin) | 0];
-                                var marketStats = {};
+                                var marketStats: any = {};
                                 if (replies[i + 2]) {
                                     if (replies[i + 2].coinmarketcap) {
                                         marketStats = replies[i + 2]
@@ -497,7 +517,7 @@ export default function (logger, portalConfig, poolConfigs) {
                                             : 0;
                                     }
                                 }
-                                var coinStats = {
+                                var coinStats: any = {
                                     name: coinName,
                                     blockTime:
                                         poolConfigs[coinName].coin.blockTime,
@@ -604,7 +624,7 @@ export default function (logger, portalConfig, poolConfigs) {
                         }
                     });
             },
-            function (err) {
+            function (err: any) {
                 if (err) {
                     logger.error(
                         logSystem,
@@ -615,7 +635,7 @@ export default function (logger, portalConfig, poolConfigs) {
                     return;
                 }
 
-                var portalStats = {
+                var portalStats: any = {
                     time: statGatherTime,
                     global: {
                         workers: 0,
@@ -630,7 +650,7 @@ export default function (logger, portalConfig, poolConfigs) {
                     coinStats.workers = {};
                     coinStats.miners = {};
                     coinStats.shares = 0;
-                    coinStats.hashrates.forEach(function (ins) {
+                    coinStats.hashrates.forEach(function (ins: any) {
                         var parts = ins.split(':');
                         var workerShares = parseFloat(parts[0]);
                         var miner = parts[1].split('.')[0];
@@ -726,7 +746,8 @@ export default function (logger, portalConfig, poolConfigs) {
                     );
 
                     var shareMultiplier =
-                        Math.pow(2, 32) / algos[coinStats.algorithm].multiplier;
+                        Math.pow(2, 32) /
+                        (algos as any)[coinStats.algorithm].multiplier;
                     coinStats.hashrate =
                         (shareMultiplier * coinStats.shares) /
                         portalConfig.website.stats.hashrateWindow;
@@ -770,8 +791,8 @@ export default function (logger, portalConfig, poolConfigs) {
                         coinStats.workers
                     ).length;
 
-                    var _shareTotal = parseFloat(0);
-                    var _maxTimeShare = parseFloat(0);
+                    var _shareTotal = parseFloat('0' as any);
+                    var _maxTimeShare = parseFloat('0' as any);
                     for (var worker in coinStats.currentRoundShares) {
                         var miner = worker.split('.')[0];
                         if (miner in coinStats.miners) {
@@ -920,7 +941,7 @@ export default function (logger, portalConfig, poolConfigs) {
                         '(' + retentionTime
                     )
                     .exec()
-                    .catch(function (err) {
+                    .catch(function (err: any) {
                         logger.error(
                             logSystem,
                             'Historics',

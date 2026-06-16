@@ -6,11 +6,11 @@ import extend from 'extend';
 import { createRedisClient, execCommands } from './libs/redisUtil.ts';
 import PoolLogger from './libs/logUtil.ts';
 import CliListener from './libs/cliListener.ts';
-import PoolWorker from './libs/poolWorker.js';
-import PaymentProcessor from './libs/paymentProcessor.js';
-import Website from './libs/website.js';
-import ProfitSwitch from './libs/profitSwitch.js';
-import PriceFeed from './libs/priceFeed.js';
+import PoolWorker from './libs/poolWorker.ts';
+import PaymentProcessor from './libs/paymentProcessor.ts';
+import Website from './libs/website.ts';
+import ProfitSwitch from './libs/profitSwitch.ts';
+import PriceFeed from './libs/priceFeed.ts';
 import algos from 'stratum-pool/lib/algoProperties.js';
 import jsonMinify from 'node-json-minify';
 

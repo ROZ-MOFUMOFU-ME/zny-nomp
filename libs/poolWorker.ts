@@ -6,28 +6,33 @@ import { createRedisClient } from './redisUtil.ts';
 import MposCompatibility from './mposCompatibility.ts';
 import ShareProcessor from './shareProcessor.ts';
 
-export default function (logger) {
+import type { Logger } from './logUtil.ts';
+
+export default function (this: any, logger: Logger) {
     var _this = this;
 
-    var poolConfigs = JSON.parse(process.env.pools);
-    var portalConfig = JSON.parse(process.env.portalConfig);
+    var poolConfigs = JSON.parse(process.env.pools as string);
+    var portalConfig = JSON.parse(process.env.portalConfig as string);
 
     var forkId = process.env.forkId;
 
-    var pools = {};
+    var pools: any = {};
 
-    var proxySwitch = {};
+    var proxySwitch: any = {};
 
-    var redisClient = createRedisClient(portalConfig.redis, function (err) {
-        logger.error(
-            'Pool',
-            'Redis',
-            'Thread ' + (parseInt(forkId) + 1),
-            'Redis client had an error: ' + JSON.stringify(err.message)
-        );
-    });
+    var redisClient = createRedisClient(
+        portalConfig.redis,
+        function (err: any) {
+            logger.error(
+                'Pool',
+                'Redis',
+                'Thread ' + (parseInt(forkId as string) + 1),
+                'Redis client had an error: ' + JSON.stringify(err.message)
+            );
+        }
+    );
     //Handle messages from master process sent via IPC
-    process.on('message', function (message) {
+    process.on('message', function (message: any) {
         switch (message.type) {
             case 'banIP':
                 for (var p in pools) {
@@ -54,7 +59,7 @@ export default function (logger) {
             case 'coinswitch':
                 var logSystem = 'Proxy';
                 var logComponent = 'Switch';
-                var logSubCat = 'Thread ' + (parseInt(forkId) + 1);
+                var logSubCat = 'Thread ' + (parseInt(forkId as string) + 1);
 
                 var switchName = message.switchName;
 
@@ -92,7 +97,7 @@ export default function (logger) {
 
                 if (newPool) {
                     oldPool.relinquishMiners(
-                        function (miner, cback) {
+                        function (miner: any, cback: any) {
                             // relinquish miners that are attached to one of the "Auto-switch" ports and leave the others there.
                             cback(
                                 proxyPorts.indexOf(
@@ -100,7 +105,7 @@ export default function (logger) {
                                 ) !== -1
                             );
                         },
-                        function (clients) {
+                        function (clients: any) {
                             newPool.attachMiners(clients);
                         }
                     );
@@ -116,7 +121,7 @@ export default function (logger) {
                                 'Last proxy state saved to redis for ' + algo
                             );
                         })
-                        .catch(function (error) {
+                        .catch(function (error: any) {
                             logger.error(
                                 logSystem,
                                 logComponent,
@@ -135,9 +140,9 @@ export default function (logger) {
 
         var logSystem = 'Pool';
         var logComponent = coin;
-        var logSubCat = 'Thread ' + (parseInt(forkId) + 1);
+        var logSubCat = 'Thread ' + (parseInt(forkId as string) + 1);
 
-        var handlers = {
+        var handlers: any = {
             auth: function () {},
             share: function () {},
             diff: function () {}
@@ -145,35 +150,45 @@ export default function (logger) {
 
         //Functions required for MPOS compatibility
         if (poolOptions.mposMode && poolOptions.mposMode.enabled) {
-            var mposCompat = new MposCompatibility(logger, poolOptions);
+            var mposCompat = new (MposCompatibility as any)(
+                logger,
+                poolOptions
+            );
 
             handlers.auth = function (
-                port,
-                workerName,
-                password,
-                authCallback
+                port: any,
+                workerName: any,
+                password: any,
+                authCallback: any
             ) {
                 mposCompat.handleAuth(workerName, password, authCallback);
             };
 
-            handlers.share = function (isValidShare, isValidBlock, data) {
+            handlers.share = function (
+                isValidShare: any,
+                isValidBlock: any,
+                data: any
+            ) {
                 mposCompat.handleShare(isValidShare, isValidBlock, data);
             };
 
-            handlers.diff = function (workerName, diff) {
+            handlers.diff = function (workerName: any, diff: any) {
                 mposCompat.handleDifficultyUpdate(workerName, diff);
             };
         }
 
         //Functions required for internal payment processing
         else {
-            var shareProcessor = new ShareProcessor(logger, poolOptions);
+            var shareProcessor = new (ShareProcessor as any)(
+                logger,
+                poolOptions
+            );
 
             handlers.auth = function (
-                port,
-                workerName,
-                password,
-                authCallback
+                port: any,
+                workerName: any,
+                password: any,
+                authCallback: any
             ) {
                 if (poolOptions.validateWorkerUsername !== true)
                     authCallback(true);
@@ -181,9 +196,9 @@ export default function (logger) {
                     pool.daemon.cmd(
                         'validateaddress',
                         [String(workerName).split('.')[0]],
-                        function (results) {
+                        function (results: any) {
                             var isValid =
-                                results.filter(function (r) {
+                                results.filter(function (r: any) {
                                     if (r.response) return r.response.isvalid;
                                     return false;
                                 }).length > 0;
@@ -193,107 +208,131 @@ export default function (logger) {
                 }
             };
 
-            handlers.share = function (isValidShare, isValidBlock, data) {
+            handlers.share = function (
+                isValidShare: any,
+                isValidBlock: any,
+                data: any
+            ) {
                 shareProcessor.handleShare(isValidShare, isValidBlock, data);
             };
         }
 
-        var authorizeFN = function (ip, port, workerName, password, callback) {
-            handlers.auth(port, workerName, password, function (authorized) {
-                var authString = authorized ? 'Authorized' : 'Unauthorized ';
+        var authorizeFN = function (
+            ip: any,
+            port: any,
+            workerName: any,
+            password: any,
+            callback: any
+        ) {
+            handlers.auth(
+                port,
+                workerName,
+                password,
+                function (authorized: any) {
+                    var authString = authorized
+                        ? 'Authorized'
+                        : 'Unauthorized ';
 
-                logger.debug(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    authString +
-                        ' ' +
-                        workerName +
-                        ':' +
-                        password +
-                        ' [' +
-                        ip +
-                        ']'
-                );
-                callback({
-                    error: null,
-                    authorized: authorized,
-                    disconnect: false
-                });
-            });
-        };
-
-        var pool = Stratum.createPool(poolOptions, authorizeFN, logger); // factory method on imported namespace
-        pool.on('share', function (isValidShare, isValidBlock, data) {
-            if (data.worker != undefined)
-                data.worker = data.worker.replace(/:/g, '-');
-
-            var shareData = JSON.stringify(data);
-
-            if (data.blockHash && !isValidBlock)
-                logger.debug(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    'We thought a block was found but it was rejected by the daemon, share data: ' +
-                        shareData
-                );
-            else if (isValidBlock)
-                logger.debug(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    'Block found: ' + data.blockHash + ' by ' + data.worker
-                );
-
-            if (isValidShare) {
-                if (data.shareDiff > 1000000000) {
                     logger.debug(
                         logSystem,
                         logComponent,
                         logSubCat,
-                        'Share was found with diff higher than 1.000.000.000!'
+                        authString +
+                            ' ' +
+                            workerName +
+                            ':' +
+                            password +
+                            ' [' +
+                            ip +
+                            ']'
                     );
-                    //} else if(data.shareDiff > 1000000) {
-                    //    logger.debug(logSystem, logComponent, logSubCat, 'Share was found with diff higher than 1.000.000!');
+                    callback({
+                        error: null,
+                        authorized: authorized,
+                        disconnect: false
+                    });
                 }
-                logger.debug(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    'Share accepted at diff ' +
-                        data.difficulty +
-                        '/' +
-                        data.shareDiff +
-                        ' by ' +
-                        data.worker +
-                        ' [' +
-                        data.ip +
-                        ']'
-                );
-            } else if (!isValidShare) {
-                logger.debug(
-                    logSystem,
-                    logComponent,
-                    logSubCat,
-                    'Share rejected: ' + shareData
-                );
+            );
+        };
+
+        var pool = (Stratum as any).createPool(
+            poolOptions,
+            authorizeFN,
+            logger
+        ); // factory method on imported namespace
+        pool.on(
+            'share',
+            function (isValidShare: any, isValidBlock: any, data: any) {
+                if (data.worker != undefined)
+                    data.worker = data.worker.replace(/:/g, '-');
+
+                var shareData = JSON.stringify(data);
+
+                if (data.blockHash && !isValidBlock)
+                    logger.debug(
+                        logSystem,
+                        logComponent,
+                        logSubCat,
+                        'We thought a block was found but it was rejected by the daemon, share data: ' +
+                            shareData
+                    );
+                else if (isValidBlock)
+                    logger.debug(
+                        logSystem,
+                        logComponent,
+                        logSubCat,
+                        'Block found: ' + data.blockHash + ' by ' + data.worker
+                    );
+
+                if (isValidShare) {
+                    if (data.shareDiff > 1000000000) {
+                        logger.debug(
+                            logSystem,
+                            logComponent,
+                            logSubCat,
+                            'Share was found with diff higher than 1.000.000.000!'
+                        );
+                        //} else if(data.shareDiff > 1000000) {
+                        //    logger.debug(logSystem, logComponent, logSubCat, 'Share was found with diff higher than 1.000.000!');
+                    }
+                    logger.debug(
+                        logSystem,
+                        logComponent,
+                        logSubCat,
+                        'Share accepted at diff ' +
+                            data.difficulty +
+                            '/' +
+                            data.shareDiff +
+                            ' by ' +
+                            data.worker +
+                            ' [' +
+                            data.ip +
+                            ']'
+                    );
+                } else if (!isValidShare) {
+                    logger.debug(
+                        logSystem,
+                        logComponent,
+                        logSubCat,
+                        'Share rejected: ' + shareData
+                    );
+                }
+
+                // handle the share
+                handlers.share(isValidShare, isValidBlock, data);
+
+                // send to master for pplnt time tracking
+                process.send!({
+                    type: 'shareTrack',
+                    thread: parseInt(forkId as string) + 1,
+                    coin: poolOptions.coin.name,
+                    isValidShare: isValidShare,
+                    isValidBlock: isValidBlock,
+                    data: data
+                });
             }
-
-            // handle the share
-            handlers.share(isValidShare, isValidBlock, data);
-
-            // send to master for pplnt time tracking
-            process.send({
-                type: 'shareTrack',
-                thread: parseInt(forkId) + 1,
-                coin: poolOptions.coin.name,
-                isValidShare: isValidShare,
-                isValidBlock: isValidBlock,
-                data: data
-            });
-        })
-            .on('difficultyUpdate', function (workerName, diff) {
+        )
+            .on('difficultyUpdate', function (workerName: any, diff: any) {
                 logger.debug(
                     logSystem,
                     logComponent,
@@ -305,11 +344,16 @@ export default function (logger) {
                 );
                 handlers.diff(workerName, diff);
             })
-            .on('log', function (severity, text) {
-                logger[severity](logSystem, logComponent, logSubCat, text);
+            .on('log', function (severity: any, text: any) {
+                (logger as any)[severity](
+                    logSystem,
+                    logComponent,
+                    logSubCat,
+                    text
+                );
             })
-            .on('banIP', function (ip, worker) {
-                process.send({ type: 'banIP', ip: ip });
+            .on('banIP', function (ip: any, worker: any) {
+                process.send!({ type: 'banIP', ip: ip });
             })
             .on('started', function () {
                 _this.setDifficultyForProxyPort(
@@ -326,9 +370,9 @@ export default function (logger) {
     if (portalConfig.switching) {
         var logSystem = 'Switching';
         var logComponent = 'Setup';
-        var logSubCat = 'Thread ' + (parseInt(forkId) + 1);
+        var logSubCat = 'Thread ' + (parseInt(forkId as string) + 1);
 
-        var proxyState = {};
+        var proxyState: any = {};
 
         //
         // Load proxy state for each algorithm from redis which allows NOMP to resume operation
@@ -350,7 +394,7 @@ export default function (logger) {
             .catch(function () {
                 return {};
             })
-            .then(function (obj) {
+            .then(function (obj: any) {
                 if (obj && Object.keys(obj).length > 0) {
                     proxyState = obj;
                     logger.debug(
@@ -440,7 +484,7 @@ export default function (logger) {
             });
     }
 
-    this.getFirstPoolForAlgorithm = function (algorithm) {
+    this.getFirstPoolForAlgorithm = function (algorithm: any) {
         var foundCoin = '';
         Object.keys(poolConfigs).forEach(function (coinName) {
             if (poolConfigs[coinName].coin.algorithm == algorithm) {
@@ -454,7 +498,11 @@ export default function (logger) {
     // Called when stratum pool emits its 'started' event to copy the initial diff and vardiff
     // configuation for any proxy switching ports configured into the stratum pool object.
     //
-    this.setDifficultyForProxyPort = function (pool, coin, algo) {
+    this.setDifficultyForProxyPort = function (
+        pool: any,
+        coin: any,
+        algo: any
+    ) {
         logger.debug(
             logSystem,
             logComponent,

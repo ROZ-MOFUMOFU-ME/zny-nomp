@@ -9,22 +9,23 @@ import express from 'express';
 import compress from 'compression';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/lib/util.js';
-import api from './api.js';
+import api from './api.ts';
+import type { Logger } from './logUtil.ts';
 
-export default function (logger) {
+export default function (this: any, logger: Logger) {
     dot.templateSettings.strip = false;
 
-    var portalConfig = JSON.parse(process.env.portalConfig);
-    var poolConfigs = JSON.parse(process.env.pools);
+    var portalConfig: any = JSON.parse(process.env.portalConfig as string);
+    var poolConfigs: any = JSON.parse(process.env.pools as string);
 
     var websiteConfig = portalConfig.website;
 
-    var portalApi = new api(logger, portalConfig, poolConfigs);
+    var portalApi: any = new (api as any)(logger, portalConfig, poolConfigs);
     var portalStats = portalApi.stats;
 
     var logSystem = 'Website';
 
-    var pageFiles = {
+    var pageFiles: any = {
         'index.html': 'index',
         'home.html': '',
         'getting_started.html': 'getting_started',
@@ -38,13 +39,13 @@ export default function (logger) {
         'payments.html': 'payments'
     };
 
-    var pageTemplates = {};
+    var pageTemplates: any = {};
 
-    var pageProcessed = {};
-    var indexesProcessed = {};
+    var pageProcessed: any = {};
+    var indexesProcessed: any = {};
 
-    var keyScriptTemplate = '';
-    var keyScriptProcessed = '';
+    var keyScriptTemplate: any = '';
+    var keyScriptProcessed: any = '';
 
     var processTemplates = function () {
         for (var pageName in pageTemplates) {
@@ -66,10 +67,10 @@ export default function (logger) {
         //logger.debug(logSystem, 'Stats', 'Website updated to latest stats');
     };
 
-    var readPageFiles = function (files) {
+    var readPageFiles = function (files: any) {
         async.each(
             files,
-            function (fileName, callback) {
+            function (fileName: any, callback: any) {
                 var filePath =
                     'website/' +
                     (fileName === 'index.html' ? '' : 'pages/') +
@@ -99,17 +100,24 @@ export default function (logger) {
 
     // if an html file was changed reload it
     /* requires node-watch 0.5.0 or newer */
-    watch(['./website', './website/pages'], function (evt, filename) {
-        var basename;
-        // support older versions of node-watch automatically
-        if (!filename && evt) basename = path.basename(evt);
-        else basename = path.basename(filename);
+    (watch as any)(
+        ['./website', './website/pages'],
+        function (evt: any, filename: any) {
+            var basename;
+            // support older versions of node-watch automatically
+            if (!filename && evt) basename = path.basename(evt);
+            else basename = path.basename(filename);
 
-        if (basename in pageFiles) {
-            readPageFiles([basename]);
-            logger.special(logSystem, 'Server', 'Reloaded file ' + basename);
+            if (basename in pageFiles) {
+                readPageFiles([basename]);
+                logger.special(
+                    logSystem,
+                    'Server',
+                    'Reloaded file ' + basename
+                );
+            }
         }
-    });
+    );
 
     portalStats.getGlobalStats(function () {
         readPageFiles(Object.keys(pageFiles));
@@ -133,14 +141,14 @@ export default function (logger) {
     var buildKeyScriptPage = function () {
         async.waterfall(
             [
-                function (callback) {
+                function (callback: any) {
                     var client = createRedisClient(portalConfig.redis);
                     client
                         .hGetAll('coinVersionBytes')
-                        .then(function (coinBytes) {
+                        .then(function (coinBytes: any) {
                             callback(null, client, coinBytes || {});
                         })
-                        .catch(function (err) {
+                        .catch(function (err: any) {
                             client.destroy();
                             callback(
                                 'Failed grabbing coin version bytes from redis ' +
@@ -148,24 +156,29 @@ export default function (logger) {
                             );
                         });
                 },
-                function (client, coinBytes, callback) {
+                function (client: any, coinBytes: any, callback: any) {
                     var enabledCoins = Object.keys(poolConfigs).map(
                         function (c) {
                             return c.toLowerCase();
                         }
                     );
-                    var missingCoins = [];
+                    var missingCoins: any = [];
                     enabledCoins.forEach(function (c) {
                         if (!(c in coinBytes)) missingCoins.push(c);
                     });
                     callback(null, client, coinBytes, missingCoins);
                 },
-                function (client, coinBytes, missingCoins, callback) {
-                    var coinsForRedis = {};
+                function (
+                    client: any,
+                    coinBytes: any,
+                    missingCoins: any,
+                    callback: any
+                ) {
+                    var coinsForRedis: any = {};
                     async.each(
                         missingCoins,
-                        function (c, cback) {
-                            var coinInfo = (function () {
+                        function (c: any, cback: any) {
+                            var coinInfo: any = (function () {
                                 for (var pName in poolConfigs) {
                                     if (pName.toLowerCase() === c)
                                         return {
@@ -177,14 +190,18 @@ export default function (logger) {
                             })();
                             var daemon = new Stratum.daemon.interface(
                                 [coinInfo.daemon],
-                                function (severity, message) {
-                                    logger[severity](logSystem, c, message);
+                                function (severity: any, message: any) {
+                                    (logger as any)[severity](
+                                        logSystem,
+                                        c,
+                                        message
+                                    );
                                 }
                             );
                             daemon.cmd(
                                 'dumpprivkey',
                                 [coinInfo.address],
-                                function (result) {
+                                function (result: any) {
                                     if (result[0].error) {
                                         logger.error(
                                             logSystem,
@@ -219,11 +236,16 @@ export default function (logger) {
                         }
                     );
                 },
-                function (client, coinBytes, coinsForRedis, callback) {
+                function (
+                    client: any,
+                    coinBytes: any,
+                    coinsForRedis: any,
+                    callback: any
+                ) {
                     if (Object.keys(coinsForRedis).length > 0) {
                         client
                             .hSet('coinVersionBytes', coinsForRedis)
-                            .catch(function (err) {
+                            .catch(function (err: any) {
                                 logger.error(
                                     logSystem,
                                     'Init',
@@ -242,7 +264,7 @@ export default function (logger) {
             ],
             function (err, coinBytes) {
                 if (err) {
-                    logger.error(logSystem, 'Init', err);
+                    logger.error(logSystem, 'Init', err as any);
                     return;
                 }
                 try {
@@ -265,14 +287,14 @@ export default function (logger) {
         );
     };
 
-    var getPage = function (pageId) {
+    var getPage = function (pageId: any) {
         if (pageId in pageProcessed) {
             var requestedPage = pageProcessed[pageId];
             return requestedPage;
         }
     };
 
-    var minerpage = function (req, res, next) {
+    var minerpage = function (req: any, res: any, next: any) {
         var address = req.params.address || null;
         if (address != null) {
             address = address.split('.')[0];
@@ -284,24 +306,24 @@ export default function (logger) {
         } else next();
     };
 
-    var payout = function (req, res, next) {
+    var payout = function (req: any, res: any, next: any) {
         var address = req.params.address || null;
         if (address != null) {
-            portalStats.getPayout(address, function (data) {
+            portalStats.getPayout(address, function (data: any) {
                 res.write(data.toString());
                 res.end();
             });
         } else next();
     };
 
-    var shares = function (req, res, next) {
+    var shares = function (req: any, res: any, next: any) {
         portalStats.getCoins(function () {
             processTemplates();
             res.end(indexesProcessed['user_shares']);
         });
     };
 
-    var usershares = function (req, res, next) {
+    var usershares = function (req: any, res: any, next: any) {
         var coin = req.params.coin || null;
         if (coin != null) {
             portalStats.getCoinTotals(coin, null, function () {
@@ -311,7 +333,7 @@ export default function (logger) {
         } else next();
     };
 
-    var route = function (req, res, next) {
+    var route = function (req: any, res: any, next: any) {
         var pageId = req.params.page || '';
         var acceptLanguage = req.headers['accept-language'];
         let language = 'en';
@@ -341,7 +363,7 @@ export default function (logger) {
             ];
             const languages = acceptLanguage
                 .split(',')
-                .map((lang) => lang.split(';')[0].trim());
+                .map((lang: any) => lang.split(';')[0].trim());
 
             for (let lang of languages) {
                 if (supportedLanguages.includes(lang)) {
@@ -404,7 +426,7 @@ export default function (logger) {
     app.use(compress());
     app.use('/static', express.static('website/static'));
 
-    app.use(function (err, req, res, next) {
+    app.use(function (err: any, req: any, res: any, next: any) {
         console.error(err.stack);
         res.status(500).send('Something broke!');
     });
