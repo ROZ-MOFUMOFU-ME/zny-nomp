@@ -25,11 +25,11 @@ const LANG_LABELS: Record<string, string> = {
 };
 
 export default function LanguageSelect() {
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
     return (
         <select
             className="rounded-md border border-navhover bg-bg px-2 py-1.5 text-sm text-white"
-            aria-label="Language"
+            aria-label={t('common_language')}
             value={i18n.resolvedLanguage}
             onChange={(e) => {
                 void i18n.changeLanguage(e.target.value);

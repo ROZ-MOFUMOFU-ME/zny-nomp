@@ -1,31 +1,46 @@
+import { useTranslation } from 'react-i18next';
 import { useLiveStats } from '../api/useLiveStats.tsx';
 import { readableHashRateString, toNum } from '../lib/format.ts';
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export default function TabStats() {
+    const { t } = useTranslation();
     const stats = useLiveStats();
-    if (!stats) return <div className="loading">Loading…</div>;
+    if (!stats) return <div className="loading">{t('tab_loading')}</div>;
     const pools = Object.values(stats.pools);
     return (
         <div>
             <h1 className="page-title">
-                <i className="fas fa-table fa-fw text-accent" /> Tab Stats
+                <i className="fas fa-table fa-fw text-accent" />{' '}
+                {t('tab_title')}
             </h1>
             <div className="overflow-x-auto">
                 <table className="data-table">
                     <thead>
                         <tr>
-                            <th>Pool</th>
-                            <th>Algo</th>
-                            <th className="text-right">Workers</th>
-                            <th className="text-right">Valid</th>
-                            <th className="text-right">Invalid</th>
-                            <th className="text-right">Blocks</th>
-                            <th className="text-right">Pending</th>
-                            <th className="text-right">Confirmed</th>
-                            <th className="text-right">Orphaned</th>
-                            <th className="text-right">Hashrate</th>
+                            <th>{t('tab_th_pool')}</th>
+                            <th>{t('tab_th_algo')}</th>
+                            <th className="text-right">
+                                {t('tab_th_workers')}
+                            </th>
+                            <th className="text-right">{t('tab_th_valid')}</th>
+                            <th className="text-right">
+                                {t('tab_th_invalid')}
+                            </th>
+                            <th className="text-right">{t('tab_th_blocks')}</th>
+                            <th className="text-right">
+                                {t('tab_th_pending')}
+                            </th>
+                            <th className="text-right">
+                                {t('tab_th_confirmed')}
+                            </th>
+                            <th className="text-right">
+                                {t('tab_th_orphaned')}
+                            </th>
+                            <th className="text-right">
+                                {t('tab_th_hashrate')}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

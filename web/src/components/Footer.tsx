@@ -1,8 +1,11 @@
+import { useTranslation } from 'react-i18next';
+
 export default function Footer() {
+    const { t } = useTranslation();
     return (
         <footer className="bg-bg p-4 text-center text-[0.85rem] text-nav [&_a]:text-white [&_i]:opacity-90">
             <div>
-                This site is powered by{' '}
+                {t('footer_powered_by')}{' '}
                 <a
                     target="_blank"
                     rel="noreferrer"
@@ -10,7 +13,7 @@ export default function Footer() {
                 >
                     zny-nomp
                 </a>{' '}
-                project forked by{' '}
+                {t('footer_forked_by')}{' '}
                 <a
                     target="_blank"
                     rel="noreferrer"
@@ -18,20 +21,20 @@ export default function Footer() {
                 >
                     ROZ
                 </a>
-                , created by Joshua Yabut and the Zclassic Community and
-                yoshuki43 originally and is licensed under the{' '}
+                {t('footer_credits')}{' '}
                 <a
                     target="_blank"
                     rel="noreferrer"
                     href="https://en.wikipedia.org/wiki/MIT_License"
                 >
-                    MIT License
+                    {t('footer_mit_license')}
                 </a>
                 .
             </div>
 
             <div className="mt-2.5 break-all text-xs leading-[1.9]">
-                <i className="fas fa-heart fa-fw" /> Donating&nbsp;&nbsp;
+                <i className="fas fa-heart fa-fw" /> {t('footer_donating')}
+                &nbsp;&nbsp;
                 <i className="fab fa-bitcoin fa-fw" /> BTC:
                 3FpbJ5cotwPZQn9fcdZrPv4h72XquzEvez&nbsp;&nbsp;
                 <i className="fab fa-ethereum fa-fw" /> ETH:
@@ -47,7 +50,8 @@ export default function Footer() {
             </div>
 
             <div className="mt-2.5 text-xs leading-[1.9]">
-                <i className="fas fa-comments fa-fw" /> Contact:&nbsp;&nbsp;
+                <i className="fas fa-comments fa-fw" /> {t('footer_contact')}
+                &nbsp;&nbsp;
                 <a
                     target="_blank"
                     rel="noreferrer"
@@ -57,7 +61,10 @@ export default function Footer() {
                     <i className="fab fa-x-twitter fa-fw" />
                 </a>
                 &nbsp;&nbsp;|&nbsp;&nbsp;
-                <a href="mailto:mail@mofumofu.me" aria-label="Email">
+                <a
+                    href="mailto:mail@mofumofu.me"
+                    aria-label={t('common_email')}
+                >
                     <i className="fas fa-envelope fa-fw" />
                 </a>
                 &nbsp;&nbsp;|&nbsp;&nbsp;

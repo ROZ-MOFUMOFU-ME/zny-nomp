@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getConfig } from '../api/client.ts';
 import type { AppConfig, AppConfigPool } from '../api/types.ts';
@@ -11,6 +12,7 @@ const code = 'whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5';
 // running pool. Numeric config fields may arrive as strings, so values that are
 // rendered/compared go through toNum.
 export default function GettingStarted() {
+    const { t } = useTranslation();
     const {
         data: config,
         isLoading,
@@ -20,10 +22,10 @@ export default function GettingStarted() {
     const [selected, setSelected] = useState<string | null>(null);
 
     if (isLoading) {
-        return <div className="loading">Loading…</div>;
+        return <div className="loading">{t('gs_loading')}</div>;
     }
     if (isError || !config) {
-        return <div className="error">Failed to load pool configuration.</div>;
+        return <div className="error">{t('gs_load_failed')}</div>;
     }
 
     const host = config.stratumHost || 'YOUR_POOL_HOST';
@@ -55,38 +57,32 @@ export default function GettingStarted() {
     return (
         <div className="space-y-4">
             <h1 className="page-title">
-                <i className="fas fa-rocket fa-fw text-accent" /> Getting
-                Started
+                <i className="fas fa-rocket fa-fw text-accent" />{' '}
+                {t('gs_title')}
             </h1>
 
             <div className="card">
-                <h2 className="mb-3 text-lg font-bold">How to start mining</h2>
+                <h2 className="mb-3 text-lg font-bold">
+                    {t('gs_how_to_start')}
+                </h2>
                 <ol className="list-decimal space-y-1 pl-5">
-                    <li>
-                        Get a receiving address for the coin you want to mine
-                        from your own wallet (e.g. the coin's official
-                        wallet/daemon) — that address is your mining username.
-                    </li>
-                    <li>
-                        Pick a coin from the list below to see its connection
-                        details.
-                    </li>
-                    <li>
-                        Point your miner at the stratum URL shown for that coin
-                        and use your wallet address as the username.
-                    </li>
+                    <li>{t('gs_step_address')}</li>
+                    <li>{t('gs_step_pick')}</li>
+                    <li>{t('gs_step_connect')}</li>
                 </ol>
                 <p className="muted mt-3">
-                    Tip: the stratum host is{' '}
-                    <code className={code}>{host}</code>. Replace it with the
-                    actual pool hostname if it shows a placeholder.
+                    {t('gs_tip_host_before')}{' '}
+                    <code className={code}>{host}</code>{' '}
+                    {t('gs_tip_host_after')}
                 </p>
             </div>
 
             <div className="card">
-                <h2 className="mb-3 text-lg font-bold">Choose a coin</h2>
+                <h2 className="mb-3 text-lg font-bold">
+                    {t('gs_choose_coin')}
+                </h2>
                 {poolEntries.length === 0 ? (
-                    <div className="muted">No pools are configured.</div>
+                    <div className="muted">{t('gs_no_pools')}</div>
                 ) : (
                     <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
                         {poolEntries.map(([name, pool]) => {
@@ -126,37 +122,39 @@ export default function GettingStarted() {
                 <div className="card">
                     <h2 className="mb-3 text-lg font-bold">
                         <i className="fas fa-plug fa-fw text-accent3" />{' '}
-                        Connection — {selectedPool.coin.name}
+                        {t('gs_connection', { coin: selectedPool.coin.name })}
                         {selectedPool.coin.symbol
                             ? ` (${selectedPool.coin.symbol})`
                             : ''}
                     </h2>
                     <div className="mb-3 max-w-md">
                         <div className="flex justify-between border-b border-dashed border-black/10 py-1">
-                            <span className="text-muted">Algorithm</span>
+                            <span className="text-muted">
+                                {t('gs_algorithm')}
+                            </span>
                             <span className="font-semibold">
                                 {selectedPool.coin.algorithm ?? 'unknown'}
                             </span>
                         </div>
                         <div className="flex justify-between py-1">
-                            <span className="text-muted">Username</span>
+                            <span className="text-muted">
+                                {t('gs_username')}
+                            </span>
                             <span className="font-semibold">
-                                Your wallet address
+                                {t('gs_your_wallet_address')}
                             </span>
                         </div>
                     </div>
 
                     {Object.keys(selectedPool.ports ?? {}).length === 0 ? (
-                        <div className="muted">
-                            No stratum ports are configured for this coin.
-                        </div>
+                        <div className="muted">{t('gs_no_stratum_ports')}</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Port</th>
-                                        <th>Stratum URL</th>
+                                        <th>{t('gs_port')}</th>
+                                        <th>{t('gs_stratum_url')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -179,16 +177,13 @@ export default function GettingStarted() {
                             </table>
                         </div>
                     )}
-                    <p className="muted mt-3">
-                        Select the port that matches your hardware/difficulty,
-                        then connect with the URL above.
-                    </p>
+                    <p className="muted mt-3">{t('gs_port_hint')}</p>
 
                     {miningTools.length > 0 && (
                         <div className="mt-4 border-t border-black/10 pt-3">
                             <div className="mb-1 font-semibold">
                                 <i className="fas fa-download fa-fw text-accent" />{' '}
-                                Mining Software
+                                {t('gs_mining_software')}
                             </div>
                             <ul className="list-disc space-y-1 pl-5">
                                 {miningTools.map((t, i) => (
@@ -211,26 +206,22 @@ export default function GettingStarted() {
             <div className="card">
                 <h2 className="mb-3 text-lg font-bold">
                     <i className="fas fa-shuffle fa-fw text-accent2" />{' '}
-                    Coin-Switching Ports
+                    {t('gs_switching_ports')}
                 </h2>
-                <p className="muted mb-3">
-                    These ports automatically switch to the most profitable coin
-                    for a given algorithm — point your miner here to always mine
-                    the best-paying coin.
-                </p>
+                <p className="muted mb-3">{t('gs_switching_desc')}</p>
                 {switchEntries.length === 0 ? (
-                    <div className="muted">
-                        No coin-switching ports are enabled.
-                    </div>
+                    <div className="muted">{t('gs_no_switching_ports')}</div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Algorithm</th>
-                                    <th>Stratum URL</th>
-                                    <th className="text-right">Difficulty</th>
+                                    <th>{t('gs_name')}</th>
+                                    <th>{t('gs_algorithm')}</th>
+                                    <th>{t('gs_stratum_url')}</th>
+                                    <th className="text-right">
+                                        {t('gs_difficulty')}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveStats } from '../api/useLiveStats.tsx';
 import { getWorkerStats } from '../api/client.ts';
@@ -115,6 +116,7 @@ function Stat({
 }
 
 export default function MinerStats() {
+    const { t } = useTranslation();
     const { address } = useParams();
     const live = useLiveStats();
 
@@ -127,10 +129,10 @@ export default function MinerStats() {
         refetchInterval: 60000
     });
 
-    if (!address) return <div className="error">No address.</div>;
-    if (isLoading) return <div className="loading">Loading…</div>;
+    if (!address) return <div className="error">{t('miner_no_address')}</div>;
+    if (isLoading) return <div className="loading">{t('miner_loading')}</div>;
     if (isError || !data || data.result === 'error')
-        return <div className="error">No data for this address.</div>;
+        return <div className="error">{t('miner_no_data')}</div>;
 
     const { rows, workers } = mergeHistory(data.history);
     const workerEntries: [string, WorkerEntry][] = Object.entries(data.workers);
@@ -142,24 +144,27 @@ export default function MinerStats() {
                     <i className="fas fa-user fa-fw text-accent" /> {address}
                 </h1>
                 <Link className="text-sm" to="/workers">
-                    <i className="fas fa-arrow-left fa-fw" /> Back to workers
+                    <i className="fas fa-arrow-left fa-fw" />{' '}
+                    {t('miner_back_to_workers')}
                 </Link>
             </div>
 
             {/* Hashrate chart with the headline now/avg/luck readouts. */}
             <div className="card">
                 <div className="mb-2 flex flex-wrap items-center gap-x-6 gap-y-1">
-                    <span className="font-semibold">Hashrate</span>
+                    <span className="font-semibold">{t('miner_hashrate')}</span>
                     <span className="ml-auto text-sm text-muted">
                         <i className="fas fa-gauge-simple-high fa-fw" />{' '}
-                        {readableHashRateString(data.totalHash)} (Now)
+                        {readableHashRateString(data.totalHash)}{' '}
+                        {t('miner_now')}
                     </span>
                     <span className="text-sm text-muted">
                         <i className="fas fa-gauge-simple fa-fw" />{' '}
-                        {readableHashRateString(totalAvg(data.history))} (Avg)
+                        {readableHashRateString(totalAvg(data.history))}{' '}
+                        {t('miner_avg')}
                     </span>
                     <span className="text-sm text-muted">
-                        <i className="fas fa-clock fa-fw" /> Luck{' '}
+                        <i className="fas fa-clock fa-fw" /> {t('miner_luck')}{' '}
                         {readableLuckTime(combinedLuckDays(data.workers))}
                     </span>
                 </div>
@@ -206,34 +211,38 @@ export default function MinerStats() {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className="muted">No history yet</div>
+                    <div className="muted">{t('miner_no_history')}</div>
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-x-8 gap-y-1 text-sm">
                     <span>
                         <i className="fas fa-chart-bar fa-fw text-black/40" />{' '}
-                        <span className="text-muted">Shares:</span>{' '}
+                        <span className="text-muted">{t('miner_shares')}:</span>{' '}
                         <span className="font-medium">
                             {toNum(data.totalShares).toFixed(2)}
                         </span>
                     </span>
                     <span>
                         <i className="fas fa-hourglass-half fa-fw text-black/40" />{' '}
-                        <span className="text-muted">Immature:</span>{' '}
+                        <span className="text-muted">
+                            {t('miner_immature')}:
+                        </span>{' '}
                         <span className="font-medium">
                             {formatAmount(data.immature)}
                         </span>
                     </span>
                     <span>
                         <i className="fas fa-wallet fa-fw text-black/40" />{' '}
-                        <span className="text-muted">Balance:</span>{' '}
+                        <span className="text-muted">
+                            {t('miner_balance')}:
+                        </span>{' '}
                         <span className="font-medium">
                             {formatAmount(data.balance)}
                         </span>
                     </span>
                     <span>
                         <i className="fas fa-money-bill fa-fw text-black/40" />{' '}
-                        <span className="text-muted">Paid:</span>{' '}
+                        <span className="text-muted">{t('miner_paid')}:</span>{' '}
                         <span className="font-medium">
                             {formatAmount(data.paid)}
                         </span>
@@ -251,7 +260,7 @@ export default function MinerStats() {
                         </div>
                         <Stat
                             icon="fa-gauge-simple-high"
-                            label="Hashrate (Now)"
+                            label={t('miner_hashrate_now')}
                             value={
                                 w.hashrateString ||
                                 readableHashRateString(w.hashrate)
@@ -259,36 +268,36 @@ export default function MinerStats() {
                         />
                         <Stat
                             icon="fa-gauge-simple"
-                            label="Hashrate (Avg)"
+                            label={t('miner_hashrate_avg')}
                             value={readableHashRateString(
                                 seriesAvg(data.history[name])
                             )}
                         />
                         <Stat
                             icon="fa-unlock"
-                            label="Diff"
+                            label={t('miner_diff')}
                             value={toNum(w.diff)}
                         />
                         <Stat
                             icon="fa-chart-bar"
-                            label="Shares"
+                            label={t('miner_shares')}
                             value={
                                 Math.round(toNum(w.currRoundShares) * 100) / 100
                             }
                         />
                         <Stat
                             icon="fa-clock"
-                            label="Luck"
+                            label={t('miner_luck')}
                             value={readableLuckTime(w.luckDays)}
                         />
                         <Stat
                             icon="fa-wallet"
-                            label="Balance"
+                            label={t('miner_balance')}
                             value={formatAmount(w.balance)}
                         />
                         <Stat
                             icon="fa-money-bill"
-                            label="Paid"
+                            label={t('miner_paid')}
                             value={formatAmount(w.paid)}
                         />
                     </div>

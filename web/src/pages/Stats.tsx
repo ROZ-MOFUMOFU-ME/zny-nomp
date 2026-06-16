@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
     LineChart,
@@ -67,6 +68,7 @@ function PoolBlocks({
     pool: PoolEntry;
     blockURL?: string;
 }) {
+    const { t } = useTranslation();
     const pending = pool.pending?.blocks ?? [];
     const confirms = pool.pending?.confirms ?? {};
     const confirmed = (pool.confirmed?.blocks ?? []).slice(0, 8);
@@ -77,11 +79,17 @@ function PoolBlocks({
         const href = blockURL ? explorerUrl(blockURL, b.blockHash) : null;
         const conf = confirms[b.blockHash];
         const status = paid ? (
-            <span className="font-semibold text-green-600">*PAID*</span>
+            <span className="font-semibold text-green-600">
+                {t('stats_paid')}
+            </span>
         ) : conf != null ? (
-            <span className="font-semibold text-red-600">{conf} of 100</span>
+            <span className="font-semibold text-red-600">
+                {t('stats_conf_of_100', { conf })}
+            </span>
         ) : (
-            <span className="font-semibold text-red-600">*PENDING*</span>
+            <span className="font-semibold text-red-600">
+                {t('stats_pending_status')}
+            </span>
         );
         return (
             <div
@@ -91,7 +99,9 @@ function PoolBlocks({
                 <div className="flex flex-wrap items-center gap-x-3">
                     <span>
                         <i className="fas fa-bars fa-fw text-black/40" />{' '}
-                        <span className="text-muted">Block:</span>{' '}
+                        <span className="text-muted">
+                            {t('stats_block_label')}
+                        </span>{' '}
                         {href ? (
                             <a href={href} target="_blank" rel="noreferrer">
                                 {b.height}
@@ -109,7 +119,7 @@ function PoolBlocks({
                 </div>
                 <div className="mt-1">
                     <i className="fas fa-gavel fa-fw text-black/40" />{' '}
-                    <span className="text-muted">Mined By:</span>{' '}
+                    <span className="text-muted">{t('stats_mined_by')}</span>{' '}
                     <Link to={`/workers/${b.worker.split('.')[0]}`}>
                         {b.worker}
                     </Link>
@@ -122,13 +132,15 @@ function PoolBlocks({
         <div className="card mt-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-lg font-bold">
-                    {cap(pool.name)} Blocks Found
+                    {t('stats_blocks_found', { name: cap(pool.name) })}
                 </span>
                 <span className="text-sm text-muted">
-                    <i className="fas fa-bars fa-fw" /> {toNum(ps.validBlocks)}{' '}
-                    Blocks &nbsp;&nbsp;
-                    <i className="fas fa-money-bill fa-fw" /> Paid:{' '}
-                    {toNum(ps.totalPaid).toFixed(8)} {pool.symbol}
+                    <i className="fas fa-bars fa-fw" />{' '}
+                    {t('stats_blocks_count', { count: toNum(ps.validBlocks) })}
+                    &nbsp;&nbsp;
+                    <i className="fas fa-money-bill fa-fw" />{' '}
+                    {t('stats_paid_label')} {toNum(ps.totalPaid).toFixed(8)}{' '}
+                    {pool.symbol}
                 </span>
             </div>
             <div className="space-y-2">
@@ -138,7 +150,7 @@ function PoolBlocks({
                         {confirmed.map((b) => render(b, true))}
                     </>
                 ) : (
-                    <div className="muted">No blocks found yet.</div>
+                    <div className="muted">{t('stats_no_blocks')}</div>
                 )}
             </div>
         </div>
@@ -146,6 +158,7 @@ function PoolBlocks({
 }
 
 function FindersPie({ pool }: { pool: PoolEntry }) {
+    const { t } = useTranslation();
     const blocks = [
         ...(pool.pending?.blocks ?? []),
         ...(pool.confirmed?.blocks ?? [])
@@ -163,7 +176,7 @@ function FindersPie({ pool }: { pool: PoolEntry }) {
     return (
         <div className="card mt-4">
             <div className="mb-2 text-center font-semibold">
-                Finders of the last {blocks.length} blocks
+                {t('stats_finders', { count: blocks.length })}
             </div>
             <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -192,6 +205,7 @@ function FindersPie({ pool }: { pool: PoolEntry }) {
 }
 
 export default function Stats() {
+    const { t } = useTranslation();
     const stats = useLiveStats();
     const historyQuery = useQuery({
         queryKey: ['poolHistory'],
@@ -199,7 +213,7 @@ export default function Stats() {
     });
     const configQuery = useQuery({ queryKey: ['config'], queryFn: getConfig });
 
-    if (!stats) return <div className="loading">Loading…</div>;
+    if (!stats) return <div className="loading">{t('stats_loading')}</div>;
 
     const poolNames = Object.keys(stats.pools);
     const history = historyQuery.data ?? [];
@@ -218,12 +232,12 @@ export default function Stats() {
 
     return (
         <div>
-            <h1 className="page-title">Pool Stats</h1>
+            <h1 className="page-title">{t('stats_title')}</h1>
 
             <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
                 <div className="card">
                     <div className="mb-2 text-center font-semibold">
-                        Pool Historical Hashrate
+                        {t('stats_historical_hashrate')}
                     </div>
                     <div className="h-[280px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -263,7 +277,7 @@ export default function Stats() {
                 </div>
                 <div className="card">
                     <div className="mb-2 text-center font-semibold">
-                        Pool Pending Blocks
+                        {t('stats_pending_blocks')}
                     </div>
                     <div className="h-[280px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -301,10 +315,13 @@ export default function Stats() {
             {priceSyms.length > 0 && (
                 <div className="card mt-4">
                     <div className="mb-2 font-semibold">
-                        <i className="fas fa-coins fa-fw" /> Live Prices
+                        <i className="fas fa-coins fa-fw" />{' '}
+                        {t('stats_live_prices')}
                         {stats.prices?.updated && (
                             <span className="ml-2 text-xs text-muted">
-                                updated {readableDate(stats.prices.updated)}
+                                {t('stats_updated', {
+                                    time: readableDate(stats.prices.updated)
+                                })}
                             </span>
                         )}
                     </div>
@@ -317,7 +334,7 @@ export default function Stats() {
                                     {formatPrice(p.price)}{' '}
                                     {(p.vsCurrency || '').toUpperCase()}
                                     <span className="ml-1 text-xs text-muted">
-                                        via {p.source}
+                                        {t('stats_via', { source: p.source })}
                                     </span>
                                 </div>
                             );
@@ -349,22 +366,22 @@ export default function Stats() {
                         <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
                             <div className="card">
                                 <div className="mb-2 font-semibold text-accent2">
-                                    <i className="fas fa-server fa-fw" /> Pool
-                                    Stats
+                                    <i className="fas fa-server fa-fw" />{' '}
+                                    {t('stats_pool_stats')}
                                 </div>
                                 <Row
                                     icon="fa-users"
-                                    label="Miners"
+                                    label={t('stats_miners')}
                                     value={pool.minerCount ?? 0}
                                 />
                                 <Row
                                     icon="fa-gears"
-                                    label="Workers"
+                                    label={t('stats_workers')}
                                     value={pool.workerCount ?? 0}
                                 />
                                 <Row
                                     icon="fa-gauge-simple-high"
-                                    label="Hashrate"
+                                    label={t('stats_hashrate')}
                                     value={
                                         pool.hashrateString ||
                                         readableHashRateString(pool.hashrate)
@@ -372,28 +389,28 @@ export default function Stats() {
                                 />
                                 <Row
                                     icon="fa-clock"
-                                    label="Luck"
+                                    label={t('stats_luck')}
                                     value={readableLuckTime(pool.luckDays)}
                                 />
                                 <Row
                                     icon="fa-chart-pie"
-                                    label="Pool share"
+                                    label={t('stats_pool_share')}
                                     value={`${share} %`}
                                 />
                             </div>
                             <div className="card">
                                 <div className="mb-2 font-semibold text-accent3">
-                                    <i className="fas fa-globe fa-fw" /> Network
-                                    Stats
+                                    <i className="fas fa-globe fa-fw" />{' '}
+                                    {t('stats_network_stats')}
                                 </div>
                                 <Row
                                     icon="fa-bars"
-                                    label="Block height"
+                                    label={t('stats_block_height')}
                                     value={toNum(ps.networkBlocks)}
                                 />
                                 <Row
                                     icon="fa-gauge-simple-high"
-                                    label="Network H/s"
+                                    label={t('stats_network_hs')}
                                     value={
                                         ps.networkHashString ||
                                         readableHashRateString(ps.networkHash)
@@ -401,58 +418,58 @@ export default function Stats() {
                                 />
                                 <Row
                                     icon="fa-unlock"
-                                    label="Difficulty"
+                                    label={t('stats_difficulty')}
                                     value={toNum(ps.networkDiff).toFixed(8)}
                                 />
                                 <Row
                                     icon="fa-signal"
-                                    label="Connections"
+                                    label={t('stats_connections')}
                                     value={toNum(ps.networkConnections)}
                                 />
                                 <Row
                                     icon="fa-code-fork"
-                                    label="Daemon"
+                                    label={t('stats_daemon')}
                                     value={ps.networkVersion || '—'}
                                 />
                                 <Row
                                     icon="fa-flask"
-                                    label="Algorithm"
+                                    label={t('stats_algorithm')}
                                     value={cap(pool.algorithm ?? '')}
                                 />
                             </div>
                             <div className="card">
                                 <div className="mb-2 font-semibold text-accent">
-                                    <i className="fas fa-cubes fa-fw" /> Block
-                                    Stats
+                                    <i className="fas fa-cubes fa-fw" />{' '}
+                                    {t('stats_block_stats')}
                                 </div>
                                 <Row
                                     icon="fa-cubes"
-                                    label="Total blocks"
+                                    label={t('stats_total_blocks')}
                                     value={toNum(ps.validBlocks)}
                                 />
                                 <Row
                                     icon="fa-hourglass-half"
-                                    label="Pending"
+                                    label={t('stats_pending')}
                                     value={pool.blocks?.pending ?? 0}
                                 />
                                 <Row
                                     icon="fa-gavel"
-                                    label="Confirmed"
+                                    label={t('stats_confirmed')}
                                     value={pool.blocks?.confirmed ?? 0}
                                 />
                                 <Row
                                     icon="fa-square-xmark"
-                                    label="Orphaned"
+                                    label={t('stats_orphaned')}
                                     value={pool.blocks?.orphaned ?? 0}
                                 />
                                 <Row
                                     icon="fa-square-check"
-                                    label="Valid shares"
+                                    label={t('stats_valid_shares')}
                                     value={toNum(ps.validShares)}
                                 />
                                 <Row
                                     icon="fa-square-minus"
-                                    label="Invalid shares"
+                                    label={t('stats_invalid_shares')}
                                     value={toNum(ps.invalidShares)}
                                 />
                             </div>

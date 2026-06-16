@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     adminPools,
     getAnnouncement,
@@ -10,6 +11,7 @@ import {
 // on a correct password — so this page is read-only: log in, view the config,
 // log out. The password is remembered in localStorage so a refresh keeps you in.
 export default function Admin() {
+    const { t } = useTranslation();
     const [password, setPassword] = useState(
         () => localStorage.getItem('admin_password') || ''
     );
@@ -65,7 +67,8 @@ export default function Admin() {
         return (
             <div>
                 <h1 className="page-title">
-                    <i className="fas fa-lock fa-fw text-accent" /> Admin
+                    <i className="fas fa-lock fa-fw text-accent" />{' '}
+                    {t('admin_title')}
                 </h1>
                 <div className="card">
                     <form
@@ -78,7 +81,7 @@ export default function Admin() {
                         <input
                             className="field min-w-[240px] flex-1"
                             type="password"
-                            placeholder="Admin password"
+                            placeholder={t('admin_password_placeholder')}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -88,16 +91,13 @@ export default function Admin() {
                             disabled={loading}
                         >
                             <i className="fas fa-right-to-bracket fa-fw" />{' '}
-                            {loading ? 'Logging in…' : 'Login'}
+                            {loading ? t('admin_logging_in') : t('admin_login')}
                         </button>
                     </form>
                     {loginError !== null && (
                         <div className="error">{loginError}</div>
                     )}
-                    <p className="muted mt-3">
-                        The admin center must be enabled in the portal config
-                        before you can log in.
-                    </p>
+                    <p className="muted mt-3">{t('admin_enable_note')}</p>
                 </div>
             </div>
         );
@@ -108,32 +108,30 @@ export default function Admin() {
     return (
         <div>
             <h1 className="page-title">
-                <i className="fas fa-lock-open fa-fw text-accent" /> Admin
+                <i className="fas fa-lock-open fa-fw text-accent" />{' '}
+                {t('admin_title')}
             </h1>
             <div className="card">
                 <button className="btn" type="button" onClick={logout}>
-                    <i className="fas fa-right-from-bracket fa-fw" /> Log out
+                    <i className="fas fa-right-from-bracket fa-fw" />{' '}
+                    {t('admin_log_out')}
                 </button>
-                <p className="muted mt-3">
-                    Pool configuration (read-only). This reflects the live
-                    pool_configs as seen by the portal.
-                </p>
+                <p className="muted mt-3">{t('admin_pool_config_note')}</p>
             </div>
 
             <div className="card mt-4">
                 <div className="mb-2 font-semibold">
-                    <i className="fas fa-bullhorn fa-fw text-accent" /> Top
-                    Announcement
+                    <i className="fas fa-bullhorn fa-fw text-accent" />{' '}
+                    {t('admin_top_announcement')}
                 </div>
                 <p className="muted mb-2 text-sm">
-                    Shown as a banner at the top of the home page. Leave empty
-                    to hide it.
+                    {t('admin_announcement_note')}
                 </p>
                 <textarea
                     className="field min-h-[120px] w-full"
                     value={announcement}
                     maxLength={2000}
-                    placeholder="Announcement text…"
+                    placeholder={t('admin_announcement_placeholder')}
                     onChange={(e) => {
                         setAnnouncement(e.target.value);
                         setAnnStatus('idle');
@@ -147,20 +145,24 @@ export default function Admin() {
                         disabled={annStatus === 'saving'}
                     >
                         <i className="fas fa-floppy-disk fa-fw" />{' '}
-                        {annStatus === 'saving' ? 'Saving…' : 'Save'}
+                        {annStatus === 'saving'
+                            ? t('admin_saving')
+                            : t('admin_save')}
                     </button>
                     {annStatus === 'saved' && (
-                        <span className="text-sm text-green-600">Saved.</span>
+                        <span className="text-sm text-green-600">
+                            {t('admin_saved')}
+                        </span>
                     )}
                     {annStatus === 'error' && (
-                        <span className="error">Failed to save.</span>
+                        <span className="error">{t('admin_save_failed')}</span>
                     )}
                 </div>
             </div>
 
             {Object.keys(pools).length === 0 ? (
                 <div className="card mt-4">
-                    <p className="muted">No pools configured.</p>
+                    <p className="muted">{t('admin_no_pools')}</p>
                 </div>
             ) : (
                 Object.entries(pools).map(([poolKey, value]) => (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLiveStats } from '../api/useLiveStats.tsx';
 import { readableHashRateString, toNum } from '../lib/format.ts';
 
@@ -9,6 +10,7 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 // to the per-worker page (/workers/:address). Numeric fields from the API may be
 // strings, so every comparison/derivation goes through toNum.
 export default function Workers() {
+    const { t } = useTranslation();
     const stats = useLiveStats();
     const navigate = useNavigate();
     const [address, setAddress] = useState('');
@@ -20,7 +22,7 @@ export default function Workers() {
 
     return (
         <div>
-            <h1 className="page-title">Workers</h1>
+            <h1 className="page-title">{t('work_title')}</h1>
 
             <form
                 className="mb-5 flex flex-wrap gap-2"
@@ -31,17 +33,18 @@ export default function Workers() {
             >
                 <input
                     className="field min-w-[260px] flex-1"
-                    placeholder="Enter your address"
+                    placeholder={t('work_address_placeholder')}
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                 />
                 <button className="btn" type="submit">
-                    <i className="fas fa-magnifying-glass fa-fw" /> Lookup
+                    <i className="fas fa-magnifying-glass fa-fw" />{' '}
+                    {t('work_lookup')}
                 </button>
             </form>
 
             {stats === null ? (
-                <div className="loading">Loading…</div>
+                <div className="loading">{t('work_loading')}</div>
             ) : (
                 Object.values(stats.pools)
                     .filter((pool) => pool.miners)
@@ -77,23 +80,25 @@ export default function Workers() {
                                     <i className="fas fa-coins fa-fw text-accent" />{' '}
                                     {cap(pool.name)}{' '}
                                     <span className="text-sm font-normal text-muted">
-                                        ({pool.minerCount ?? 0} miners ·{' '}
-                                        {pool.workerCount ?? 0} workers)
+                                        {t('work_miner_worker_counts', {
+                                            miners: pool.minerCount ?? 0,
+                                            workers: pool.workerCount ?? 0
+                                        })}
                                     </span>
                                 </h2>
                                 <div className="overflow-x-auto">
                                     <table className="data-table">
                                         <thead>
                                             <tr>
-                                                <th>Address</th>
+                                                <th>{t('work_th_address')}</th>
                                                 <th className="text-right">
-                                                    Current-round Shares
+                                                    {t('work_th_curr_shares')}
                                                 </th>
                                                 <th className="text-right">
-                                                    Efficiency %
+                                                    {t('work_th_efficiency')}
                                                 </th>
                                                 <th className="text-right">
-                                                    Hashrate
+                                                    {t('work_th_hashrate')}
                                                 </th>
                                             </tr>
                                         </thead>

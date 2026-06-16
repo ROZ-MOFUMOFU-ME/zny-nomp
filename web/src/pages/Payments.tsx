@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveStats } from '../api/useLiveStats.tsx';
 import { getPayments, getConfig } from '../api/client.ts';
@@ -25,6 +26,7 @@ function blocksText(blocks: PaymentRow['blocks']): string {
 }
 
 export default function Payments() {
+    const { t } = useTranslation();
     const live = useLiveStats();
     const paymentsQuery = useQuery<PoolPayments[]>({
         queryKey: ['payments'],
@@ -37,10 +39,10 @@ export default function Payments() {
     });
 
     if (paymentsQuery.isLoading) {
-        return <div className="loading">Loading…</div>;
+        return <div className="loading">{t('pay_loading')}</div>;
     }
     if (paymentsQuery.isError || !paymentsQuery.data) {
-        return <div className="error">Failed to load payments.</div>;
+        return <div className="error">{t('pay_load_failed')}</div>;
     }
 
     const pools = paymentsQuery.data;
@@ -52,15 +54,15 @@ export default function Payments() {
     if (pools.length === 0 || !hasAnyPayments) {
         return (
             <div>
-                <h1 className="page-title">Payments</h1>
-                <div className="muted">No payments yet.</div>
+                <h1 className="page-title">{t('pay_title')}</h1>
+                <div className="muted">{t('pay_none_yet')}</div>
             </div>
         );
     }
 
     return (
         <div>
-            <h1 className="page-title">Payments</h1>
+            <h1 className="page-title">{t('pay_title')}</h1>
             {pools.map((pool) => {
                 const rows: PaymentRow[] = (pool.payments ?? [])
                     .slice()
@@ -82,12 +84,18 @@ export default function Payments() {
                         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                             <h2 className="m-0 text-xl font-bold">
                                 <i className="fas fa-money-bill-transfer fa-fw text-accent3" />{' '}
-                                {cap(pool.name)} Payments
+                                {t('pay_pool_heading', {
+                                    pool: cap(pool.name)
+                                })}
                             </h2>
                             <span className="text-sm text-muted">
                                 <i className="fas fa-cubes fa-fw" />{' '}
-                                {toNum(ps.validBlocks)} Blocks &nbsp;&nbsp;
-                                <i className="fas fa-money-bill fa-fw" /> Paid:{' '}
+                                {t('pay_blocks_count', {
+                                    count: toNum(ps.validBlocks)
+                                })}{' '}
+                                &nbsp;&nbsp;
+                                <i className="fas fa-money-bill fa-fw" />{' '}
+                                {t('pay_paid_label')}{' '}
                                 {formatAmount(ps.totalPaid)} {symbol}
                             </span>
                         </div>
@@ -96,13 +104,17 @@ export default function Payments() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Blocks</th>
-                                        <th>Time</th>
-                                        <th className="text-right">Miners</th>
-                                        <th className="text-right">Shares</th>
-                                        <th>Payment Amount</th>
+                                        <th>{t('pay_th_blocks')}</th>
+                                        <th>{t('pay_th_time')}</th>
                                         <th className="text-right">
-                                            Total Payment Amount
+                                            {t('pay_th_miners')}
+                                        </th>
+                                        <th className="text-right">
+                                            {t('pay_th_shares')}
+                                        </th>
+                                        <th>{t('pay_th_payment_amount')}</th>
+                                        <th className="text-right">
+                                            {t('pay_th_total_payment_amount')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -128,7 +140,9 @@ export default function Payments() {
                                                             href={txUrl}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            title="View transaction"
+                                                            title={t(
+                                                                'pay_view_transaction'
+                                                            )}
                                                         >
                                                             {text}
                                                         </a>

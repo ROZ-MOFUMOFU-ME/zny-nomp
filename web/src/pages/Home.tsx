@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useLiveStats } from '../api/useLiveStats.tsx';
 import { getAnnouncement } from '../api/client.ts';
 import { readableHashRateString } from '../lib/format.ts';
@@ -9,6 +10,7 @@ const line = 'whitespace-nowrap py-0.5';
 const item = 'min-w-[150px] rounded-lg bg-white/15 px-3.5 py-2';
 
 export default function Home() {
+    const { t } = useTranslation();
     const stats = useLiveStats();
     const algos = stats ? Object.entries(stats.algos) : [];
     const pools = stats ? Object.values(stats.pools) : [];
@@ -23,7 +25,8 @@ export default function Home() {
             {note && (
                 <section className="mb-5 rounded-xl border-l-4 border-accent bg-accent/10 px-5 py-4">
                     <div className="mb-1 font-bold text-accent">
-                        <i className="fas fa-bullhorn fa-fw" /> Announcement
+                        <i className="fas fa-bullhorn fa-fw" />{' '}
+                        {t('home_announcement')}
                     </div>
                     <div className="whitespace-pre-wrap text-sm">{note}</div>
                 </section>
@@ -36,23 +39,27 @@ export default function Home() {
                 />
                 <div className="flex-1 basis-80">
                     <h1 className="mb-3 text-4xl font-bold">
-                        Welcome to the future of mining
+                        {t('home_welcome_title')}
                     </h1>
                     <ul className="m-0 list-none p-0 text-lg leading-loose [&>li]:before:mr-2.5 [&>li]:before:opacity-80 [&>li]:before:content-['✦']">
-                        <li>Low fees</li>
-                        <li>High performance Node.js backend</li>
-                        <li>User friendly mining client</li>
-                        <li>Multi-coin / multi-pool</li>
+                        <li>{t('home_feature_low_fees')}</li>
+                        <li>{t('home_feature_nodejs_backend')}</li>
+                        <li>{t('home_feature_mining_client')}</li>
+                        <li>{t('home_feature_multi_coin')}</li>
                     </ul>
                 </div>
             </section>
 
             <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
                 <section className="rounded-xl bg-accent2 px-5 py-4 text-white">
-                    <div className="mb-3 text-xl font-bold">Global Stats</div>
+                    <div className="mb-3 text-xl font-bold">
+                        {t('home_global_stats')}
+                    </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2.5">
                         {!stats ? (
-                            <div className="text-white/80">Loading…</div>
+                            <div className="text-white/80">
+                                {t('home_loading')}
+                            </div>
                         ) : algos.length ? (
                             algos.map(([algo, a]) => (
                                 <div className={item} key={algo}>
@@ -62,7 +69,7 @@ export default function Home() {
                                     </div>
                                     <div className={line}>
                                         <i className="fas fa-users fa-fw" />{' '}
-                                        {a.workers} Miners
+                                        {t('home_miners', { count: a.workers })}
                                     </div>
                                     <div className={line}>
                                         <i className="fas fa-gauge-simple-high fa-fw" />{' '}
@@ -73,17 +80,21 @@ export default function Home() {
                             ))
                         ) : (
                             <div className="text-white/80">
-                                No active algorithms
+                                {t('home_no_active_algorithms')}
                             </div>
                         )}
                     </div>
                 </section>
 
                 <section className="rounded-xl bg-accent3 px-5 py-4 text-white">
-                    <div className="mb-3 text-xl font-bold">Pools / Coins</div>
+                    <div className="mb-3 text-xl font-bold">
+                        {t('home_pools_coins')}
+                    </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2.5">
                         {!stats ? (
-                            <div className="text-white/80">Loading…</div>
+                            <div className="text-white/80">
+                                {t('home_loading')}
+                            </div>
                         ) : pools.length ? (
                             pools.map((p) => (
                                 <div className={item} key={p.name}>
@@ -93,7 +104,9 @@ export default function Home() {
                                     </div>
                                     <div className={line}>
                                         <i className="fas fa-users fa-fw" />{' '}
-                                        {p.workerCount ?? 0} Miners
+                                        {t('home_miners', {
+                                            count: p.workerCount ?? 0
+                                        })}
                                     </div>
                                     <div className={line}>
                                         <i className="fas fa-gauge-simple-high fa-fw" />{' '}
@@ -104,7 +117,7 @@ export default function Home() {
                             ))
                         ) : (
                             <div className="text-white/80">
-                                No pools configured
+                                {t('home_no_pools_configured')}
                             </div>
                         )}
                     </div>
