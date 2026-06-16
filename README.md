@@ -1,8 +1,10 @@
 # BitZeny - Node Open Mining Portal
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/node.js.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/node.js.yml)&nbsp;[![Lint](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/lint-format.yml?branch=main&style=flat-square&logo=prettier&logoColor=white&label=lint)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/lint-format.yml)&nbsp;[![CircleCI](https://img.shields.io/circleci/build/github/ROZ-MOFUMOFU-ME/zny-nomp/main?style=flat-square&logo=circleci&label=CircleCI)](https://circleci.com/gh/ROZ-MOFUMOFU-ME/zny-nomp/tree/main)&nbsp;[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](https://www.javascript.com/)&nbsp;[![Node.js](https://img.shields.io/badge/node-%E2%89%A520-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)&nbsp;[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)&nbsp;[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](https://opensource.org/licenses/MIT)&nbsp;[![Discord](https://img.shields.io/badge/Discord-join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/zHUdQy2NzU)
+[![CI](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/node.js.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/node.js.yml)&nbsp;[![Lint](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/lint-format.yml?branch=main&style=flat-square&logo=prettier&logoColor=white&label=lint)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/lint-format.yml)&nbsp;[![CircleCI](https://img.shields.io/circleci/build/github/ROZ-MOFUMOFU-ME/zny-nomp/main?style=flat-square&logo=circleci&label=CircleCI)](https://circleci.com/gh/ROZ-MOFUMOFU-ME/zny-nomp/tree/main)&nbsp;[![Release](https://img.shields.io/github/v/release/ROZ-MOFUMOFU-ME/zny-nomp?style=flat-square&logo=github&label=release&color=blue)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/releases)&nbsp;[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)&nbsp;[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/)&nbsp;[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)&nbsp;[![Node.js](https://img.shields.io/badge/node-%E2%89%A522.18-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)&nbsp;[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)&nbsp;[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](https://opensource.org/licenses/MIT)&nbsp;[![Discord](https://img.shields.io/badge/Discord-join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/zHUdQy2NzU)
 
 This is a Yescrypt, YesPoWer, YesPoWerSUGAR, YescryptR8G, Lyra2REv2, sha256d, Quark, x11, vipstar and more algo mining pool based off of Node Open Mining Portal. Coins known to work include BitZeny, Koto, Monacoin, Bellcoin, Sugarchain, KumaCoin, Yenten (dev-fee aware) and VIPSTARCOIN.
+
+The backend is written in **TypeScript** and runs **buildless** via Node's native type-stripping (no compile step — `.ts` runs directly), and the web frontend is a **React + Vite** single-page app (in `web/`) that consumes the portal's JSON API.
 
 **Roadmap:** see [ROADMAP.md](ROADMAP.md) for current status, known issues, and planned improvements (this portal is developed together with [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) and [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing), which have their own roadmaps).
 
@@ -31,42 +33,36 @@ If your pool uses ZNY-NOMP let us know and we will list your website here.
 #### Requirements
 
 - Coin daemon(s) (find the coin's repo and build latest version from source)
-- [Node.js](https://nodejs.org/) v20+, tested up to v24 ([installation instructions](https://nodejs.org/en/download/package-manager)) — v20.17+/22+ is required because the bitcoinjs-lib dependency chain loads an ESM-only module via `require(esm)`
+- [Node.js](https://nodejs.org/) **v22.18+** (tested up to v24; `engines` requires `>=22.18`) ([installation instructions](https://nodejs.org/en/download/package-manager)) — required for native TypeScript type-stripping (the backend runs `.ts` directly with no build step) and because the bitcoinjs-lib dependency chain loads an ESM-only module via `require(esm)`
 - [Redis](http://redis.io/) key-value store v6.2+ ([follow these instructions](http://redis.io/topics/quickstart)) — the portal uses the node-redis v6 client, which officially supports Redis 6.2 and newer
 - A C/C++ toolchain with C++20 support (gcc 10+) and Python, used to build the [multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing) native addon pulled in via [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool)
 
-#### Development Tools (Optional but Recommended)
+#### Development Tools
 
-- [Prettier](https://prettier.io/) - Code formatter for consistent JavaScript formatting
-- [ESLint](https://eslint.org/) - JavaScript linter for code quality
-
-To install development dependencies:
-
-```bash
-npm install --save-dev prettier eslint
-```
-
-To format code with Prettier:
+The backend is TypeScript run buildless via Node's native type-stripping (no
+compile step); [TypeScript](https://www.typescriptlang.org/) (`tsc`) is used
+only for type-checking, with [Prettier](https://prettier.io/) and
+[ESLint](https://eslint.org/) (`typescript-eslint`) for style. Use the bundled
+npm scripts:
 
 ```bash
-npx prettier --write "**/*.js"
-```
-
-To lint code with ESLint:
-
-```bash
-npx eslint "**/*.js"
+npm run typecheck   # tsc --noEmit (type-check only, no build)
+npm run lint        # ESLint
+npm run format      # Prettier --write .
+npm run test:unit   # node --test unit tests (test/*.test.ts)
 ```
 
 #### Multi-repository development
 
-This portal depends on [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) which in turn depends on [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing); both are pinned to their `main` branches as git dependencies, and all three repositories are developed together on `main` (node-stratum-pool's `main` is protected, so changes there land via pull request). To work on the whole stack locally, clone the three repos side by side and link them:
+This portal depends on [node-stratum-pool](https://github.com/ROZ-MOFUMOFU-ME/node-stratum-pool) which in turn depends on [node-multi-hashing](https://github.com/ROZ-MOFUMOFU-ME/node-multi-hashing). All three repositories are developed together on their `develop` branches; `main` is for releases (node-stratum-pool's `main` is protected, so changes there land via pull request). On `develop` the git dependencies track `#develop`, so a fresh `npm install` pulls the TypeScript sibling code; the release merge to `main` switches the specs back to `#main`. To work on the whole stack locally, clone the three repos side by side and link them (this also avoids rebuilding the native addon on every install):
 
 ```bash
 cd ../node-multi-hashing && npm link
 cd ../node-stratum-pool  && npm link multi-hashing && npm link
 cd ../zny-nomp           && npm link stratum-pool
 ```
+
+Re-run `npm link stratum-pool` after any `npm install`/`npm update` in zny-nomp — npm replaces the symlink with a git clone (verify with `ls -la node_modules/stratum-pool`).
 
 ##### Seriously
 
@@ -100,7 +96,7 @@ a good pool operator. For starters be sure to read:
 
 #### 1) Downloading & Installing
 
-Clone the repository and run `npm update` for all the dependencies to be installed:
+Clone the repository and run `npm install` for all the dependencies to be installed:
 
 ```bash
 sudo apt-get install build-essential libsodium-dev libboost-all-dev libgmp3-dev node-gyp libssl-dev -y
@@ -237,7 +233,7 @@ Explanation for each field:
        a specific algorithm instead of a specific coin. Miners that connect to these ports are
        automatically switched a coin determined by the server. The default coin is the first
        configured pool for each algorithm and coin switching can be triggered using the
-       cli.js script in the scripts folder.
+       cli.ts script in the scripts folder.
 
        Miners connecting to these switching ports must use their public key in the format of
        RIPEMD160(SHA256(public-key)). An address for each type of coin is derived from the miner's
@@ -611,22 +607,15 @@ We welcome contributions! Please follow these steps:
 - Add tests for new features
 - Write clear and descriptive commit messages
 
-#### Code Formatting
+#### Code Formatting & checks
 
-Before submitting a pull request, please ensure your code is properly formatted:
+Before submitting a pull request, please run:
 
 ```bash
-# Format all JavaScript files
-npm run format
-
-# Or manually with Prettier
-npx prettier --write "**/*.js"
-
-# Check code quality with ESLint
-npm run lint
-
-# Or manually with ESLint
-npx eslint "**/*.js"
+npm run format      # Prettier (write)
+npm run lint        # ESLint
+npm run typecheck   # tsc --noEmit (type-check)
+npm run test:unit   # unit tests
 ```
 
 ---
