@@ -210,9 +210,15 @@ Monorepo consolidation is deferred; these are the active priorities.
   migrated; see "Type safety & layering")._
 - Keep the toolchain current (ESLint/Prettier, Node LTS, routine dependency
   bumps).
-- **i18n** — the SPA now ships 21-language i18n via react-i18next (ported from
+- **i18n** — the SPA now ships 20-language i18n via react-i18next (ported from
   the old `translations.json`); keep string coverage complete as the UI grows
   and make adding new locales straightforward.
+- ~~Operator **branding & home customization**~~ _(done — `website.branding`
+  in `config.json`, served via `/api/config`, drives the site name, separate
+  header/hero logos, favicon, dropdown-capable nav links, hero copy and
+  "No KYC"-style highlight badges, operator HTML sections, mining-server
+  location cards with in-browser ping, and GA4 / custom analytics tags — no
+  code changes needed to rebrand)._
 - **Mobile-friendly, responsive UI** plus a Progressive Web App (installable,
   offline stats view, optional push notifications) and a dark mode.
 - Documented public API (OpenAPI/Swagger) and optional WebSocket push for

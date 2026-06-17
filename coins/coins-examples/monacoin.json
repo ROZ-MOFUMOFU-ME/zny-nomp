@@ -17,8 +17,9 @@
     },
     "blockTime": 90,
     "explorer": {
-        "txURL": "https://insight.electrum-mona.org/insight/tx/",
-        "blockURL": "https://insight.electrum-mona.org/insight/block/"
+        "txURL": "https://blockbook.electrum-mona.org/tx/",
+        "blockURL": "https://blockbook.electrum-mona.org/block/",
+        "address": "https://blockbook.electrum-mona.org/address/"
     },
     "miningTools": [
         {

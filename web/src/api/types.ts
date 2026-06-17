@@ -148,6 +148,20 @@ export interface MiningTool {
     url: string;
 }
 
+export interface AppConfigPortVarDiff {
+    minDiff?: number | string;
+    maxDiff?: number | string;
+    targetTime?: number | string;
+    retargetTime?: number | string;
+    variancePercent?: number | string;
+}
+
+export interface AppConfigPort {
+    diff?: number | string;
+    tls?: boolean;
+    varDiff?: AppConfigPortVarDiff;
+}
+
 export interface AppConfigPool {
     coin: {
         name: string;
@@ -158,12 +172,104 @@ export interface AppConfigPool {
         // Each entry may be { name, url } or a bare URL string.
         miningTools?: Array<MiningTool | string>;
     };
-    ports?: Record<string, unknown>;
+    ports?: Record<string, AppConfigPort>;
+}
+
+export interface AppConfigNavLink {
+    label: string;
+    // Omitted for dropdown parents (use children instead).
+    url?: string;
+    // Optional FontAwesome class for an icon, e.g. "fas fa-map-marker-alt".
+    icon?: string;
+    // Dropdown sub-links (one level). When set, this entry is a toggle menu
+    // (e.g. "Pools" linking to sibling coin sites).
+    children?: AppConfigNavLink[];
+}
+
+export interface AppConfigSection {
+    title?: string;
+    // Operator-authored HTML (config.json is a trusted source). Rendered with
+    // dangerouslySetInnerHTML on the home page — keep it operator-only.
+    html: string;
+}
+
+// A server feature row: a bare string (rendered with a check icon) or an
+// object with a custom FontAwesome icon.
+export type AppConfigServerFeature = string | { icon?: string; text: string };
+
+export interface AppConfigServer {
+    region?: string;
+    country?: string;
+    city?: string;
+    // ISO 3166-1 alpha-2 code for flag-icons, e.g. "sg".
+    flag?: string;
+    // CORS-enabled endpoint; round-trip latency is measured client-side.
+    pingUrl?: string;
+    // Direct stratum connection URI, shown with a copy button.
+    uri?: string;
+    features?: AppConfigServerFeature[];
+}
+
+export interface AppConfigServers {
+    title?: string;
+    list?: AppConfigServer[];
+}
+
+// A hero highlight badge: a bare string (check icon) or { icon, text }.
+export type AppConfigHighlight = string | { icon?: string; text: string };
+
+export interface AppConfigAnalyticsScript {
+    src: string;
+    async?: boolean;
+    defer?: boolean;
+    attributes?: Record<string, string>;
+}
+
+export interface AppConfigAnalytics {
+    // GA4 shortcut: loads gtag.js + init for this measurement id (G-XXXX).
+    googleAnalyticsId?: string;
+    // Arbitrary <script> tags appended to <head> (Plausible, Matomo, …).
+    scripts?: AppConfigAnalyticsScript[];
+}
+
+// Operator branding from config.json `website.branding` (see GET /api/config).
+// All fields are optional and free-form so a deployment can rebrand without
+// code changes; the home hero renders only the facts the operator filled in.
+export interface AppConfigBranding {
+    siteName?: string;
+    logo?: string;
+    favicon?: string;
+    // Short text shown next to the site name in the header.
+    tagline?: string;
+    // Extra external links appended to the header nav.
+    navLinks?: AppConfigNavLink[];
+    home?: {
+        // Hero logo, independent of the header/site logo above; falls back to
+        // branding.logo when unset.
+        logo?: string;
+        // Free-form hero heading; takes priority over the {{coin}} template.
+        // Use this for multi-coin pools (no single coin to name).
+        title?: string;
+        coin?: string;
+        minPayout?: string;
+        paymentInterval?: string;
+        poolFee?: string;
+        paymentMethod?: string;
+        // Custom HTML content blocks rendered below the hero.
+        sections?: AppConfigSection[];
+        // Structured "mining servers" cards with client-side ping.
+        servers?: AppConfigServers;
+        // Hero highlight badges (e.g. No KYC). Omit for built-in defaults,
+        // [] to hide.
+        highlights?: AppConfigHighlight[];
+    };
+    analytics?: AppConfigAnalytics;
 }
 
 // Served by the new GET /api/config endpoint.
 export interface AppConfig {
     stratumHost?: string;
+    branding?: AppConfigBranding;
     switching?: Record<
         string,
         { enabled?: boolean; port?: number; algorithm?: string; diff?: number }

@@ -512,8 +512,9 @@ portal's container healthcheck probes `/api/health`.
 Besides the stats endpoints (see `/api`), the portal exposes:
 
 - `GET /api/config` — public runtime config the SPA consumes (stratum host,
-  enabled coin-switching ports, and per-pool coin / ports / explorer /
-  `miningTools`).
+  enabled coin-switching ports, per-pool coin / ports / explorer /
+  `miningTools`, and operator `branding` — see "Branding & home customization"
+  below).
 - `GET /api/prices` — latest coin prices from the price feed (enable the
   `priceFeed` block in the config; supports CoinGecko + CoinPaprika with
   per-symbol fallback).
@@ -522,6 +523,29 @@ Besides the stats endpoints (see `/api`), the portal exposes:
 - `GET /api/metrics` — Prometheus exposition-format metrics (pool/algo
   hashrate, shares, blocks, network stats, prices).
 - `GET /api/health` — readiness probe (`200` ok / `503` degraded).
+
+#### Branding & home customization
+
+The site appearance and home page are driven by `website.branding` in
+`config.json` (served via `GET /api/config`), so a deployment can rebrand
+without touching code. All fields are optional:
+
+- `siteName`, `logo` (header), `favicon` — plain paths or absolute CDN URLs.
+- `tagline`, and `navLinks[]` — extra header links; a link with `children[]`
+  becomes a dropdown (e.g. a "Pools" menu linking to sibling-coin sites).
+- `home`: a separate hero `logo`; the hero heading (`title` is free-form and
+  wins over the `{{coin}}` template — use it for multi-coin pools, otherwise
+  set `coin`); the payout / interval / fee / method facts; `highlights[]`
+  (badges such as "No KYC" / "Anonymous Mining" — built-in defaults when
+  omitted, `[]` to hide); `sections[]` (operator-authored HTML blocks); and
+  `servers[]` (location cards showing specs + live in-browser ping latency,
+  highlighting the fastest).
+- `analytics`: a GA4 `googleAnalyticsId` and/or arbitrary `scripts[]`
+  (Plausible, Matomo, …) injected into `<head>`.
+
+UI text is i18n-driven; only the values above (and `sections[]` HTML) are
+operator-supplied. See `config_example.json` for the full shape with
+`_comment_*` hints.
 
 ###### Optional enhancements for your awesome new mining pool server setup:
 

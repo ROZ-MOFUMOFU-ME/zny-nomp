@@ -28,7 +28,7 @@ export default function LanguageSelect() {
     const { t, i18n } = useTranslation();
     return (
         <select
-            className="rounded-md border border-navhover bg-bg px-2 py-1.5 text-sm text-white"
+            className="shrink-0 rounded-md border border-navhover bg-bg px-2 py-1.5 text-sm text-white"
             aria-label={t('common_language')}
             value={i18n.resolvedLanguage}
             onChange={(e) => {

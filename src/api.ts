@@ -104,12 +104,56 @@ export default function (
                         ports: pc.ports
                     };
                 });
+                // Operator branding (site name / logo / home-hero copy) so a
+                // deployment can rebrand from config.json without code changes.
+                var brandCfg: any =
+                    (portalConfig.website && portalConfig.website.branding) ||
+                    {};
+                var brandHome: any = brandCfg.home || {};
+                var brandAnalytics: any = brandCfg.analytics || {};
+                // Only emit array values of the expected shape so a config typo
+                // (e.g. navLinks/sections written as a string) can't crash the
+                // SPA. Also drops any _comment_* helper keys.
+                var arr = function (v: any) {
+                    return Array.isArray(v) ? v : undefined;
+                };
                 res.header('Content-Type', 'application/json');
                 res.end(
                     JSON.stringify({
                         stratumHost:
                             portalConfig.website &&
                             portalConfig.website.stratumHost,
+                        branding: {
+                            siteName: brandCfg.siteName,
+                            logo: brandCfg.logo,
+                            favicon: brandCfg.favicon,
+                            tagline: brandCfg.tagline,
+                            navLinks: arr(brandCfg.navLinks),
+                            home: {
+                                logo: brandHome.logo,
+                                title: brandHome.title,
+                                coin: brandHome.coin,
+                                minPayout: brandHome.minPayout,
+                                paymentInterval: brandHome.paymentInterval,
+                                poolFee: brandHome.poolFee,
+                                paymentMethod: brandHome.paymentMethod,
+                                sections: arr(brandHome.sections),
+                                servers:
+                                    brandHome.servers &&
+                                    typeof brandHome.servers === 'object'
+                                        ? {
+                                              title: brandHome.servers.title,
+                                              list: arr(brandHome.servers.list)
+                                          }
+                                        : undefined,
+                                highlights: arr(brandHome.highlights)
+                            },
+                            analytics: {
+                                googleAnalyticsId:
+                                    brandAnalytics.googleAnalyticsId,
+                                scripts: arr(brandAnalytics.scripts)
+                            }
+                        },
                         switching: switching,
                         pools: pools
                     })

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getConfig } from '../api/client.ts';
-import type { AppConfig, AppConfigPool } from '../api/types.ts';
+import type { AppConfig, AppConfigPool, AppConfigPort } from '../api/types.ts';
 import { toNum } from '../lib/format.ts';
 
 const code = 'whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5';
@@ -155,11 +155,28 @@ export default function GettingStarted() {
                                     <tr>
                                         <th>{t('gs_port')}</th>
                                         <th>{t('gs_stratum_url')}</th>
+                                        <th className="text-right">
+                                            {t('gs_difficulty')}
+                                        </th>
+                                        <th className="whitespace-nowrap">
+                                            {t('gs_vardiff')}
+                                        </th>
+                                        <th className="text-center">
+                                            {t('gs_tls')}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {Object.keys(selectedPool.ports ?? {}).map(
-                                        (port) => (
+                                    {Object.entries(
+                                        selectedPool.ports ?? {}
+                                    ).map(([port, raw]) => {
+                                        const p = (raw ?? {}) as AppConfigPort;
+                                        const vd = p.varDiff;
+                                        const hasVd =
+                                            vd != null &&
+                                            vd.minDiff != null &&
+                                            vd.maxDiff != null;
+                                        return (
                                             <tr key={port}>
                                                 <td className="whitespace-nowrap">
                                                     {port}
@@ -170,9 +187,28 @@ export default function GettingStarted() {
                                                         {port}
                                                     </code>
                                                 </td>
+                                                <td className="text-right">
+                                                    {p.diff != null
+                                                        ? toNum(p.diff)
+                                                        : '—'}
+                                                </td>
+                                                <td className="whitespace-nowrap">
+                                                    {hasVd
+                                                        ? `${toNum(vd.minDiff)} – ${toNum(vd.maxDiff)}`
+                                                        : '—'}
+                                                </td>
+                                                <td className="text-center">
+                                                    {p.tls ? (
+                                                        <i className="fas fa-lock text-green-600" />
+                                                    ) : (
+                                                        <span className="text-muted">
+                                                            —
+                                                        </span>
+                                                    )}
+                                                </td>
                                             </tr>
-                                        )
-                                    )}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

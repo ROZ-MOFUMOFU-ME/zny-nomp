@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveStats } from '../api/useLiveStats.tsx';
-import { getWorkerStats } from '../api/client.ts';
+import { getWorkerStats, getConfig } from '../api/client.ts';
 import type { WorkerStats, WorkerEntry } from '../api/types.ts';
 import {
     readableHashRateString,
@@ -128,6 +128,7 @@ export default function MinerStats() {
         enabled: !!address,
         refetchInterval: 60000
     });
+    const config = useQuery({ queryKey: ['config'], queryFn: getConfig });
 
     if (!address) return <div className="error">{t('miner_no_address')}</div>;
     if (isLoading) return <div className="loading">{t('miner_loading')}</div>;
@@ -136,12 +137,31 @@ export default function MinerStats() {
 
     const { rows, workers } = mergeHistory(data.history);
     const workerEntries: [string, WorkerEntry][] = Object.entries(data.workers);
+    // Link the address to the coin's block explorer (first pool that defines an
+    // address URL — single-coin pools are unambiguous).
+    const explorerAddr = Object.values(config.data?.pools ?? {})
+        .map((p) => p.coin?.explorer?.address)
+        .find(
+            (u): u is string => typeof u === 'string' && /^https?:\/\//i.test(u)
+        );
 
     return (
         <div>
             <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1">
                 <h1 className="m-0 break-all text-2xl font-bold">
-                    <i className="fas fa-user fa-fw text-accent" /> {address}
+                    <i className="fas fa-user fa-fw text-accent" />{' '}
+                    {explorerAddr ? (
+                        <a
+                            href={explorerAddr + address}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={t('miner_view_on_explorer')}
+                        >
+                            {address}
+                        </a>
+                    ) : (
+                        address
+                    )}
                 </h1>
                 <Link className="text-sm" to="/workers">
                     <i className="fas fa-arrow-left fa-fw" />{' '}
@@ -189,7 +209,7 @@ export default function MinerStats() {
                                 />
                                 <Tooltip
                                     labelFormatter={(t) => readableDate(t)}
-                                    formatter={(value: number | string) =>
+                                    formatter={(value) =>
                                         readableHashRateString(value)
                                     }
                                 />
