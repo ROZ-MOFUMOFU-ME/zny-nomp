@@ -461,9 +461,9 @@ export default function (
                         portalConfig.website.stats.hashrateWindow) |
                     0
                 ).toString();
-                /* 12 commands per coin; the reply offsets (i + 0 .. i + 11)
+                /* 13 commands per coin; the reply offsets (i + 0 .. i + 12)
                    below depend on this exact order */
-                var commandsPerCoin = 12;
+                var commandsPerCoin = 13;
 
                 var multi = client.client.multi();
                 client.coins.forEach(function (coin: any) {
@@ -483,7 +483,10 @@ export default function (
                         .hGetAll(coin + ':shares:roundCurrent')
                         .hGetAll(coin + ':blocksPendingConfirms')
                         .zRange(coin + ':payments', -100, -1)
-                        .hGetAll(coin + ':shares:timesCurrent');
+                        .hGetAll(coin + ':shares:timesCurrent')
+                        // i+12: PPS accrual stats (float/paused/accruedTotal/
+                        // sharePPS); empty hash for non-PPS coins.
+                        .hGetAll(coin + ':pps:stats');
                 });
 
                 multi
@@ -626,6 +629,25 @@ export default function (
                                         coinStats.payments.push(jsonObj);
                                     }
                                 }
+                                // PPS monitoring (meaningful only when
+                                // paymentMode=pps): float at last accrual, the
+                                // kill-switch paused flag, lifetime accrued, and
+                                // the latest per-diff-unit share value. Zero for
+                                // other modes. Liability = live balances total,
+                                // already surfaced through miner balances.
+                                var ppsReply = replies[i + 12] || {};
+                                coinStats.pps = {
+                                    mode:
+                                        (
+                                            poolConfigs[coinName]
+                                                .paymentProcessing || {}
+                                        ).paymentMode || 'prop',
+                                    float: parseFloat(ppsReply.float) || 0,
+                                    paused: ppsReply.paused === '1' ? 1 : 0,
+                                    accruedTotal:
+                                        parseFloat(ppsReply.accruedTotal) || 0,
+                                    sharePPS: parseFloat(ppsReply.sharePPS) || 0
+                                };
                                 allCoinStats[coinStats.name] = coinStats;
                             }
                             // sort pools alphabetically

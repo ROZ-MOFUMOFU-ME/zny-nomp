@@ -18,10 +18,17 @@
         "minConf": 10,
         "enabled": true,
         "paymentMode": "prop",
-        "_comment_paymentMode": "prop, pplnt, solo",
+        "_comment_paymentMode": "prop, pplnt, solo, pps",
         "paymentInterval": 120,
         "minimumPayment": 0.1,
         "maxBlocksPerPayment": 3,
+        "_comment_pps": "Only used when paymentMode is 'pps' (share-based). SHARE-BASED RISK: the pool fronts block-find variance from a pre-funded float, so it owes miners coins it may not yet have — keep it behind the float monitoring at /api/metrics. blockReward = coins per block (set to your coin's CURRENT subsidy); minFloat = kill-switch, pause accrual when the spendable wallet balance drops below this; feePercent = pool cut taken off each share's pay; accrualInterval = seconds between accrual runs (min 10).",
+        "pps": {
+            "blockReward": 6.25,
+            "minFloat": 500,
+            "feePercent": 0.5,
+            "accrualInterval": 60
+        },
         "daemon": {
             "host": "127.0.0.1",
             "port": 9402,

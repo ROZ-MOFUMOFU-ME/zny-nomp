@@ -22,6 +22,13 @@ interface PoolStat {
         [key: string]: unknown;
     };
     blocks?: { pending?: number; confirmed?: number; [key: string]: unknown };
+    pps?: {
+        mode?: string;
+        float?: number;
+        paused?: number;
+        accruedTotal?: number;
+        sharePPS?: number;
+    };
     [key: string]: unknown;
 }
 
@@ -185,6 +192,57 @@ export function renderMetrics(stats?: MetricsStats | null): string {
         'Confirmed blocks',
         poolSamples(function (c) {
             return num(c.blocks && c.blocks.confirmed);
+        })
+    );
+
+    // PPS (pay-per-share) health — only for pools actually running pps. `float`
+    // is the spendable pool balance read at the last accrual; `paused`=1 means
+    // the minFloat kill-switch halted accrual (miners are NOT being credited —
+    // alert on this). Skipped entirely for prop/pplnt/solo pools.
+    const ppsPools = poolNames.filter(function (p) {
+        const pp = pools[p] && pools[p].pps;
+        return !!pp && pp.mode === 'pps';
+    });
+    const ppsSamples = function (
+        pick: (pp: NonNullable<PoolStat['pps']>) => number
+    ): MetricSample[] {
+        return ppsPools.map(function (p): MetricSample {
+            return {
+                labels: { pool: p },
+                value: pick(pools[p].pps as NonNullable<PoolStat['pps']>)
+            };
+        });
+    };
+    metric(
+        'nomp_pool_pps_float',
+        'gauge',
+        'Spendable pool balance (float) at the last PPS accrual, in coins',
+        ppsSamples(function (pp) {
+            return num(pp.float);
+        })
+    );
+    metric(
+        'nomp_pool_pps_paused',
+        'gauge',
+        'PPS accrual paused by the minFloat kill-switch (1=paused, 0=running)',
+        ppsSamples(function (pp) {
+            return num(pp.paused);
+        })
+    );
+    metric(
+        'nomp_pool_pps_accrued_total',
+        'gauge',
+        'Lifetime total accrued to miners under PPS, in coins',
+        ppsSamples(function (pp) {
+            return num(pp.accruedTotal);
+        })
+    );
+    metric(
+        'nomp_pool_pps_share_value',
+        'gauge',
+        'Current PPS value of one difficulty unit of work, in coins',
+        ppsSamples(function (pp) {
+            return num(pp.sharePPS);
         })
     );
 

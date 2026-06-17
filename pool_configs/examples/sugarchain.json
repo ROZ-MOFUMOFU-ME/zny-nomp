@@ -14,7 +14,7 @@
         "minConf": 10,
         "enabled": true,
         "paymentMode": "prop",
-        "_comment_paymentMode": "prop, pplnt, solo",
+        "_comment_paymentMode": "prop, pplnt, solo, pps",
         "paymentInterval": 600,
         "minimumPayment": 10,
         "maxBlocksPerPayment": 3,

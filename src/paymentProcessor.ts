@@ -108,11 +108,12 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         1
     );
 
-    // Payment mode: prop (default, proportional), pplnt (time-weighted), or
-    // solo (whole block reward to the finder). pps/dpps are designed but not
-    // implemented yet (see docs/payment-schemes.md) and fall back to prop.
+    // Payment mode: prop (default, proportional), pplnt (time-weighted), solo
+    // (whole block reward to the finder), or pps (pay-per-share, share-based).
+    // dpps (dynamic PPS) is designed but not implemented yet (see
+    // docs/payment-schemes.md) and falls back to prop.
     var paymentMode = processingConfig.paymentMode || 'prop';
-    if (['prop', 'pplnt', 'solo'].indexOf(paymentMode) === -1) {
+    if (['prop', 'pplnt', 'solo', 'pps'].indexOf(paymentMode) === -1) {
         logger.warning(
             logSystem,
             logComponent,
@@ -126,6 +127,34 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     var pplntTimeQualify = processingConfig.pplnt || 0.51; // 51%
     // solo - the block finder (round.minedby) takes the whole block reward
     var soloEnabled = paymentMode === 'solo';
+    // pps - pay-per-share. SHARE-BASED: the pool fronts variance from a float so
+    // this carries real financial liability (see docs/payment-schemes.md).
+    // Miners accrue `(blockReward / networkDiff) * shareDiff` continuously into
+    // coin:balances (accruePPS, below); matured block rewards are routed to the
+    // pool float instead of miners. HIGH RISK — keep behind float monitoring
+    // (/api/metrics) and the minFloat kill-switch.
+    var ppsEnabled = paymentMode === 'pps';
+    var ppsConfig = (ppsEnabled && processingConfig.pps) || {};
+    var ppsBlockReward = parseFloat(ppsConfig.blockReward) || 0;
+    var ppsFeePercent = parseFloat(ppsConfig.feePercent) || 0;
+    var ppsMinFloat = parseFloat(ppsConfig.minFloat) || 0;
+    // Accrual cannot run without a positive per-block reward basis; if pps is
+    // selected but misconfigured we log and behave as prop (block-based, safe).
+    var ppsActive = ppsEnabled && ppsBlockReward > 0;
+    if (ppsEnabled && !ppsActive) {
+        logger.error(
+            logSystem,
+            logComponent,
+            'paymentMode "pps" requires pps.blockReward > 0 — PPS accrual is DISABLED (behaving as prop) until configured'
+        );
+    }
+    if (ppsActive && !(ppsMinFloat > 0)) {
+        logger.warning(
+            logSystem,
+            logComponent,
+            'pps.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
+        );
+    }
 
     var requireShielding = poolOptions.coin.requireShielding === true;
     var fee = parseFloat(poolOptions.coin.txfee) || parseFloat(0.0004 as any);
@@ -712,6 +741,175 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         });
     }
 
+    // PPS accrual (share-based "Step 0"). Runs on its own timer when pps is
+    // active. Drains coin:pps:shareBuffer (written by shareProcessor) into
+    // coin:balances at a fixed per-share rate, independent of block finds. The
+    // pool fronts this from its float, so a minFloat kill-switch pauses accrual
+    // (retaining the buffer) when the spendable wallet balance dips too low.
+    // Liability is NOT tracked here — it equals the live coin:balances total
+    // (payments reduce it automatically); see /api/metrics. Refs
+    // docs/payment-schemes.md.
+    function accruePPS() {
+        // Kill-switch / float guard: never accrue liability the wallet can't
+        // back. getbalance is the spendable pool balance (the float).
+        daemon.cmd('getbalance', [], function (result: any) {
+            if (
+                !result ||
+                result.error ||
+                result[0].error ||
+                result[0].response == null
+            ) {
+                logger.error(
+                    logSystem,
+                    logComponent,
+                    'PPS accrual: getbalance failed ' +
+                        JSON.stringify(result && result[0] && result[0].error)
+                );
+                return;
+            }
+            var floatBalance = parseFloat(result[0].response) || 0;
+            if (ppsMinFloat > 0 && floatBalance < ppsMinFloat) {
+                logger.warning(
+                    logSystem,
+                    logComponent,
+                    'PPS accrual PAUSED (kill-switch): float ' +
+                        floatBalance +
+                        ' < minFloat ' +
+                        ppsMinFloat +
+                        ' — buffer retained, miners not credited this cycle'
+                );
+                execCommands(redisClient, [
+                    ['hset', coin + ':pps:stats', 'paused', '1'],
+                    [
+                        'hset',
+                        coin + ':pps:stats',
+                        'float',
+                        floatBalance.toFixed(8)
+                    ]
+                ]).catch(function () {});
+                return;
+            }
+            redisClient
+                .hGet(coin + ':stats', 'networkDiff')
+                .then(function (ndStr: any) {
+                    var networkDiff = parseFloat(ndStr) || 0;
+                    if (networkDiff <= 0) {
+                        logger.warning(
+                            logSystem,
+                            logComponent,
+                            'PPS accrual: networkDiff not cached yet, skipping cycle'
+                        );
+                        return;
+                    }
+                    // value of one difficulty unit of work, in coins
+                    var sharePPS = ppsBlockReward / networkDiff;
+                    // Atomically snapshot+drain: RENAME moves the live hash aside
+                    // so shares arriving mid-accrual land in a fresh buffer and
+                    // are never lost or double-counted.
+                    redisClient
+                        .rename(
+                            coin + ':pps:shareBuffer',
+                            coin + ':pps:draining'
+                        )
+                        .then(function () {
+                            return redisClient.hGetAll(coin + ':pps:draining');
+                        })
+                        .then(function (buffer: any) {
+                            var cmds: Array<Array<string | number>> = [];
+                            var totalOwed = 0;
+                            var totalDiff = 0;
+                            for (var worker in buffer) {
+                                var shareDiff = parseFloat(buffer[worker]) || 0;
+                                if (shareDiff <= 0) continue;
+                                var owed =
+                                    sharePPS *
+                                    shareDiff *
+                                    (1 - ppsFeePercent / 100);
+                                if (owed <= 0) continue;
+                                cmds.push([
+                                    'hincrbyfloat',
+                                    coin + ':balances',
+                                    worker,
+                                    owed.toFixed(8)
+                                ]);
+                                totalOwed += owed;
+                                totalDiff += shareDiff;
+                            }
+                            cmds.push(['del', coin + ':pps:draining']);
+                            cmds.push([
+                                'hset',
+                                coin + ':pps:stats',
+                                'paused',
+                                '0'
+                            ]);
+                            cmds.push([
+                                'hset',
+                                coin + ':pps:stats',
+                                'float',
+                                floatBalance.toFixed(8)
+                            ]);
+                            cmds.push([
+                                'hset',
+                                coin + ':pps:stats',
+                                'sharePPS',
+                                sharePPS.toFixed(12)
+                            ]);
+                            if (totalOwed > 0) {
+                                cmds.push([
+                                    'hincrbyfloat',
+                                    coin + ':pps:stats',
+                                    'accruedTotal',
+                                    totalOwed.toFixed(8)
+                                ]);
+                            }
+                            return execCommands(redisClient, cmds).then(
+                                function () {
+                                    if (totalOwed > 0) {
+                                        logger.debug(
+                                            logSystem,
+                                            logComponent,
+                                            'PPS accrued ' +
+                                                totalOwed.toFixed(8) +
+                                                ' over ' +
+                                                totalDiff +
+                                                ' share-diff (sharePPS ' +
+                                                sharePPS.toFixed(12) +
+                                                ', float ' +
+                                                floatBalance +
+                                                ')'
+                                        );
+                                    }
+                                }
+                            );
+                        })
+                        .catch(function (err: any) {
+                            // RENAME rejects when no shares accumulated since the
+                            // last cycle (key missing) — benign, nothing to do.
+                            if (
+                                err &&
+                                /no such key/i.test(String(err.message))
+                            ) {
+                                return;
+                            }
+                            logger.error(
+                                logSystem,
+                                logComponent,
+                                'PPS accrual drain error: ' +
+                                    JSON.stringify(err && err.message)
+                            );
+                        });
+                })
+                .catch(function (err: any) {
+                    logger.error(
+                        logSystem,
+                        logComponent,
+                        'PPS accrual: redis error reading networkDiff ' +
+                            JSON.stringify(err && err.message)
+                    );
+                });
+        });
+    }
+
     // run shielding process every x minutes (walletInterval). Default is a
     // moderate 10 min: z_sendmany is slow/fee-bearing, so a 1-minute cadence
     // just spams tiny shields and the code below even warns when the interval is
@@ -753,6 +951,28 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         // update network stats using coin daemon
         cacheNetworkStats();
     }, stats_interval);
+
+    // PPS accrual timer — only when pps is active (mode=pps + blockReward set).
+    // Drains the per-share buffer into coin:balances at a fixed rate, decoupled
+    // from block finds. Default 60s; override with pps.accrualInterval (min 10s).
+    if (ppsActive) {
+        var ppsAccrualMs =
+            Math.max(parseInt(ppsConfig.accrualInterval) || 60, 10) * 1000;
+        setInterval(accruePPS, ppsAccrualMs);
+        logger.debug(
+            logSystem,
+            logComponent,
+            'PPS accrual enabled (blockReward ' +
+                ppsBlockReward +
+                ', fee ' +
+                ppsFeePercent +
+                '%, minFloat ' +
+                ppsMinFloat +
+                ', every ' +
+                ppsAccrualMs / 1000 +
+                's)'
+        );
+    }
 
     // check operation statuses every 57 seconds
     var opid_interval = 57 * 1000;
@@ -1715,18 +1935,25 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                     workers[
                                                                         workerAddress
                                                                     ] || {});
-                                                            // solo: the finder
-                                                            // takes 100%, others 0
+                                                            // solo: finder takes
+                                                            // 100%, others 0.
+                                                            // pps: matured reward
+                                                            // goes to the pool
+                                                            // float (miners are
+                                                            // paid via accrual),
+                                                            // so 0 here.
                                                             var percent =
                                                                 soloEnabled
                                                                     ? workerAddress ===
                                                                       round.minedby
                                                                         ? 1.0
                                                                         : 0
-                                                                    : parseFloat(
-                                                                          worker.roundShares
-                                                                      ) /
-                                                                      totalShares;
+                                                                    : ppsActive
+                                                                      ? 0
+                                                                      : parseFloat(
+                                                                            worker.roundShares
+                                                                        ) /
+                                                                        totalShares;
                                                             // calculate workers immature for this round
                                                             var workerImmatureTotal =
                                                                 Math.round(
@@ -1926,18 +2153,25 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                     workers[
                                                                         workerAddress
                                                                     ] || {});
-                                                            // solo: the finder
-                                                            // takes 100%, others 0
+                                                            // solo: finder takes
+                                                            // 100%, others 0.
+                                                            // pps: matured reward
+                                                            // goes to the pool
+                                                            // float (miners are
+                                                            // paid via accrual),
+                                                            // so 0 here.
                                                             var percent =
                                                                 soloEnabled
                                                                     ? workerAddress ===
                                                                       round.minedby
                                                                         ? 1.0
                                                                         : 0
-                                                                    : parseFloat(
-                                                                          worker.roundShares
-                                                                      ) /
-                                                                      totalShares;
+                                                                    : ppsActive
+                                                                      ? 0
+                                                                      : parseFloat(
+                                                                            worker.roundShares
+                                                                        ) /
+                                                                        totalShares;
                                                             if (percent > 1.0) {
                                                                 err = true;
                                                                 logger.error(
