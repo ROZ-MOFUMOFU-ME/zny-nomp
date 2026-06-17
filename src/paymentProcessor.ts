@@ -108,9 +108,24 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         1
     );
 
+    // Payment mode: prop (default, proportional), pplnt (time-weighted), or
+    // solo (whole block reward to the finder). pps/dpps are designed but not
+    // implemented yet (see docs/payment-schemes.md) and fall back to prop.
+    var paymentMode = processingConfig.paymentMode || 'prop';
+    if (['prop', 'pplnt', 'solo'].indexOf(paymentMode) === -1) {
+        logger.warning(
+            logSystem,
+            logComponent,
+            'paymentMode "' +
+                paymentMode +
+                '" is not implemented; falling back to proportional (prop)'
+        );
+    }
     // pplnt - pay per last N time shares
-    var pplntEnabled = processingConfig.paymentMode === 'pplnt' || false;
+    var pplntEnabled = paymentMode === 'pplnt';
     var pplntTimeQualify = processingConfig.pplnt || 0.51; // 51%
+    // solo - the block finder (round.minedby) takes the whole block reward
+    var soloEnabled = paymentMode === 'solo';
 
     var requireShielding = poolOptions.coin.requireShielding === true;
     var fee = parseFloat(poolOptions.coin.txfee) || parseFloat(0.0004 as any);
@@ -1700,10 +1715,18 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                     workers[
                                                                         workerAddress
                                                                     ] || {});
+                                                            // solo: the finder
+                                                            // takes 100%, others 0
                                                             var percent =
-                                                                parseFloat(
-                                                                    worker.roundShares
-                                                                ) / totalShares;
+                                                                soloEnabled
+                                                                    ? workerAddress ===
+                                                                      round.minedby
+                                                                        ? 1.0
+                                                                        : 0
+                                                                    : parseFloat(
+                                                                          worker.roundShares
+                                                                      ) /
+                                                                      totalShares;
                                                             // calculate workers immature for this round
                                                             var workerImmatureTotal =
                                                                 Math.round(
@@ -1903,10 +1926,18 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                     workers[
                                                                         workerAddress
                                                                     ] || {});
+                                                            // solo: the finder
+                                                            // takes 100%, others 0
                                                             var percent =
-                                                                parseFloat(
-                                                                    worker.roundShares
-                                                                ) / totalShares;
+                                                                soloEnabled
+                                                                    ? workerAddress ===
+                                                                      round.minedby
+                                                                        ? 1.0
+                                                                        : 0
+                                                                    : parseFloat(
+                                                                          worker.roundShares
+                                                                      ) /
+                                                                      totalShares;
                                                             if (percent > 1.0) {
                                                                 err = true;
                                                                 logger.error(
