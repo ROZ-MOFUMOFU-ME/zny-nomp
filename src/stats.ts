@@ -517,8 +517,23 @@ export default function (
                                             : 0;
                                     }
                                 }
+                                var rewardRecipients =
+                                    poolConfigs[coinName].rewardRecipients ||
+                                    {};
+                                // Pool fee (%) = sum of reward-recipient shares,
+                                // surfaced in /api/stats so aggregators
+                                // (MiningPoolStats etc.) can show the fee.
+                                var poolFeePercent = Object.keys(
+                                    rewardRecipients
+                                ).reduce(function (sum: number, addr: string) {
+                                    return (
+                                        sum +
+                                        (Number(rewardRecipients[addr]) || 0)
+                                    );
+                                }, 0);
                                 var coinStats: any = {
                                     name: coinName,
+                                    fee: poolFeePercent,
                                     blockTime:
                                         poolConfigs[coinName].coin.blockTime,
                                     symbol: poolConfigs[
