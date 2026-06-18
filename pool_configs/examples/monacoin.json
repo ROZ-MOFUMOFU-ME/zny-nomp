@@ -18,7 +18,7 @@
         "minConf": 10,
         "enabled": true,
         "paymentMode": "prop",
-        "_comment_paymentMode": "prop, pplnt, solo, pps",
+        "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
         "paymentInterval": 120,
         "minimumPayment": 0.1,
         "maxBlocksPerPayment": 3,
@@ -27,6 +27,15 @@
             "blockReward": 6.25,
             "minFloat": 500,
             "feePercent": 0.5,
+            "accrualInterval": 60
+        },
+        "_comment_dpps": "Only used when paymentMode is 'dpps' (dynamic PPS). Same SHARE-BASED RISK as pps (the pool fronts variance from a float — keep it behind /api/metrics monitoring), but the per-share rate auto-throttles on the pool's realized luck instead of charging a fixed fee. blockReward = coins per block (current subsidy); targetMargin = solvency cushion taken off the rate (0.02 = 2%); rateMin = floor on the per-share rate vs full PPS (bounds pool downside); smoothingWindow = accrual cycles over which realized luck is EMA-smoothed; minFloat = kill-switch like pps; accrualInterval = seconds between accrual runs (min 10).",
+        "dpps": {
+            "blockReward": 6.25,
+            "targetMargin": 0.02,
+            "rateMin": 0.5,
+            "smoothingWindow": 100,
+            "minFloat": 500,
             "accrualInterval": 60
         },
         "daemon": {

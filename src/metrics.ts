@@ -28,6 +28,8 @@ interface PoolStat {
         paused?: number;
         accruedTotal?: number;
         sharePPS?: number;
+        rateScalar?: number;
+        realizedLuck?: number;
     };
     [key: string]: unknown;
 }
@@ -195,13 +197,13 @@ export function renderMetrics(stats?: MetricsStats | null): string {
         })
     );
 
-    // PPS (pay-per-share) health — only for pools actually running pps. `float`
-    // is the spendable pool balance read at the last accrual; `paused`=1 means
-    // the minFloat kill-switch halted accrual (miners are NOT being credited —
-    // alert on this). Skipped entirely for prop/pplnt/solo pools.
+    // Share-based (pps / dpps) health — only for pools actually running a
+    // share-based mode. `float` is the spendable pool balance read at the last
+    // accrual; `paused`=1 means the minFloat kill-switch halted accrual (miners
+    // are NOT being credited — alert on this). Skipped for prop/pplnt/solo pools.
     const ppsPools = poolNames.filter(function (p) {
         const pp = pools[p] && pools[p].pps;
-        return !!pp && pp.mode === 'pps';
+        return !!pp && (pp.mode === 'pps' || pp.mode === 'dpps');
     });
     const ppsSamples = function (
         pick: (pp: NonNullable<PoolStat['pps']>) => number
@@ -243,6 +245,38 @@ export function renderMetrics(stats?: MetricsStats | null): string {
         'Current PPS value of one difficulty unit of work, in coins',
         ppsSamples(function (pp) {
             return num(pp.sharePPS);
+        })
+    );
+    // D-PPS only: the dynamic rate scalar (basePPS multiplier in [rateMin, 1.0])
+    // and the smoothed realized luck driving it. Emitted only for dpps pools.
+    const dppsPools = ppsPools.filter(function (p) {
+        const pp = pools[p].pps;
+        return !!pp && pp.mode === 'dpps';
+    });
+    const dppsSamples = function (
+        pick: (pp: NonNullable<PoolStat['pps']>) => number
+    ): MetricSample[] {
+        return dppsPools.map(function (p): MetricSample {
+            return {
+                labels: { pool: p },
+                value: pick(pools[p].pps as NonNullable<PoolStat['pps']>)
+            };
+        });
+    };
+    metric(
+        'nomp_pool_dpps_rate_scalar',
+        'gauge',
+        'D-PPS dynamic per-share rate scalar at the last accrual (1.0 = full PPS, floored at rateMin)',
+        dppsSamples(function (pp) {
+            return num(pp.rateScalar);
+        })
+    );
+    metric(
+        'nomp_pool_dpps_realized_luck',
+        'gauge',
+        'D-PPS smoothed realized luck (actualReward EMA / expectedReward EMA; < 1 = pool running underwater)',
+        dppsSamples(function (pp) {
+            return num(pp.realizedLuck);
         })
     );
 

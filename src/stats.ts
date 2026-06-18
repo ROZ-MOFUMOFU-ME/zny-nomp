@@ -629,12 +629,13 @@ export default function (
                                         coinStats.payments.push(jsonObj);
                                     }
                                 }
-                                // PPS monitoring (meaningful only when
-                                // paymentMode=pps): float at last accrual, the
-                                // kill-switch paused flag, lifetime accrued, and
-                                // the latest per-diff-unit share value. Zero for
-                                // other modes. Liability = live balances total,
-                                // already surfaced through miner balances.
+                                // Share-based monitoring (meaningful only when
+                                // paymentMode=pps or dpps): float at last accrual,
+                                // the kill-switch paused flag, lifetime accrued, and
+                                // the latest per-diff-unit base share value. For
+                                // dpps, also the dynamic rate scalar and smoothed
+                                // realized luck. Zero for other modes. Liability =
+                                // live balances total, already surfaced via balances.
                                 var ppsReply = replies[i + 12] || {};
                                 coinStats.pps = {
                                     mode:
@@ -646,7 +647,12 @@ export default function (
                                     paused: ppsReply.paused === '1' ? 1 : 0,
                                     accruedTotal:
                                         parseFloat(ppsReply.accruedTotal) || 0,
-                                    sharePPS: parseFloat(ppsReply.sharePPS) || 0
+                                    sharePPS:
+                                        parseFloat(ppsReply.sharePPS) || 0,
+                                    rateScalar:
+                                        parseFloat(ppsReply.rateScalar) || 0,
+                                    realizedLuck:
+                                        parseFloat(ppsReply.realizedLuck) || 0
                                 };
                                 allCoinStats[coinStats.name] = coinStats;
                             }

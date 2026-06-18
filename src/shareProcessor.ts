@@ -14,14 +14,16 @@ value: a hash with..
 export default function (this: any, logger: Logger, poolConfig: any) {
     const redisConfig = poolConfig.redis;
     const coin = poolConfig.coin.name;
-    // PPS accrues per-share value continuously (drained by the payment processor
-    // on a timer, independent of block finds), so each valid share's difficulty
-    // is mirrored into a parallel buffer. roundCurrent stays exclusively for
-    // block-based round accounting (prop/pplnt/solo). D-PPS is not implemented
-    // yet (see docs/payment-schemes.md) and will reuse this same buffer.
+    // PPS and D-PPS accrue per-share value continuously (drained by the payment
+    // processor on a timer, independent of block finds), so each valid share's
+    // difficulty is mirrored into a parallel buffer. roundCurrent stays
+    // exclusively for block-based round accounting (prop/pplnt/solo). Both
+    // share-based modes use the same shareBuffer; only the per-share rate differs
+    // (see docs/payment-schemes.md §4–5).
     const ppsEnabled =
         !!poolConfig.paymentProcessing &&
-        poolConfig.paymentProcessing.paymentMode === 'pps';
+        (poolConfig.paymentProcessing.paymentMode === 'pps' ||
+            poolConfig.paymentProcessing.paymentMode === 'dpps');
 
     const forkId = process.env.forkId;
     const logSystem = 'Pool';

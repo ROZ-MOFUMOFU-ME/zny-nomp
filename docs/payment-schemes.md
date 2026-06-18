@@ -1,8 +1,10 @@
 # Design: Solo / PPS / D-PPS Payment Schemes for zny-nomp
 
-> Status: **DESIGN ONLY** — no code yet. Investigation of how to add `solo`,
-> `pps`, `dpps` to `paymentProcessing.paymentMode` (today only `prop`/`pplnt`).
-> `file:line` references are to branch `develop`.
+> Status: **IMPLEMENTED** on `develop` — `solo`, `pps` and `dpps` are all live in
+> `paymentProcessing.paymentMode` (alongside `prop`/`pplnt`). This is the original
+> design; the `file:line` references below predate the code and may have drifted.
+> D-PPS rate math lives in `src/ppsLogic.ts` (unit-tested in
+> `test/ppsLogic.test.ts`); accrual is in `paymentProcessor.ts` (shared with PPS).
 
 ---
 
@@ -138,6 +140,15 @@ paid regardless of blocks found.
 ---
 
 ## 5. D-PPS — dynamic PPS
+
+> **Implemented.** Reuses the entire PPS accrual path (shareBuffer drain + float
+> kill-switch); only the per-share rate differs. `rateScalar` and the smoothed
+> realized luck are computed in `src/ppsLogic.ts`, persisted to `coin:pps:stats`
+> (`rateScalar`/`realizedLuck`/`expectedEma`/`actualEma`), and exposed via
+> `/api/metrics` (`nomp_pool_dpps_rate_scalar`, `nomp_pool_dpps_realized_luck`).
+> `actualReward` is accrued from matured blocks (Step 3 `generate`) into
+> `coin:pps:stats.actualPending`. NOT mainnet-safe until a sustained testnet run.
+
 ```
 basePPS    = (blockReward / networkDifficulty) * shareDifficulty
 realizedLuck(window) = actualRewardReceived / expectedReward   (expected = basePPS·Σ shareDiff)

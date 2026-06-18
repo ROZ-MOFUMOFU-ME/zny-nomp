@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { createRedisClient, execCommands } from './redisUtil.ts';
+import { dppsRateScalar, emaNext, realizedLuck } from './ppsLogic.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/src/util.ts';
@@ -109,11 +110,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     );
 
     // Payment mode: prop (default, proportional), pplnt (time-weighted), solo
-    // (whole block reward to the finder), or pps (pay-per-share, share-based).
-    // dpps (dynamic PPS) is designed but not implemented yet (see
-    // docs/payment-schemes.md) and falls back to prop.
+    // (whole block reward to the finder), pps (fixed pay-per-share, share-based),
+    // or dpps (dynamic PPS — PPS whose per-share rate auto-throttles on the pool's
+    // realized luck, floored at rateMin; see docs/payment-schemes.md §5).
     var paymentMode = processingConfig.paymentMode || 'prop';
-    if (['prop', 'pplnt', 'solo', 'pps'].indexOf(paymentMode) === -1) {
+    if (['prop', 'pplnt', 'solo', 'pps', 'dpps'].indexOf(paymentMode) === -1) {
         logger.warning(
             logSystem,
             logComponent,
@@ -155,6 +156,46 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             'pps.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
         );
     }
+    // dpps - DYNAMIC pay-per-share. PPS plus a feedback controller: the per-share
+    // rate is scaled by the pool's realized luck (smoothed actualReward /
+    // expectedReward) so payouts auto-throttle when the pool runs underwater,
+    // floored at rateMin and capped at full PPS. Shares the entire PPS accrual
+    // path (shareBuffer drain + float kill-switch); only the per-share rate differs.
+    var dppsEnabled = paymentMode === 'dpps';
+    var dppsConfig = (dppsEnabled && processingConfig.dpps) || {};
+    var dppsBlockReward = parseFloat(dppsConfig.blockReward) || 0;
+    var dppsTargetMargin = parseFloat(dppsConfig.targetMargin);
+    if (!(dppsTargetMargin >= 0 && dppsTargetMargin < 1))
+        dppsTargetMargin = 0.02;
+    var dppsRateMin = parseFloat(dppsConfig.rateMin);
+    if (!(dppsRateMin >= 0 && dppsRateMin <= 1)) dppsRateMin = 0.5;
+    var dppsSmoothingWindow = Math.max(
+        parseInt(dppsConfig.smoothingWindow) || 100,
+        1
+    );
+    var dppsMinFloat = parseFloat(dppsConfig.minFloat) || 0;
+    var dppsActive = dppsEnabled && dppsBlockReward > 0;
+    if (dppsEnabled && !dppsActive) {
+        logger.error(
+            logSystem,
+            logComponent,
+            'paymentMode "dpps" requires dpps.blockReward > 0 — D-PPS accrual is DISABLED (behaving as prop) until configured'
+        );
+    }
+    if (dppsActive && !(dppsMinFloat > 0)) {
+        logger.warning(
+            logSystem,
+            logComponent,
+            'dpps.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
+        );
+    }
+    // Unified share-based accrual parameters. PPS and D-PPS share the accrual
+    // timer, the shareBuffer drain and the float kill-switch; only the per-share
+    // rate differs (fixed (1 - feePercent) for pps, dynamic rateScalar for dpps).
+    var shareBasedActive = ppsActive || dppsActive;
+    var shareBlockReward = ppsActive ? ppsBlockReward : dppsBlockReward;
+    var shareMinFloat = ppsActive ? ppsMinFloat : dppsMinFloat;
+    var shareAccrualConfig: any = ppsActive ? ppsConfig : dppsConfig;
 
     var requireShielding = poolOptions.coin.requireShielding === true;
     var fee = parseFloat(poolOptions.coin.txfee) || parseFloat(0.0004 as any);
@@ -768,14 +809,14 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 return;
             }
             var floatBalance = parseFloat(result[0].response) || 0;
-            if (ppsMinFloat > 0 && floatBalance < ppsMinFloat) {
+            if (shareMinFloat > 0 && floatBalance < shareMinFloat) {
                 logger.warning(
                     logSystem,
                     logComponent,
-                    'PPS accrual PAUSED (kill-switch): float ' +
+                    'Share-based accrual PAUSED (kill-switch): float ' +
                         floatBalance +
                         ' < minFloat ' +
-                        ppsMinFloat +
+                        shareMinFloat +
                         ' — buffer retained, miners not credited this cycle'
                 );
                 execCommands(redisClient, [
@@ -789,20 +830,41 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 ]).catch(function () {});
                 return;
             }
-            redisClient
-                .hGet(coin + ':stats', 'networkDiff')
-                .then(function (ndStr: any) {
-                    var networkDiff = parseFloat(ndStr) || 0;
+            var statsKey = coin + ':pps:stats';
+            Promise.all([
+                redisClient.hGet(coin + ':stats', 'networkDiff'),
+                dppsActive ? redisClient.hGetAll(statsKey) : Promise.resolve({})
+            ])
+                .then(function (reads: any) {
+                    var networkDiff = parseFloat(reads[0]) || 0;
+                    var statsHash = reads[1] || {};
                     if (networkDiff <= 0) {
                         logger.warning(
                             logSystem,
                             logComponent,
-                            'PPS accrual: networkDiff not cached yet, skipping cycle'
+                            'Share-based accrual: networkDiff not cached yet, skipping cycle'
                         );
                         return;
                     }
-                    // value of one difficulty unit of work, in coins
-                    var sharePPS = ppsBlockReward / networkDiff;
+                    // basePPS: full value of one difficulty unit of work, in coins.
+                    var basePPS = shareBlockReward / networkDiff;
+                    // Per-share rate. pps: fixed (1 - feePercent). dpps: dynamic
+                    // rateScalar from smoothed realized luck (actualReward EMA /
+                    // expectedReward EMA), floored at rateMin and capped at 1.0.
+                    var expectedEma = parseFloat(statsHash.expectedEma) || 0;
+                    var actualEma = parseFloat(statsHash.actualEma) || 0;
+                    var actualPending =
+                        parseFloat(statsHash.actualPending) || 0;
+                    var rateScalar = dppsActive
+                        ? dppsRateScalar(
+                              realizedLuck(actualEma, expectedEma),
+                              dppsTargetMargin,
+                              dppsRateMin
+                          )
+                        : 1;
+                    var effectiveRate = dppsActive
+                        ? rateScalar
+                        : 1 - ppsFeePercent / 100;
                     // Atomically snapshot+drain: RENAME moves the live hash aside
                     // so shares arriving mid-accrual land in a fresh buffer and
                     // are never lost or double-counted.
@@ -821,10 +883,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                             for (var worker in buffer) {
                                 var shareDiff = parseFloat(buffer[worker]) || 0;
                                 if (shareDiff <= 0) continue;
-                                var owed =
-                                    sharePPS *
-                                    shareDiff *
-                                    (1 - ppsFeePercent / 100);
+                                var owed = basePPS * effectiveRate * shareDiff;
                                 if (owed <= 0) continue;
                                 cmds.push([
                                     'hincrbyfloat',
@@ -836,31 +895,80 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                 totalDiff += shareDiff;
                             }
                             cmds.push(['del', coin + ':pps:draining']);
+                            cmds.push(['hset', statsKey, 'paused', '0']);
                             cmds.push([
                                 'hset',
-                                coin + ':pps:stats',
-                                'paused',
-                                '0'
-                            ]);
-                            cmds.push([
-                                'hset',
-                                coin + ':pps:stats',
+                                statsKey,
                                 'float',
                                 floatBalance.toFixed(8)
                             ]);
                             cmds.push([
                                 'hset',
-                                coin + ':pps:stats',
+                                statsKey,
                                 'sharePPS',
-                                sharePPS.toFixed(12)
+                                basePPS.toFixed(12)
                             ]);
                             if (totalOwed > 0) {
                                 cmds.push([
                                     'hincrbyfloat',
-                                    coin + ':pps:stats',
+                                    statsKey,
                                     'accruedTotal',
                                     totalOwed.toFixed(8)
                                 ]);
+                            }
+                            if (dppsActive) {
+                                // Roll the luck EMAs with this cycle's flows:
+                                // expected = full-PPS value of the drained work,
+                                // actual = block rewards received since the last
+                                // cycle (actualPending, accrued in Step 3). Reset
+                                // pending by subtracting the snapshot so a block
+                                // maturing mid-cycle is not lost.
+                                var newExpectedEma = emaNext(
+                                    expectedEma,
+                                    basePPS * totalDiff,
+                                    dppsSmoothingWindow
+                                );
+                                var newActualEma = emaNext(
+                                    actualEma,
+                                    actualPending,
+                                    dppsSmoothingWindow
+                                );
+                                cmds.push(['hset', statsKey, 'mode', 'dpps']);
+                                cmds.push([
+                                    'hset',
+                                    statsKey,
+                                    'expectedEma',
+                                    newExpectedEma.toFixed(8)
+                                ]);
+                                cmds.push([
+                                    'hset',
+                                    statsKey,
+                                    'actualEma',
+                                    newActualEma.toFixed(8)
+                                ]);
+                                cmds.push([
+                                    'hset',
+                                    statsKey,
+                                    'realizedLuck',
+                                    realizedLuck(
+                                        newActualEma,
+                                        newExpectedEma
+                                    ).toFixed(6)
+                                ]);
+                                cmds.push([
+                                    'hset',
+                                    statsKey,
+                                    'rateScalar',
+                                    rateScalar.toFixed(6)
+                                ]);
+                                if (actualPending !== 0) {
+                                    cmds.push([
+                                        'hincrbyfloat',
+                                        statsKey,
+                                        'actualPending',
+                                        (-actualPending).toFixed(8)
+                                    ]);
+                                }
                             }
                             return execCommands(redisClient, cmds).then(
                                 function () {
@@ -868,12 +976,15 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                         logger.debug(
                                             logSystem,
                                             logComponent,
-                                            'PPS accrued ' +
+                                            (dppsActive ? 'D-PPS' : 'PPS') +
+                                                ' accrued ' +
                                                 totalOwed.toFixed(8) +
                                                 ' over ' +
                                                 totalDiff +
-                                                ' share-diff (sharePPS ' +
-                                                sharePPS.toFixed(12) +
+                                                ' share-diff (basePPS ' +
+                                                basePPS.toFixed(12) +
+                                                ', rate ' +
+                                                effectiveRate.toFixed(6) +
                                                 ', float ' +
                                                 floatBalance +
                                                 ')'
@@ -894,7 +1005,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                             logger.error(
                                 logSystem,
                                 logComponent,
-                                'PPS accrual drain error: ' +
+                                'Share-based accrual drain error: ' +
                                     JSON.stringify(err && err.message)
                             );
                         });
@@ -903,7 +1014,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                     logger.error(
                         logSystem,
                         logComponent,
-                        'PPS accrual: redis error reading networkDiff ' +
+                        'Share-based accrual: redis error reading stats ' +
                             JSON.stringify(err && err.message)
                     );
                 });
@@ -952,22 +1063,31 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         cacheNetworkStats();
     }, stats_interval);
 
-    // PPS accrual timer — only when pps is active (mode=pps + blockReward set).
-    // Drains the per-share buffer into coin:balances at a fixed rate, decoupled
-    // from block finds. Default 60s; override with pps.accrualInterval (min 10s).
-    if (ppsActive) {
+    // Share-based accrual timer — only when pps or dpps is active (mode set +
+    // blockReward > 0). Drains the per-share buffer into coin:balances decoupled
+    // from block finds. Default 60s; override with {pps|dpps}.accrualInterval
+    // (min 10s).
+    if (shareBasedActive) {
         var ppsAccrualMs =
-            Math.max(parseInt(ppsConfig.accrualInterval) || 60, 10) * 1000;
+            Math.max(parseInt(shareAccrualConfig.accrualInterval) || 60, 10) *
+            1000;
         setInterval(accruePPS, ppsAccrualMs);
         logger.debug(
             logSystem,
             logComponent,
-            'PPS accrual enabled (blockReward ' +
-                ppsBlockReward +
-                ', fee ' +
-                ppsFeePercent +
-                '%, minFloat ' +
-                ppsMinFloat +
+            (dppsActive ? 'D-PPS' : 'PPS') +
+                ' accrual enabled (blockReward ' +
+                shareBlockReward +
+                (dppsActive
+                    ? ', targetMargin ' +
+                      dppsTargetMargin +
+                      ', rateMin ' +
+                      dppsRateMin +
+                      ', smoothingWindow ' +
+                      dppsSmoothingWindow
+                    : ', fee ' + ppsFeePercent + '%') +
+                ', minFloat ' +
+                shareMinFloat +
                 ', every ' +
                 ppsAccrualMs / 1000 +
                 's)'
@@ -1948,7 +2068,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                       round.minedby
                                                                         ? 1.0
                                                                         : 0
-                                                                    : ppsActive
+                                                                    : shareBasedActive
                                                                       ? 0
                                                                       : parseFloat(
                                                                             worker.roundShares
@@ -1994,6 +2114,29 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                         reward = Math.round(
                                                             reward - feeSatoshi
                                                         );
+
+                                                        // D-PPS realized-luck input: the matured block reward
+                                                        // (the gross coins the pool actually received this round,
+                                                        // which under pps/dpps goes to the float) is accrued into
+                                                        // coin:pps:stats.actualPending; the next accrual cycle
+                                                        // folds it into the actualReward EMA. Once per matured
+                                                        // round — the round leaves blocksPending after payout, so
+                                                        // it is never double-counted.
+                                                        if (
+                                                            dppsActive &&
+                                                            round.reward > 0
+                                                        ) {
+                                                            redisClient
+                                                                .hIncrByFloat(
+                                                                    coin +
+                                                                        ':pps:stats',
+                                                                    'actualPending',
+                                                                    round.reward
+                                                                )
+                                                                .catch(
+                                                                    function () {}
+                                                                );
+                                                        }
 
                                                         // find most time spent in this round by single worker
                                                         maxTime = 0;
@@ -2166,7 +2309,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                       round.minedby
                                                                         ? 1.0
                                                                         : 0
-                                                                    : ppsActive
+                                                                    : shareBasedActive
                                                                       ? 0
                                                                       : parseFloat(
                                                                             worker.roundShares
