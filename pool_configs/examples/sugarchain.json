@@ -15,6 +15,22 @@
         "enabled": true,
         "paymentMode": "prop",
         "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
+        "_comment_pps": "paymentMode=pps only (share-based; the pool fronts block-find variance from a pre-funded float - see docs/payment-schemes.md). blockReward = current block subsidy in coins (0 DISABLES accrual; set it from your daemon's getblocktemplate coinbasevalue or getblocksubsidy); minFloat = kill-switch float floor, operator-tunable; feePercent = pool cut taken off each share; accrualInterval = seconds (min 10).",
+        "pps": {
+            "blockReward": 5.36870912,
+            "minFloat": 200,
+            "feePercent": 0.5,
+            "accrualInterval": 60
+        },
+        "_comment_dpps": "paymentMode=dpps only (dynamic PPS; the per-share rate auto-throttles on the pool's realized luck, floored at rateMin and capped at full PPS - see docs/payment-schemes.md section 5). blockReward as in pps; targetMargin = solvency cushion taken off the rate (0.02 = 2%); rateMin = floor on the per-share rate vs full PPS; smoothingWindow = accrual cycles over which realized luck is EMA-smoothed; minFloat / accrualInterval as in pps.",
+        "dpps": {
+            "blockReward": 5.36870912,
+            "targetMargin": 0.02,
+            "rateMin": 0.5,
+            "smoothingWindow": 100,
+            "minFloat": 200,
+            "accrualInterval": 60
+        },
         "paymentInterval": 600,
         "minimumPayment": 10,
         "maxBlocksPerPayment": 3,
