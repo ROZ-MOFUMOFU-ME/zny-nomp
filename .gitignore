@@ -401,6 +401,8 @@ FodyWeavers.xsd
 config.json
 pool_configs/*.json
 coins/*.json
+coins/regtest/
+coins/testnet/
 
 # Build artifacts (legacy TypeScript/Next.js experiments — not used)
 dist/
