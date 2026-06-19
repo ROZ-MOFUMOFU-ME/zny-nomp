@@ -2,6 +2,11 @@ import fs from 'fs';
 import { createRedisClient, execCommands } from './redisUtil.ts';
 import { dppsRateScalar, emaNext, realizedLuck } from './ppsLogic.ts';
 import { parsePplnsEntry, pplnsShareTotals } from './pplnsLogic.ts';
+import {
+    avgFeePerBlock,
+    fppsEffectiveReward,
+    ppsPlusFeePart
+} from './feeRewardLogic.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/src/util.ts';
@@ -116,9 +121,16 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     // realized luck, floored at rateMin; see docs/payment-schemes.md §5).
     var paymentMode = processingConfig.paymentMode || 'prop';
     if (
-        ['prop', 'pplnt', 'pplns', 'solo', 'pps', 'dpps'].indexOf(
-            paymentMode
-        ) === -1
+        [
+            'prop',
+            'pplnt',
+            'pplns',
+            'solo',
+            'pps',
+            'dpps',
+            'fpps',
+            'ppsplus'
+        ].indexOf(paymentMode) === -1
     ) {
         logger.warning(
             logSystem,
@@ -206,13 +218,121 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             'dpps.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
         );
     }
-    // Unified share-based accrual parameters. PPS and D-PPS share the accrual
-    // timer, the shareBuffer drain and the float kill-switch; only the per-share
-    // rate differs (fixed (1 - feePercent) for pps, dynamic rateScalar for dpps).
-    var shareBasedActive = ppsActive || dppsActive;
-    var shareBlockReward = ppsActive ? ppsBlockReward : dppsBlockReward;
-    var shareMinFloat = ppsActive ? ppsMinFloat : dppsMinFloat;
-    var shareAccrualConfig: any = ppsActive ? ppsConfig : dppsConfig;
+    // fpps - FULL pay-per-share. PPS whose per-share rate also pays out the
+    // pool's expected transaction fees: the rate basis is
+    // (blockReward + smoothed avg tx fee) instead of just the subsidy. Each
+    // matured block's fee (round.reward - blockReward) is sampled into a fee EMA
+    // (feePending/feeBlocksPending -> feeEma in coin:pps:stats, rolled by
+    // accruePPS); like PPS the whole matured reward goes to the float. SHARE-
+    // BASED — same float / kill-switch risk as pps. See docs/payment-schemes.md.
+    var fppsEnabled = paymentMode === 'fpps';
+    var fppsConfig = (fppsEnabled && processingConfig.fpps) || {};
+    var fppsBlockReward = parseFloat(fppsConfig.blockReward) || 0;
+    var fppsFeePercent = parseFloat(fppsConfig.feePercent) || 0;
+    var fppsMinFloat = parseFloat(fppsConfig.minFloat) || 0;
+    var fppsFeeWindow = Math.max(parseInt(fppsConfig.feeWindow) || 100, 1);
+    var fppsActive = fppsEnabled && fppsBlockReward > 0;
+    if (fppsEnabled && !fppsActive) {
+        logger.error(
+            logSystem,
+            logComponent,
+            'paymentMode "fpps" requires fpps.blockReward > 0 — FPPS accrual is DISABLED (behaving as prop) until configured'
+        );
+    }
+    if (fppsActive && !(fppsMinFloat > 0)) {
+        logger.warning(
+            logSystem,
+            logComponent,
+            'fpps.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
+        );
+    }
+    // ppsplus - PPS+. The block SUBSIDY is paid via PPS accrual (share-based,
+    // from the float); each matured block's TX-FEE portion
+    // (round.reward - blockReward) is distributed PPLNS-style to recent shares
+    // (block-based) instead of being routed to the float. So it reuses both the
+    // PPS accrual path (subsidy) and the PPLNS rolling-window path (fees). The
+    // subsidy stays in the wallet to back the accrual. SHARE-BASED on the
+    // subsidy leg — same float / kill-switch risk as pps.
+    var ppsplusEnabled = paymentMode === 'ppsplus';
+    var ppsplusConfig = (ppsplusEnabled && processingConfig.ppsplus) || {};
+    var ppsplusBlockReward = parseFloat(ppsplusConfig.blockReward) || 0;
+    var ppsplusFeePercent = parseFloat(ppsplusConfig.feePercent) || 0;
+    var ppsplusMinFloat = parseFloat(ppsplusConfig.minFloat) || 0;
+    var ppsplusN = parseFloat(ppsplusConfig.n) || 2; // fee window = N x networkDiff
+    var ppsplusActive = ppsplusEnabled && ppsplusBlockReward > 0;
+    if (ppsplusEnabled && !ppsplusActive) {
+        logger.error(
+            logSystem,
+            logComponent,
+            'paymentMode "ppsplus" requires ppsplus.blockReward > 0 — PPS+ accrual is DISABLED (behaving as prop) until configured'
+        );
+    }
+    if (ppsplusActive && !(ppsplusMinFloat > 0)) {
+        logger.warning(
+            logSystem,
+            logComponent,
+            'ppsplus.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
+        );
+    }
+    // Unified share-based accrual parameters. pps / dpps / fpps / ppsplus share
+    // the accrual timer, the shareBuffer drain and the float kill-switch; only
+    // the per-share rate basis differs (fixed (1 - feePercent) for pps/fpps/
+    // ppsplus, dynamic rateScalar for dpps; fpps adds the smoothed fee to the
+    // reward basis; ppsplus accrues only the subsidy).
+    var accrualActive = ppsActive || dppsActive || fppsActive || ppsplusActive;
+    var shareBlockReward = ppsActive
+        ? ppsBlockReward
+        : dppsActive
+          ? dppsBlockReward
+          : fppsActive
+            ? fppsBlockReward
+            : ppsplusActive
+              ? ppsplusBlockReward
+              : 0;
+    var shareMinFloat = ppsActive
+        ? ppsMinFloat
+        : dppsActive
+          ? dppsMinFloat
+          : fppsActive
+            ? fppsMinFloat
+            : ppsplusActive
+              ? ppsplusMinFloat
+              : 0;
+    var shareFeePercent = ppsActive
+        ? ppsFeePercent
+        : fppsActive
+          ? fppsFeePercent
+          : ppsplusActive
+            ? ppsplusFeePercent
+            : 0;
+    var shareAccrualConfig: any = ppsActive
+        ? ppsConfig
+        : dppsActive
+          ? dppsConfig
+          : fppsActive
+            ? fppsConfig
+            : ppsplusActive
+              ? ppsplusConfig
+              : {};
+    // Whether a matured block's FULL reward is routed to the float (miners paid
+    // via accrual): true for pps/dpps/fpps. ppsplus distributes the fee portion
+    // to miners (only the subsidy backs the float), so it is NOT block-to-float.
+    var blockToFloat = ppsActive || dppsActive || fppsActive;
+    // Whether the PPLNS rolling window is maintained / consumed: pure pplns and
+    // ppsplus (the latter uses it only to split tx fees).
+    var pplnsWindowActive = pplnsEnabled || ppsplusActive;
+    // Fee window multiplier used by the active window consumer.
+    var pplnsWindowN = ppsplusActive ? ppsplusN : pplnsN;
+    // Human label for the active share-based accrual mode (logs only).
+    var shareModeLabel = ppsActive
+        ? 'PPS'
+        : dppsActive
+          ? 'D-PPS'
+          : fppsActive
+            ? 'FPPS'
+            : ppsplusActive
+              ? 'PPS+'
+              : 'PPS';
 
     var requireShielding = poolOptions.coin.requireShielding === true;
     var fee = parseFloat(poolOptions.coin.txfee) || parseFloat(0.0004 as any);
@@ -850,7 +970,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             var statsKey = coin + ':pps:stats';
             Promise.all([
                 redisClient.hGet(coin + ':stats', 'networkDiff'),
-                dppsActive ? redisClient.hGetAll(statsKey) : Promise.resolve({})
+                // dpps needs the luck EMAs; fpps needs the fee EMA + pending fee
+                // samples — both live in pps:stats.
+                dppsActive || fppsActive
+                    ? redisClient.hGetAll(statsKey)
+                    : Promise.resolve({})
             ])
                 .then(function (reads: any) {
                     var networkDiff = parseFloat(reads[0]) || 0;
@@ -863,11 +987,31 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                         );
                         return;
                     }
+                    // FPPS: roll the per-block tx-fee EMA from this cycle's
+                    // matured-block samples (feePending over feeBlocksPending,
+                    // accumulated in Step 3), and add the smoothed fee to the
+                    // reward basis so each share is paid its even slice of fees.
+                    var feeEma = parseFloat(statsHash.feeEma) || 0;
+                    var feePending = parseFloat(statsHash.feePending) || 0;
+                    var feeBlocksPending =
+                        parseFloat(statsHash.feeBlocksPending) || 0;
+                    var newFeeEma = feeEma;
+                    if (fppsActive && feeBlocksPending > 0) {
+                        newFeeEma = emaNext(
+                            feeEma,
+                            avgFeePerBlock(feePending, feeBlocksPending),
+                            fppsFeeWindow
+                        );
+                    }
+                    var rewardBasis = fppsActive
+                        ? fppsEffectiveReward(shareBlockReward, newFeeEma)
+                        : shareBlockReward;
                     // basePPS: full value of one difficulty unit of work, in coins.
-                    var basePPS = shareBlockReward / networkDiff;
-                    // Per-share rate. pps: fixed (1 - feePercent). dpps: dynamic
-                    // rateScalar from smoothed realized luck (actualReward EMA /
-                    // expectedReward EMA), floored at rateMin and capped at 1.0.
+                    var basePPS = rewardBasis / networkDiff;
+                    // Per-share rate. pps/fpps/ppsplus: fixed (1 - feePercent).
+                    // dpps: dynamic rateScalar from smoothed realized luck
+                    // (actualReward EMA / expectedReward EMA), floored at rateMin
+                    // and capped at 1.0.
                     var expectedEma = parseFloat(statsHash.expectedEma) || 0;
                     var actualEma = parseFloat(statsHash.actualEma) || 0;
                     var actualPending =
@@ -881,7 +1025,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                         : 1;
                     var effectiveRate = dppsActive
                         ? rateScalar
-                        : 1 - ppsFeePercent / 100;
+                        : 1 - shareFeePercent / 100;
                     // Atomically snapshot+drain: RENAME moves the live hash aside
                     // so shares arriving mid-accrual land in a fresh buffer and
                     // are never lost or double-counted.
@@ -932,6 +1076,34 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                     'accruedTotal',
                                     totalOwed.toFixed(8)
                                 ]);
+                            }
+                            if (fppsActive) {
+                                // Persist the rolled fee EMA and clear this
+                                // cycle's pending samples (subtract the snapshot
+                                // so a block maturing mid-cycle is not lost).
+                                cmds.push(['hset', statsKey, 'mode', 'fpps']);
+                                cmds.push([
+                                    'hset',
+                                    statsKey,
+                                    'feeEma',
+                                    newFeeEma.toFixed(8)
+                                ]);
+                                if (feePending !== 0) {
+                                    cmds.push([
+                                        'hincrbyfloat',
+                                        statsKey,
+                                        'feePending',
+                                        (-feePending).toFixed(8)
+                                    ]);
+                                }
+                                if (feeBlocksPending !== 0) {
+                                    cmds.push([
+                                        'hincrbyfloat',
+                                        statsKey,
+                                        'feeBlocksPending',
+                                        String(-feeBlocksPending)
+                                    ]);
+                                }
                             }
                             if (dppsActive) {
                                 // Roll the luck EMAs with this cycle's flows:
@@ -993,7 +1165,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                         logger.debug(
                                             logSystem,
                                             logComponent,
-                                            (dppsActive ? 'D-PPS' : 'PPS') +
+                                            shareModeLabel +
                                                 ' accrued ' +
                                                 totalOwed.toFixed(8) +
                                                 ' over ' +
@@ -1080,11 +1252,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         cacheNetworkStats();
     }, stats_interval);
 
-    // Share-based accrual timer — only when pps or dpps is active (mode set +
-    // blockReward > 0). Drains the per-share buffer into coin:balances decoupled
-    // from block finds. Default 60s; override with {pps|dpps}.accrualInterval
-    // (min 10s).
-    if (shareBasedActive) {
+    // Share-based accrual timer — only when a share-based mode is active (mode
+    // set + blockReward > 0: pps/dpps/fpps/ppsplus). Drains the per-share buffer
+    // into coin:balances decoupled from block finds. Default 60s; override with
+    // {pps|dpps|fpps|ppsplus}.accrualInterval (min 10s).
+    if (accrualActive) {
         var ppsAccrualMs =
             Math.max(parseInt(shareAccrualConfig.accrualInterval) || 60, 10) *
             1000;
@@ -1092,7 +1264,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         logger.debug(
             logSystem,
             logComponent,
-            (dppsActive ? 'D-PPS' : 'PPS') +
+            shareModeLabel +
                 ' accrual enabled (blockReward ' +
                 shareBlockReward +
                 (dppsActive
@@ -1102,7 +1274,9 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                       dppsRateMin +
                       ', smoothingWindow ' +
                       dppsSmoothingWindow
-                    : ', fee ' + ppsFeePercent + '%') +
+                    : ', fee ' + shareFeePercent + '%') +
+                (fppsActive ? ', feeWindow ' + fppsFeeWindow : '') +
+                (ppsplusActive ? ', feeWindowN ' + ppsplusN : '') +
                 ', minFloat ' +
                 shareMinFloat +
                 ', every ' +
@@ -1328,7 +1502,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         // shares fall in the window, never the total reward paid (the full block
         // reward is always distributed proportionally among the window).
         var loadPplnsTotals = function (rounds: any, cb: any) {
-            if (!pplnsEnabled) return cb(null);
+            if (!pplnsWindowActive) return cb(null);
             var pm = redisClient.multi();
             pm.hGet(coin + ':stats', 'networkDiff');
             rounds.forEach(function (r: any) {
@@ -1339,7 +1513,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 function (res: any) {
                     endRedisTimer();
                     var networkDiff = parseFloat(res[0]) || 0;
-                    var windowDiff = pplnsN * networkDiff;
+                    var windowDiff = pplnsWindowN * networkDiff;
                     var byHeight: any = {};
                     rounds.forEach(function (r: any, i: any) {
                         var entries = (res[i + 1] || [])
@@ -1855,7 +2029,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                     // before pplns was enabled) falls back to
                                     // its round shares (prop-like) so it still
                                     // pays rather than being kicked.
-                                    if (pplnsEnabled && pplnsTotals) {
+                                    if (pplnsWindowActive && pplnsTotals) {
                                         rounds.forEach(function (
                                             r: any,
                                             i: any
@@ -1896,7 +2070,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                     var feeSatoshi = coinsToSatoshies(fee);
                                     var totalOwed: any = parseInt(0 as any);
                                     for (var i = 0; i < rounds.length; i++) {
-                                        // only pay generated blocks, not orphaned, kicked, immature
+                                        // only pay generated blocks, not orphaned, kicked, immature.
+                                        // The full block reward is counted (conservative): under
+                                        // pps/dpps/fpps it stays in the float and under ppsplus the
+                                        // subsidy stays in the wallet, but in every case the wallet
+                                        // must hold the coins, so the funds check should require them.
                                         if (rounds[i].category == 'generate') {
                                             totalOwed =
                                                 totalOwed +
@@ -2057,6 +2235,24 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                 feeSatoshi
                                                         );
 
+                                                        // PPS+: only the tx-fee portion is owed to miners from a
+                                                        // block (the subsidy is paid via accrual), so the immature
+                                                        // estimate excludes the subsidy too.
+                                                        if (ppsplusActive) {
+                                                            immature =
+                                                                Math.round(
+                                                                    ppsPlusFeePart(
+                                                                        coinsToSatoshies(
+                                                                            round.reward
+                                                                        ),
+                                                                        coinsToSatoshies(
+                                                                            ppsplusBlockReward
+                                                                        ),
+                                                                        feeSatoshi
+                                                                    )
+                                                                );
+                                                        }
+
                                                         // find most time spent in this round by single worker
                                                         var maxTime: any = 0;
                                                         for (var workerAddress in workerTimes) {
@@ -2183,7 +2379,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                       round.minedby
                                                                         ? 1.0
                                                                         : 0
-                                                                    : shareBasedActive
+                                                                    : blockToFloat
                                                                       ? 0
                                                                       : parseFloat(
                                                                             worker.roundShares
@@ -2230,6 +2426,24 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                             reward - feeSatoshi
                                                         );
 
+                                                        // PPS+: only the TX-FEE portion of the block is
+                                                        // distributed to miners here (PPLNS-style). The subsidy
+                                                        // stays in the wallet to back the PPS accrual that pays it
+                                                        // per-share, so the apportioned amount is the fee part.
+                                                        if (ppsplusActive) {
+                                                            reward = Math.round(
+                                                                ppsPlusFeePart(
+                                                                    coinsToSatoshies(
+                                                                        round.reward
+                                                                    ),
+                                                                    coinsToSatoshies(
+                                                                        ppsplusBlockReward
+                                                                    ),
+                                                                    feeSatoshi
+                                                                )
+                                                            );
+                                                        }
+
                                                         // D-PPS realized-luck input: the matured block reward
                                                         // (the gross coins the pool actually received this round,
                                                         // which under pps/dpps goes to the float) is accrued into
@@ -2248,6 +2462,41 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                     'actualPending',
                                                                     round.reward
                                                                 )
+                                                                .catch(
+                                                                    function () {}
+                                                                );
+                                                        }
+
+                                                        // FPPS fee sample: each matured block's tx-fee portion
+                                                        // (gross coinbase minus the fixed subsidy) is accumulated
+                                                        // as a pending sum + count; accruePPS folds it into the
+                                                        // fee EMA that lifts the per-share rate. Once per matured
+                                                        // round (it leaves blocksPending after payout).
+                                                        if (
+                                                            fppsActive &&
+                                                            round.reward > 0
+                                                        ) {
+                                                            var fppsFee =
+                                                                Math.max(
+                                                                    0,
+                                                                    round.reward -
+                                                                        fppsBlockReward
+                                                                );
+                                                            redisClient
+                                                                .multi()
+                                                                .hIncrByFloat(
+                                                                    coin +
+                                                                        ':pps:stats',
+                                                                    'feePending',
+                                                                    fppsFee
+                                                                )
+                                                                .hIncrByFloat(
+                                                                    coin +
+                                                                        ':pps:stats',
+                                                                    'feeBlocksPending',
+                                                                    1
+                                                                )
+                                                                .exec()
                                                                 .catch(
                                                                     function () {}
                                                                 );
@@ -2424,7 +2673,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                       round.minedby
                                                                         ? 1.0
                                                                         : 0
-                                                                    : shareBasedActive
+                                                                    : blockToFloat
                                                                       ? 0
                                                                       : parseFloat(
                                                                             worker.roundShares
@@ -2945,7 +3194,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                     roundsToDelete.push(
                                         coin + ':shares:times' + r.height
                                     );
-                                    if (pplnsEnabled)
+                                    if (pplnsWindowActive)
                                         roundsToDelete.push(
                                             coin +
                                                 ':shares:pplnsRound' +
@@ -2979,7 +3228,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                 roundsToDelete.push(
                                     coin + ':shares:times' + r.height
                                 );
-                                if (pplnsEnabled)
+                                if (pplnsWindowActive)
                                     roundsToDelete.push(
                                         coin + ':shares:pplnsRound' + r.height
                                     );

@@ -104,12 +104,15 @@ is already in `coin:shares:roundCurrent`.
 - **Block-based** (`prop`, `pplnt`, `solo`, `pplns`): money moves only when a
   block matures. Pool carries **zero** liability — it only pays coins it
   received. Slots into the existing waterfall.
-- **Share-based** (`pps`, `dpps`): miners are owed per _share_, decoupled from
-  block confirmation. The pool **fronts** variance from a float → new accrual
-  path + real financial liability.
+- **Share-based** (`pps`, `dpps`, `fpps`): miners are owed per _share_,
+  decoupled from block confirmation. The pool **fronts** variance from a float →
+  new accrual path + real financial liability.
+- **Hybrid** (`ppsplus`): the block _subsidy_ is share-based (PPS accrual,
+  float-backed) while the _tx-fee_ portion of each block is block-based
+  (distributed PPLNS-style on maturity).
 
 Refactor: replace the lone boolean near `111-113` with a normalized
-`paymentMode ∈ { prop(default), pplnt, solo, pps, dpps }`.
+`paymentMode ∈ { prop(default), pplnt, pplns, solo, pps, dpps, fpps, ppsplus }`.
 
 ---
 
@@ -244,23 +247,90 @@ it is fed from a rolling share log rather than the per-round
 
 ---
 
+## 5c. FPPS — full pay-per-share (block subsidy + average tx fees)
+
+> **Implemented** as `paymentMode: "fpps"`. SHARE-BASED — same float /
+> kill-switch risk as PPS; reuses the entire PPS accrual path. Fee math is pure
+> and unit-tested in `src/feeRewardLogic.ts` (`test/feeRewardLogic.test.ts`).
+> **Not mainnet-safe until a sustained testnet run** (as with PPS/D-PPS).
+
+```
+feeEma      = EMA over `feeWindow` of per-block tx fees (sampled at maturity)
+rewardBasis = blockReward + feeEma
+sharePPS    = (rewardBasis / networkDiff) * (1 - feePercent/100) * shareDiff
+```
+
+FPPS is PPS whose per-share rate also pays out the pool's **expected transaction
+fees**, so a miner's fee earnings don't depend on happening to be active for the
+one block that carried a fat fee.
+
+- **Fee sampling (`paymentProcessor.ts`, Step 3 `generate`):** each matured
+  block's fee `= round.reward - blockReward` is accumulated into
+  `coin:pps:stats` as `feePending` (sum) + `feeBlocksPending` (count).
+- **Fee EMA (accruePPS):** each cycle rolls `feeEma = emaNext(feeEma,
+feePending/feeBlocksPending, feeWindow)` and clears the pending samples
+  (subtracting the snapshot so a mid-cycle block isn't lost — same trick as
+  D-PPS `actualPending`). The per-share rate basis becomes `blockReward + feeEma`.
+- **Block routing:** as with PPS, the whole matured reward goes to the float
+  (it funds the accrual). `feeEma` floors at 0, so a bad sample never cuts the
+  subsidy a miner is owed.
+- **Risk: HIGH** (share-based, fronts variance). **Config:** `"paymentMode":
+"fpps"` + `fpps: { blockReward, feePercent, minFloat, feeWindow, accrualInterval }`.
+  **Effort: M** (built on PPS).
+
+---
+
+## 5d. PPS+ — PPS subsidy + PPLNS fees
+
+> **Implemented** as `paymentMode: "ppsplus"`. HYBRID: the block subsidy is
+> share-based (PPS accrual, float-backed), the tx-fee portion is block-based
+> (PPLNS). Reuses both the PPS accrual path and the PPLNS window path. Fee-split
+> math is pure/tested (`ppsPlusFeePart`). **Not mainnet-safe until a sustained
+> testnet run** (the subsidy leg carries PPS float risk).
+
+```
+subsidy per share = (blockReward / networkDiff) * (1 - feePercent/100) * shareDiff   (PPS accrual)
+fee part (per block, satoshi) = gross - blockReward - txfeeReserve                    (ppsPlusFeePart)
+fee part distributed PPLNS-style over the last N shares before the block
+```
+
+- **Subsidy leg:** identical to PPS — shareProcessor mirrors each share into
+  `coin:pps:shareBuffer`, `accruePPS` credits `coin:balances`. The subsidy
+  **stays in the wallet** (it is _not_ routed to the float as miner-owed) to back
+  this accrual.
+- **Fee leg:** shareProcessor also maintains the PPLNS rolling log + per-block
+  snapshot (`coin:shares:pplnsWindow` / `pplnsRound<height>`). At maturity the
+  fee part replaces the apportioned `reward`, distributed by the PPLNS window
+  (`ppsplus.n × networkDiff`). A subsidy-only block (no fees) simply pays 0 from
+  the block — the block still confirms (the funds check counts the full reward,
+  so it never sticks immature).
+- **Risk: MEDIUM-HIGH** (only the subsidy is float-exposed; fees are paid from
+  coins actually received). **Config:** `"paymentMode": "ppsplus"` + `ppsplus: {
+blockReward, feePercent, minFloat, n, maxLogLength, accrualInterval }`.
+  **Effort: M** (PPS + PPLNS).
+
+---
+
 ## 6. Config schema change
 
-`paymentProcessing.paymentMode` 'prop'|'pplnt' → add 'solo'|'pplns'|'pps'|'dpps'.
-Update the `_comment_paymentMode` in every `pool_configs/examples/*` (additive,
-valid JSON → `npm run check:config` passes). A runtime guard near the
-`paymentMode` parse warns on unknown modes (and warns if `pps`/`dpps` lack
-`minFloat`). Per CLAUDE.md the keys are additive and default-off (`prop` stays
-default), so existing deployments are unaffected.
+`paymentProcessing.paymentMode` 'prop'|'pplnt' → add
+'solo'|'pplns'|'pps'|'dpps'|'fpps'|'ppsplus'. Update the `_comment_paymentMode`
+in every `pool_configs/examples/*` (additive, valid JSON → `npm run check:config`
+passes). A runtime guard near the `paymentMode` parse warns on unknown modes
+(and warns if a share-based mode lacks `minFloat`). Per CLAUDE.md the keys are
+additive and default-off (`prop` stays default), so existing deployments are
+unaffected.
 
 ```jsonc
 "paymentProcessing": {
     "paymentMode": "prop",
-    "_comment_paymentMode": "prop, pplnt, pplns, solo, pps, dpps",
+    "_comment_paymentMode": "prop, pplnt, pplns, solo, pps, dpps, fpps, ppsplus",
     "pplnt": 0.51,
     "pplns": { "n": 2, "maxLogLength": 100000 },                                                   // pplns only
     "pps":  { "blockReward": 50, "minFloat": 500, "feePercent": 1.0, "accrualInterval": 60 },     // pps only
-    "dpps": { "blockReward": 50, "targetMargin": 0.02, "rateMin": 0.5, "smoothingWindow": 100, "minFloat": 500, "accrualInterval": 60 } // dpps only
+    "dpps": { "blockReward": 50, "targetMargin": 0.02, "rateMin": 0.5, "smoothingWindow": 100, "minFloat": 500, "accrualInterval": 60 }, // dpps only
+    "fpps": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "feeWindow": 100, "accrualInterval": 60 }, // fpps only
+    "ppsplus": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "n": 2, "maxLogLength": 100000, "accrualInterval": 60 } // ppsplus only
 }
 ```
 
@@ -268,12 +338,14 @@ default), so existing deployments are unaffected.
 
 ## 7. Summary
 
-| Scheme | Model                       | New Redis keys                            | Pool risk                          | Effort | Prod-safe?                                               |
-| ------ | --------------------------- | ----------------------------------------- | ---------------------------------- | ------ | -------------------------------------------------------- |
-| Solo   | block-based                 | none (finder already stored)              | Low                                | S      | Yes (after testnet keying check)                         |
-| PPLNS  | block-based, sliding window | shares:pplnsWindow, shares:pplnsRound<h>  | Low (no float)                     | M      | After a sustained testnet run                            |
-| PPS    | share-based accrual         | pps:shareBuffer, pps:liability, pps:stats | High (fronts variance, bankruptcy) | L      | No until float mgmt + monitoring + kill-switch + testnet |
-| D-PPS  | share-based + dynamic rate  | PPS keys + luck/rate fields               | Medium-High (bounded by rateMin)   | L      | No until PPS hardened                                    |
+| Scheme | Model                             | New Redis keys                            | Pool risk                                | Effort | Prod-safe?                                               |
+| ------ | --------------------------------- | ----------------------------------------- | ---------------------------------------- | ------ | -------------------------------------------------------- |
+| Solo   | block-based                       | none (finder already stored)              | Low                                      | S      | Yes (after testnet keying check)                         |
+| PPLNS  | block-based, sliding window       | shares:pplnsWindow, shares:pplnsRound<h>  | Low (no float)                           | M      | After a sustained testnet run                            |
+| PPS    | share-based accrual               | pps:shareBuffer, pps:liability, pps:stats | High (fronts variance, bankruptcy)       | L      | No until float mgmt + monitoring + kill-switch + testnet |
+| D-PPS  | share-based + dynamic rate        | PPS keys + luck/rate fields               | Medium-High (bounded by rateMin)         | L      | No until PPS hardened                                    |
+| FPPS   | share-based (subsidy + fees)      | PPS keys + fee EMA fields                 | High (fronts variance, like PPS)         | M      | After a sustained testnet run                            |
+| PPS+   | hybrid (PPS subsidy + PPLNS fees) | PPS keys + PPLNS window keys              | Medium-High (only subsidy float-exposed) | M      | After a sustained testnet run                            |
 
 (Existing: prop = block-based no risk; pplnt = block-based + time-weight, no risk.)
 

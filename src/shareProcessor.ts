@@ -20,30 +20,39 @@ export default function (this: any, logger: Logger, poolConfig: any) {
     // exclusively for block-based round accounting (prop/pplnt/solo). Both
     // share-based modes use the same shareBuffer; only the per-share rate differs
     // (see docs/payment-schemes.md §4–5).
+    // Share-based accrual buffer: pps / dpps / fpps / ppsplus all credit miners
+    // per-share off a float (only the per-share rate basis differs), so each
+    // valid share's difficulty is mirrored into coin:pps:shareBuffer (drained by
+    // the payment processor on a timer). roundCurrent stays exclusively for
+    // block-based round accounting. See docs/payment-schemes.md.
+    const paymentMode =
+        (poolConfig.paymentProcessing &&
+            poolConfig.paymentProcessing.paymentMode) ||
+        'prop';
     const ppsEnabled =
-        !!poolConfig.paymentProcessing &&
-        (poolConfig.paymentProcessing.paymentMode === 'pps' ||
-            poolConfig.paymentProcessing.paymentMode === 'dpps');
+        paymentMode === 'pps' ||
+        paymentMode === 'dpps' ||
+        paymentMode === 'fpps' ||
+        paymentMode === 'ppsplus';
     // PPLNS keeps a rolling, capped log of recent shares ("worker:diff", newest
     // first) that spans round boundaries; on a block it is snapshotted into
     // coin:shares:pplnsRound<height>, and the payment processor pays each block
-    // from its last-N-shares window (windowDiff = pplnsN * networkDiff). Unlike
-    // PPS this is block-based — no float / liability. See docs/payment-schemes.md
-    // and src/pplnsLogic.ts.
-    const pplnsEnabled =
-        !!poolConfig.paymentProcessing &&
-        poolConfig.paymentProcessing.paymentMode === 'pplns';
+    // from its last-N-shares window (windowDiff = N * networkDiff). Used by pure
+    // pplns and by ppsplus (which distributes the tx-fee portion of each block
+    // PPLNS-style). Block-based — no float / liability. See
+    // docs/payment-schemes.md and src/pplnsLogic.ts.
+    const pplnsEnabled = paymentMode === 'pplns' || paymentMode === 'ppsplus';
     // Cap on the rolling log (entries). It must comfortably exceed the share
     // count covered by the window; if it is too small the window simply uses
     // every entry it has (still a valid proportional payout, just a shorter N).
+    // Read from whichever mode owns the window (pplns or ppsplus).
+    const pplnsWindowConfig =
+        (poolConfig.paymentProcessing &&
+            (poolConfig.paymentProcessing.pplns ||
+                poolConfig.paymentProcessing.ppsplus)) ||
+        {};
     const pplnsMaxLog = Math.max(
-        parseInt(
-            (poolConfig.paymentProcessing &&
-                poolConfig.paymentProcessing.pplns &&
-                poolConfig.paymentProcessing.pplns.maxLogLength) ||
-                (100000 as any),
-            10
-        ),
+        parseInt(pplnsWindowConfig.maxLogLength || (100000 as any), 10),
         1
     );
 
