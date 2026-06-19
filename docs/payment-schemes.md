@@ -180,8 +180,8 @@ JSON → `npm run check:config` passes). Add a runtime guard near
     "paymentMode": "prop",
     "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
     "pplnt": 0.51,
-    "pps":  { "blockReward": 50, "minFloat": 500, "feePercent": 1.0 },     // pps only
-    "dpps": { "blockReward": 50, "targetMargin": 0.02, "smoothingWindow": 100, "rateMin": 0.5, "minFloat": 500 } // dpps only
+    "pps":  { "blockReward": 50, "minFloat": 500, "feePercent": 1.0, "accrualInterval": 60 },     // pps only
+    "dpps": { "blockReward": 50, "targetMargin": 0.02, "rateMin": 0.5, "smoothingWindow": 100, "minFloat": 500, "accrualInterval": 60 } // dpps only
 }
 ```
 

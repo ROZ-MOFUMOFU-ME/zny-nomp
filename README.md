@@ -1,6 +1,6 @@
 # BitZeny - Node Open Mining Portal
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/node.js.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/node.js.yml)&nbsp;[![Lint](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/lint-format.yml?branch=main&style=flat-square&logo=prettier&logoColor=white&label=lint)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/lint-format.yml)&nbsp;[![CircleCI](https://img.shields.io/circleci/build/github/ROZ-MOFUMOFU-ME/zny-nomp/main?style=flat-square&logo=circleci&label=CircleCI)](https://circleci.com/gh/ROZ-MOFUMOFU-ME/zny-nomp/tree/main)&nbsp;[![Release](https://img.shields.io/github/v/release/ROZ-MOFUMOFU-ME/zny-nomp?style=flat-square&logo=github&label=release&color=blue)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/releases)&nbsp;[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)&nbsp;[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/)&nbsp;[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)&nbsp;[![Node.js](https://img.shields.io/badge/node-%E2%89%A522.18-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)&nbsp;[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)&nbsp;[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](https://opensource.org/licenses/MIT)&nbsp;[![Discord](https://img.shields.io/badge/Discord-join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/zHUdQy2NzU)
+[![CI](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/node.js.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/node.js.yml)&nbsp;[![Lint](https://img.shields.io/github/actions/workflow/status/ROZ-MOFUMOFU-ME/zny-nomp/lint-format.yml?branch=main&style=flat-square&logo=prettier&logoColor=white&label=lint)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/actions/workflows/lint-format.yml)&nbsp;[![Release](https://img.shields.io/github/v/release/ROZ-MOFUMOFU-ME/zny-nomp?style=flat-square&logo=github&label=release&color=blue)](https://github.com/ROZ-MOFUMOFU-ME/zny-nomp/releases)&nbsp;[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)&nbsp;[![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/)&nbsp;[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)&nbsp;[![Node.js](https://img.shields.io/badge/node-%E2%89%A522.18-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)&nbsp;[![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)&nbsp;[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](https://opensource.org/licenses/MIT)&nbsp;[![Discord](https://img.shields.io/badge/Discord-join-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/zHUdQy2NzU)
 
 This is a Yescrypt, YesPoWer, YesPoWerSUGAR, YescryptR8G, Lyra2REv2, sha256d, Quark, x11, vipstar and more algo mining pool based off of Node Open Mining Portal. Coins known to work include BitZeny, Koto, Monacoin, Bellcoin, Sugarchain, KumaCoin, Yenten (dev-fee aware) and VIPSTARCOIN.
 
@@ -201,7 +201,7 @@ Explanation for each field:
     "website": {
         "enabled": true,
         /* If you are using a reverse-proxy like nginx to display the website then set this to
-           127.0.0.1 to not expose the port. */
+           127.0.0.1 to not expose the port. See docs/reverse-proxy.md for the nginx setup. */
         "host": "0.0.0.0",
         "port": 80,
         /* Used for displaying stratum connection data on the Getting Started page. */
@@ -302,6 +302,18 @@ Explanation for each field:
             "BTC": { "coingecko": "bitcoin", "coinpaprika": "btc-bitcoin" },
             "MONA": { "coingecko": "monacoin", "coinpaprika": "mona-monacoin" }
         }
+    },
+
+    /* Optional pool wallet-balance logger (src/balanceLogger.ts). When enabled,
+       records each pool's spendable daemon getbalance to Redis every `interval`
+       seconds (keeping a rolling `historyRetention`-second window), surfaced via
+       GET /api (stats.pools[coin].walletBalance) and the Prometheus gauge
+       nomp_pool_wallet_balance. Native replacement for the old
+       scripts/getbalance.py + kotobalance.service. */
+    "balanceLog": {
+        "enabled": false,
+        "interval": 300,
+        "historyRetention": 86400 // seconds of history to keep (0 = latest only)
     }
 }
 ```
@@ -389,8 +401,8 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
     "paymentProcessing": {
         "minConf": 10, // Minimum number of confirmations for a block before processing payment.
         "enabled": true, // Enables payment processing.
-        "paymentMode": "prop", // Payment mode: proportional (prop) or Pay Per Last N Time (pplnt).
-        "_comment_paymentMode": "prop, pplnt",
+        "paymentMode": "prop", // prop | pplnt | solo | pps | dpps — see docs/payment-schemes.md
+        "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
         "paymentInterval": 120, // Payment interval in seconds.
         "minimumPayment": 0.1, // Minimum amount of coins to be paid out.
         "maxBlocksPerPayment": 3, // Maximum number of blocks to include in a single payment.
@@ -455,23 +467,19 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
 }
 ```
 
-##### [Optional, recommended] Setting up blocknotify
+##### Block notifications & admin commands
 
-1. In `config.json` set the port and password for `blockNotifyListener`
-2. In your daemon conf file set the `blocknotify` command to use:
+New blocks are detected automatically over **P2P** — enable the `p2p` block in
+each `pool_configs/*.json` and the pool is notified the instant a block appears,
+so no external `blocknotify` script is needed.
 
-```
-node [path to cli.ts] [coin name in config] [block hash symbol]
-```
-
-Example: inside `bitzeny.conf` add the line
+Operator commands are exposed over the password-gated admin API (also reachable
+from the `/admin` page); `password` is `website.adminCenter.password` in `config.json`:
 
 ```
-blocknotify=node /home/user/zny-nomp/scripts/cli.ts blocknotify bitzeny %s
+POST /api/admin/reloadpool   { "password": "...", "coin": "bitzeny" }
+POST /api/admin/coinswitch   { "password": "...", "coin": "bitzeny", "algorithm": "yescryptR8" }
 ```
-
-Alternatively, you can use a more efficient block notify script written in pure C. Build and usage instructions
-are commented in [scripts/blocknotify.c](scripts/blocknotify.c).
 
 #### 3) Start the portal
 
