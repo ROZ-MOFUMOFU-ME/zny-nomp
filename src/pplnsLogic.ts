@@ -86,6 +86,22 @@ export function pplnsPercents(
     return out;
 }
 
+// PPLNS window size in stratum-scale difficulty:
+//   windowDiff = pplnsN * rawNetworkDiff * algoMultiplier
+// The window-log diffs are on the stratum scale (raw daemon difficulty x the
+// algo multiplier), so the window bound must be too — same scaling as
+// ppsLogic.basePPS. Without the multiplier the window is multiplier-times too
+// small on non-sha256 algos and collapses to the single newest share. Returns 0
+// for any non-positive / non-finite input (→ empty window, nothing paid).
+export function pplnsWindowDiff(
+    pplnsN: number,
+    rawNetworkDiff: number,
+    algoMultiplier: number
+): number {
+    const w = pplnsN * rawNetworkDiff * algoMultiplier;
+    return Number.isFinite(w) && w > 0 ? w : 0;
+}
+
 // Parse a rolling-log entry "worker:diff" (as stored by shareProcessor) back
 // into a PplnsShare, or null if malformed. The worker field may itself contain
 // no colons (addresses/worker names don't), so a simple last-colon split is safe

@@ -1,7 +1,16 @@
 import fs from 'fs';
 import { createRedisClient, execCommands } from './redisUtil.ts';
-import { dppsRateScalar, emaNext, realizedLuck } from './ppsLogic.ts';
-import { parsePplnsEntry, pplnsShareTotals } from './pplnsLogic.ts';
+import {
+    dppsRateScalar,
+    emaNext,
+    realizedLuck,
+    basePPS as basePPSOf
+} from './ppsLogic.ts';
+import {
+    parsePplnsEntry,
+    pplnsShareTotals,
+    pplnsWindowDiff
+} from './pplnsLogic.ts';
 import {
     avgFeePerBlock,
     fppsEffectiveReward,
@@ -1062,7 +1071,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                     // coins. networkDiff x algoMultiplier puts the cached raw
                     // daemon difficulty onto the same (stratum) scale as the
                     // accumulated shareDiff (see algoMultiplier note above).
-                    var basePPS = rewardBasis / (networkDiff * algoMultiplier);
+                    var basePPS = basePPSOf(
+                        rewardBasis,
+                        networkDiff,
+                        algoMultiplier
+                    );
                     // Per-share rate. pps/fpps/ppsplus: fixed (1 - feePercent).
                     // dpps: dynamic rateScalar from smoothed realized luck
                     // (actualReward EMA / expectedReward EMA), floored at rateMin
@@ -1323,8 +1336,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                     // networkDiff x algoMultiplier → same scale as shareDiff
                     // (see algoMultiplier note); without it basePPS over-credits
                     // by the multiplier on yespower/yescrypt etc.
-                    var basePPS =
-                        smppsBlockReward / (networkDiff * algoMultiplier);
+                    var basePPS = basePPSOf(
+                        smppsBlockReward,
+                        networkDiff,
+                        algoMultiplier
+                    );
                     var rate = 1 - smppsFeePercent / 100;
                     // Drain this cycle's shares (RENAME+HGETALL); "no such key"
                     // just means no new shares — we still release budget against
@@ -1873,8 +1889,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                     // too small on non-sha256 algos (e.g. 65536x on yespower),
                     // collapsing to just the newest share and paying ~the whole
                     // block to one miner.
-                    var windowDiff =
-                        pplnsWindowN * networkDiff * algoMultiplier;
+                    var windowDiff = pplnsWindowDiff(
+                        pplnsWindowN,
+                        networkDiff,
+                        algoMultiplier
+                    );
                     var byHeight: any = {};
                     rounds.forEach(function (r: any, i: any) {
                         var entries = (res[i + 1] || [])

@@ -44,6 +44,26 @@ export function realizedLuck(actualEma: number, expectedEma: number): number {
     return Number.isFinite(l) && l >= 0 ? l : 1.0;
 }
 
+// Value of one stratum-difficulty unit of work, in coins:
+//   basePPS = reward / (rawNetworkDiff * algoMultiplier)
+// `rawNetworkDiff` is the daemon getmininginfo difficulty cached in
+// coin:stats.networkDiff; multiplying by the algo multiplier puts it on the
+// SAME (stratum) scale as the accumulated shareData.difficulty. Skipping the
+// multiplier over-credits by the multiplier on non-sha256 algos (e.g. 65536x on
+// yespower/yescrypt) — see docs/payment-schemes.md §4. Returns 0 for a
+// non-positive / non-finite effective difficulty or reward (callers then accrue
+// nothing rather than NaN/Infinity).
+export function basePPS(
+    reward: number,
+    rawNetworkDiff: number,
+    algoMultiplier: number
+): number {
+    const eff = rawNetworkDiff * algoMultiplier;
+    if (!Number.isFinite(reward) || reward < 0) return 0;
+    if (!Number.isFinite(eff) || eff <= 0) return 0;
+    return reward / eff;
+}
+
 function clamp(x: number, lo: number, hi: number): number {
     return Math.min(Math.max(x, lo), hi);
 }

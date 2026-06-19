@@ -2,7 +2,12 @@
 // Run: node --test test/ppsLogic.test.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dppsRateScalar, emaNext, realizedLuck } from '../src/ppsLogic.ts';
+import {
+    dppsRateScalar,
+    emaNext,
+    realizedLuck,
+    basePPS
+} from '../src/ppsLogic.ts';
 
 const close = (a: number, b: number, eps = 1e-9) =>
     assert.ok(Math.abs(a - b) <= eps, `${a} !~= ${b}`);
@@ -88,4 +93,20 @@ test('integration: sustained bad luck drives the rate to the floor', () => {
     }
     close(realizedLuck(actEma, expEma), 0.3, 1e-6);
     assert.equal(dppsRateScalar(realizedLuck(actEma, expEma), 0.02, 0.5), 0.5);
+});
+
+test('basePPS: scales raw networkDiff by the algo multiplier (the bug it fixes)', () => {
+    // bellcoin-like: reward 1.25, raw daemon diff 0.000061, yespower mult 65536
+    // -> stratum networkDiff ~4 -> basePPS ~0.3125 (NOT 1.25/0.000061 = 20480)
+    close(basePPS(1.25, 0.00006103515625, 65536), 0.3125, 1e-6);
+    // sha256d / quark (multiplier 1): unchanged
+    close(basePPS(1.25, 4, 1), 0.3125);
+});
+
+test('basePPS: guards non-positive / non-finite -> 0', () => {
+    assert.equal(basePPS(1, 0, 65536), 0); // zero diff
+    assert.equal(basePPS(1, -1, 65536), 0);
+    assert.equal(basePPS(-1, 4, 1), 0); // negative reward
+    assert.equal(basePPS(NaN, 4, 1), 0);
+    assert.equal(basePPS(1, 4, 0), 0); // zero multiplier
 });

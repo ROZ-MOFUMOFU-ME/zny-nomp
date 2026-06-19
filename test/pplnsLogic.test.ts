@@ -6,7 +6,8 @@ import {
     selectPplnsWindow,
     pplnsShareTotals,
     pplnsPercents,
-    parsePplnsEntry
+    parsePplnsEntry,
+    pplnsWindowDiff
 } from '../src/pplnsLogic.ts';
 
 const close = (a: number, b: number, eps = 1e-9) =>
@@ -112,4 +113,17 @@ test('parsePplnsEntry: rejects malformed / non-positive', () => {
     assert.equal(parsePplnsEntry('addr:-2'), null);
     assert.equal(parsePplnsEntry('addr:abc'), null);
     assert.equal(parsePplnsEntry(123 as any), null);
+});
+
+test('pplnsWindowDiff: n * rawNetworkDiff * algoMultiplier (stratum scale)', () => {
+    // lyra2re2 mult 256: n=2, raw diff 0.0411 -> windowDiff ~21 (NOT 2*0.0411=0.082)
+    close(pplnsWindowDiff(2, 0.0411, 256), 2 * 0.0411 * 256, 1e-9);
+    close(pplnsWindowDiff(2, 4, 1), 8); // sha256d/quark unchanged
+});
+
+test('pplnsWindowDiff: guards non-positive / non-finite -> 0', () => {
+    assert.equal(pplnsWindowDiff(2, 0, 256), 0);
+    assert.equal(pplnsWindowDiff(0, 4, 1), 0);
+    assert.equal(pplnsWindowDiff(2, 4, 0), 0);
+    assert.equal(pplnsWindowDiff(NaN, 4, 1), 0);
 });
