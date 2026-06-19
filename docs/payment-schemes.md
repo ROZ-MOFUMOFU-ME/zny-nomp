@@ -101,9 +101,9 @@ is already in `coin:shares:roundCurrent`.
 
 ## 2. Two families
 
-- **Block-based** (`prop`, `pplnt`, `solo`): money moves only when a block
-  matures. Pool carries **zero** liability — it only pays coins it received.
-  Slots into the existing waterfall.
+- **Block-based** (`prop`, `pplnt`, `solo`, `pplns`): money moves only when a
+  block matures. Pool carries **zero** liability — it only pays coins it
+  received. Slots into the existing waterfall.
 - **Share-based** (`pps`, `dpps`): miners are owed per _share_, decoupled from
   block confirmation. The pool **fronts** variance from a float → new accrual
   path + real financial liability.
@@ -199,20 +199,66 @@ minFloat }`. **Risk: MEDIUM-HIGH** (auto-throttles on bad luck + `rateMin`
 
 ---
 
+## 5b. PPLNS — pay per last N shares (block-based)
+
+> **Implemented** on `develop` as `paymentMode: "pplns"`. Block-based (no float /
+> liability, like prop/pplnt/solo). Window/apportionment math is pure and
+> unit-tested in `src/pplnsLogic.ts` (`test/pplnsLogic.test.ts`). **Needs a
+> sustained testnet run before mainnet** — the keying / window sizing should be
+> watched on a real multi-worker pool first.
+
+```
+windowDiff = pplnsN * networkDiff
+percent(worker) = Σ worker's diff in the last `windowDiff` of shares / windowDiff
+worker.reward   = postFeeBlockReward * percent(worker)
+```
+
+Each matured block is shared among the contributors to the **last N shares**
+before it, where the window N is a multiple of the network difficulty (a "score"
+window). Unlike `prop`/`pplnt` the window **slides across round boundaries**, so
+it is fed from a rolling share log rather than the per-round
+`coin:shares:round<height>` hash.
+
+- **Rolling log (`shareProcessor.ts`):** every valid share `LPUSH`es
+  `"worker:diff"` onto `coin:shares:pplnsWindow` (newest first), trimmed to
+  `pplns.maxLogLength` entries (default 100000). Additive — `roundCurrent` is
+  still maintained for the no-worker-shares guard and orphan merge-back.
+- **Block-time snapshot:** on a valid block the log is `COPY`'d (Redis 6.2+,
+  `REPLACE`) into `coin:shares:pplnsRound<height>` in the same MULTI, _after_ the
+  block-finding share is pushed — so the window is captured at find time, not at
+  payment time.
+- **Payout (`paymentProcessor.ts`, Step 3):** for each `generate`/`immature`
+  round, the snapshot is read (`LRANGE`), parsed, and resolved by
+  `pplnsShareTotals(entries, pplnsN * networkDiff)` into a `{ worker -> windowDiff }`
+  map that **replaces** the per-round share hash. The existing proportional loop
+  (`percent = roundShares / totalShares`) then distributes the full post-fee
+  reward unchanged. The snapshot key is deleted with the round keys in Step 5.
+- **Window sizing note:** the window uses the _current_ cached `networkDiff`. A
+  slightly stale difficulty only shifts _which_ shares fall in the window — the
+  full block reward is always distributed proportionally among the window, so
+  there is no solvency impact. A block whose snapshot is empty/missing (e.g.
+  found before `pplns` was enabled) falls back to its round shares (prop-like)
+  rather than being kicked.
+- **Risk: LOW** (block-based, no float). **Config:** `"paymentMode": "pplns"` +
+  `pplns: { n, maxLogLength }`. **Effort: M.**
+
+---
+
 ## 6. Config schema change
 
-`paymentProcessing.paymentMode` 'prop'|'pplnt' → add 'solo'|'pps'|'dpps'. Update
-the `_comment_paymentMode` in every `pool_configs/examples/*` (additive, valid
-JSON → `npm run check:config` passes). Add a runtime guard near
-`paymentProcessor.ts:111-113` that errors on unknown modes and warns if
-`pps`/`dpps` lack `minFloat`. Per CLAUDE.md the keys are additive and default-off
-(`prop` stays default), so existing deployments are unaffected.
+`paymentProcessing.paymentMode` 'prop'|'pplnt' → add 'solo'|'pplns'|'pps'|'dpps'.
+Update the `_comment_paymentMode` in every `pool_configs/examples/*` (additive,
+valid JSON → `npm run check:config` passes). A runtime guard near the
+`paymentMode` parse warns on unknown modes (and warns if `pps`/`dpps` lack
+`minFloat`). Per CLAUDE.md the keys are additive and default-off (`prop` stays
+default), so existing deployments are unaffected.
 
 ```jsonc
 "paymentProcessing": {
     "paymentMode": "prop",
-    "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
+    "_comment_paymentMode": "prop, pplnt, pplns, solo, pps, dpps",
     "pplnt": 0.51,
+    "pplns": { "n": 2, "maxLogLength": 100000 },                                                   // pplns only
     "pps":  { "blockReward": 50, "minFloat": 500, "feePercent": 1.0, "accrualInterval": 60 },     // pps only
     "dpps": { "blockReward": 50, "targetMargin": 0.02, "rateMin": 0.5, "smoothingWindow": 100, "minFloat": 500, "accrualInterval": 60 } // dpps only
 }
@@ -222,11 +268,12 @@ JSON → `npm run check:config` passes). Add a runtime guard near
 
 ## 7. Summary
 
-| Scheme | Model                      | New Redis keys                            | Pool risk                          | Effort | Prod-safe?                                               |
-| ------ | -------------------------- | ----------------------------------------- | ---------------------------------- | ------ | -------------------------------------------------------- |
-| Solo   | block-based                | none (finder already stored)              | Low                                | S      | Yes (after testnet keying check)                         |
-| PPS    | share-based accrual        | pps:shareBuffer, pps:liability, pps:stats | High (fronts variance, bankruptcy) | L      | No until float mgmt + monitoring + kill-switch + testnet |
-| D-PPS  | share-based + dynamic rate | PPS keys + luck/rate fields               | Medium-High (bounded by rateMin)   | L      | No until PPS hardened                                    |
+| Scheme | Model                       | New Redis keys                            | Pool risk                          | Effort | Prod-safe?                                               |
+| ------ | --------------------------- | ----------------------------------------- | ---------------------------------- | ------ | -------------------------------------------------------- |
+| Solo   | block-based                 | none (finder already stored)              | Low                                | S      | Yes (after testnet keying check)                         |
+| PPLNS  | block-based, sliding window | shares:pplnsWindow, shares:pplnsRound<h>  | Low (no float)                     | M      | After a sustained testnet run                            |
+| PPS    | share-based accrual         | pps:shareBuffer, pps:liability, pps:stats | High (fronts variance, bankruptcy) | L      | No until float mgmt + monitoring + kill-switch + testnet |
+| D-PPS  | share-based + dynamic rate  | PPS keys + luck/rate fields               | Medium-High (bounded by rateMin)   | L      | No until PPS hardened                                    |
 
 (Existing: prop = block-based no risk; pplnt = block-based + time-weight, no risk.)
 

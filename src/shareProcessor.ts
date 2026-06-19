@@ -24,6 +24,28 @@ export default function (this: any, logger: Logger, poolConfig: any) {
         !!poolConfig.paymentProcessing &&
         (poolConfig.paymentProcessing.paymentMode === 'pps' ||
             poolConfig.paymentProcessing.paymentMode === 'dpps');
+    // PPLNS keeps a rolling, capped log of recent shares ("worker:diff", newest
+    // first) that spans round boundaries; on a block it is snapshotted into
+    // coin:shares:pplnsRound<height>, and the payment processor pays each block
+    // from its last-N-shares window (windowDiff = pplnsN * networkDiff). Unlike
+    // PPS this is block-based — no float / liability. See docs/payment-schemes.md
+    // and src/pplnsLogic.ts.
+    const pplnsEnabled =
+        !!poolConfig.paymentProcessing &&
+        poolConfig.paymentProcessing.paymentMode === 'pplns';
+    // Cap on the rolling log (entries). It must comfortably exceed the share
+    // count covered by the window; if it is too small the window simply uses
+    // every entry it has (still a valid proportional payout, just a shorter N).
+    const pplnsMaxLog = Math.max(
+        parseInt(
+            (poolConfig.paymentProcessing &&
+                poolConfig.paymentProcessing.pplns &&
+                poolConfig.paymentProcessing.pplns.maxLogLength) ||
+                (100000 as any),
+            10
+        ),
+        1
+    );
 
     const forkId = process.env.forkId;
     const logSystem = 'Pool';
@@ -123,6 +145,21 @@ export default function (this: any, logger: Logger, poolConfig: any) {
                     shareData.difficulty
                 ]);
             }
+            if (pplnsEnabled) {
+                // newest at the head (matches the newest-first window walk in
+                // pplnsLogic.selectPplnsWindow), then trim to the cap
+                redisCommands.push([
+                    'lpush',
+                    coin + ':shares:pplnsWindow',
+                    shareData.worker + ':' + shareData.difficulty
+                ]);
+                redisCommands.push([
+                    'ltrim',
+                    coin + ':shares:pplnsWindow',
+                    0,
+                    pplnsMaxLog - 1
+                ]);
+            }
             redisCommands.push(['hincrby', coin + ':stats', 'validShares', 1]);
         } else {
             redisCommands.push([
@@ -169,6 +206,18 @@ export default function (this: any, logger: Logger, poolConfig: any) {
                     dateNow
                 ].join(':')
             ]);
+            if (pplnsEnabled) {
+                // snapshot the rolling window at find time (the block share was
+                // just LPUSH'd above, so it is included). The payment processor
+                // reads/deletes coin:shares:pplnsRound<height>. COPY needs Redis
+                // 6.2+ (already required); REPLACE guards a retried block.
+                redisCommands.push([
+                    'copy',
+                    coin + ':shares:pplnsWindow',
+                    coin + ':shares:pplnsRound' + shareData.height,
+                    'REPLACE'
+                ]);
+            }
             redisCommands.push(['hincrby', coin + ':stats', 'validBlocks', 1]);
         } else if (shareData.blockHash) {
             redisCommands.push([

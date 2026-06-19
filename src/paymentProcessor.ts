@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { createRedisClient, execCommands } from './redisUtil.ts';
 import { dppsRateScalar, emaNext, realizedLuck } from './ppsLogic.ts';
+import { parsePplnsEntry, pplnsShareTotals } from './pplnsLogic.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/src/util.ts';
@@ -114,7 +115,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     // or dpps (dynamic PPS — PPS whose per-share rate auto-throttles on the pool's
     // realized luck, floored at rateMin; see docs/payment-schemes.md §5).
     var paymentMode = processingConfig.paymentMode || 'prop';
-    if (['prop', 'pplnt', 'solo', 'pps', 'dpps'].indexOf(paymentMode) === -1) {
+    if (
+        ['prop', 'pplnt', 'pplns', 'solo', 'pps', 'dpps'].indexOf(
+            paymentMode
+        ) === -1
+    ) {
         logger.warning(
             logSystem,
             logComponent,
@@ -126,6 +131,18 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     // pplnt - pay per last N time shares
     var pplntEnabled = paymentMode === 'pplnt';
     var pplntTimeQualify = processingConfig.pplnt || 0.51; // 51%
+    // pplns - pay per last N shares. BLOCK-BASED (no float / liability, like
+    // prop/pplnt/solo): each matured block is shared among the contributors to
+    // the last N shares before it, where the window N is a multiple of the
+    // network difficulty (windowDiff = pplnsN * networkDiff). The window slides
+    // across round boundaries, so it is fed from a rolling share log
+    // (coin:shares:pplnsWindow) snapshotted per block into
+    // coin:shares:pplnsRound<height> at find time, rather than the per-round
+    // coin:shares:round<height> hash. See docs/payment-schemes.md and
+    // src/pplnsLogic.ts.
+    var pplnsEnabled = paymentMode === 'pplns';
+    var pplnsConfig = (pplnsEnabled && processingConfig.pplns) || {};
+    var pplnsN = parseFloat(pplnsConfig.n) || 2; // window = N x networkDiff
     // solo - the block finder (round.minedby) takes the whole block reward
     var soloEnabled = paymentMode === 'solo';
     // pps - pay-per-share. SHARE-BASED: the pool fronts variance from a float so
@@ -1303,6 +1320,51 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             timeSpentRPC += Date.now() - startTimeRedis;
         };
 
+        // PPLNS: load the per-block share-log snapshots and resolve the window
+        // (pplnsN x current networkDiff) into per-round { worker -> windowDiff }
+        // maps, keyed by block height. Returns null (and a no-op) for every
+        // non-PPLNS mode. The window is sized by the *current* cached
+        // networkDiff; an off-by-a-little network difficulty only shifts which
+        // shares fall in the window, never the total reward paid (the full block
+        // reward is always distributed proportionally among the window).
+        var loadPplnsTotals = function (rounds: any, cb: any) {
+            if (!pplnsEnabled) return cb(null);
+            var pm = redisClient.multi();
+            pm.hGet(coin + ':stats', 'networkDiff');
+            rounds.forEach(function (r: any) {
+                pm.lRange(coin + ':shares:pplnsRound' + r.height, 0, -1);
+            });
+            startRedisTimer();
+            pm.exec().then(
+                function (res: any) {
+                    endRedisTimer();
+                    var networkDiff = parseFloat(res[0]) || 0;
+                    var windowDiff = pplnsN * networkDiff;
+                    var byHeight: any = {};
+                    rounds.forEach(function (r: any, i: any) {
+                        var entries = (res[i + 1] || [])
+                            .map(parsePplnsEntry)
+                            .filter(Boolean);
+                        byHeight[r.height] = pplnsShareTotals(
+                            entries,
+                            windowDiff
+                        ).totals;
+                    });
+                    cb(byHeight);
+                },
+                function (error: any) {
+                    endRedisTimer();
+                    logger.error(
+                        logSystem,
+                        logComponent,
+                        'Error loading PPLNS share-log snapshots ' +
+                            JSON.stringify(error && error.message)
+                    );
+                    cb(null);
+                }
+            );
+        };
+
         async.waterfall(
             [
                 /*
@@ -1728,8 +1790,20 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                 }
                             });
 
-                            // continue to next step in waterfall
-                            callback(null, workers, rounds, addressAccount);
+                            // continue to next step in waterfall (loading the
+                            // PPLNS window snapshots first when in pplns mode)
+                            loadPplnsTotals(
+                                rounds,
+                                function (pplnsTotals: any) {
+                                    callback(
+                                        null,
+                                        workers,
+                                        rounds,
+                                        addressAccount,
+                                        pplnsTotals
+                                    );
+                                }
+                            );
                         }
                     );
                 },
@@ -1740,11 +1814,14 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                          * pull shares from redis
                          * calculate rewards
                          * pplnt share reductions if needed
+                         * for pplns, swap the per-round share hash for the
+                           pre-resolved last-N-shares window totals
             */
                 function (
                     workers: any,
                     rounds: any,
                     addressAccount: any,
+                    pplnsTotals: any,
                     callback: any
                 ) {
                     // pplnt times lookup
@@ -1767,6 +1844,44 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                             sharesMulti.exec().then(
                                 function (allWorkerShares: any) {
                                     endRedisTimer();
+
+                                    // PPLNS: for blocks we are about to pay or
+                                    // mark immature, replace the per-round share
+                                    // hash with the last-N-shares window totals
+                                    // resolved in Step 2. Orphan/kicked rounds
+                                    // keep their real round shares so the orphan
+                                    // share merge-back is unaffected. A block
+                                    // with an empty/missing snapshot (e.g. found
+                                    // before pplns was enabled) falls back to
+                                    // its round shares (prop-like) so it still
+                                    // pays rather than being kicked.
+                                    if (pplnsEnabled && pplnsTotals) {
+                                        rounds.forEach(function (
+                                            r: any,
+                                            i: any
+                                        ) {
+                                            if (
+                                                r.category !== 'generate' &&
+                                                r.category !== 'immature'
+                                            )
+                                                return;
+                                            var totals = pplnsTotals[r.height];
+                                            if (
+                                                totals &&
+                                                Object.keys(totals).length > 0
+                                            ) {
+                                                allWorkerShares[i] = totals;
+                                            } else {
+                                                logger.warning(
+                                                    logSystem,
+                                                    logComponent,
+                                                    'PPLNS: no share-log window for round ' +
+                                                        r.height +
+                                                        ' — falling back to round shares for this block'
+                                                );
+                                            }
+                                        });
+                                    }
 
                                     // error detection
                                     var err: any = null;
@@ -2830,6 +2945,12 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                     roundsToDelete.push(
                                         coin + ':shares:times' + r.height
                                     );
+                                    if (pplnsEnabled)
+                                        roundsToDelete.push(
+                                            coin +
+                                                ':shares:pplnsRound' +
+                                                r.height
+                                        );
                                 }
                                 return;
                             case 'immature':
@@ -2858,6 +2979,10 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                 roundsToDelete.push(
                                     coin + ':shares:times' + r.height
                                 );
+                                if (pplnsEnabled)
+                                    roundsToDelete.push(
+                                        coin + ':shares:pplnsRound' + r.height
+                                    );
                                 return;
                         }
                     });

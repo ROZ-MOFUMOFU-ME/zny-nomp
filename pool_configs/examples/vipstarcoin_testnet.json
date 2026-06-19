@@ -18,7 +18,7 @@
         "_comment_minConf": "VIPS COINBASE_MATURITY is 500; keep a small margin",
         "enabled": true,
         "paymentMode": "prop",
-        "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
+        "_comment_paymentMode": "prop, pplnt, pplns, solo, pps, dpps",
         "_comment_pps": "paymentMode=pps only (share-based; the pool fronts block-find variance from a pre-funded float - see docs/payment-schemes.md). blockReward = current block subsidy in coins (0 DISABLES accrual; set it from your daemon's getblocktemplate coinbasevalue or getblocksubsidy); minFloat = kill-switch float floor, operator-tunable; feePercent = pool cut taken off each share; accrualInterval = seconds (min 10).",
         "pps": {
             "blockReward": 0,
@@ -34,6 +34,11 @@
             "smoothingWindow": 100,
             "minFloat": 0,
             "accrualInterval": 60
+        },
+        "_comment_pplns": "paymentMode=pplns only (pay-per-last-N-shares; block-based, no float/liability - see docs/payment-schemes.md). Each matured block is shared among the contributors to the last N shares before it, where the window is a multiple of the network difficulty (windowDiff = n * networkDiff) and slides across round boundaries. n = window size as a multiple of network difficulty; maxLogLength = cap on the rolling share log in entries (must comfortably exceed the shares the window covers).",
+        "pplns": {
+            "n": 2,
+            "maxLogLength": 100000
         },
         "paymentInterval": 600,
         "minimumPayment": 1,
