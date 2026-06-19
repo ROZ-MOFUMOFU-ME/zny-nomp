@@ -130,6 +130,19 @@ and the stack as a whole.
 > `--minversion/--protover/--initversion` options for the old peercoin-style
 > wallet) is deployed and serving nodes, so KumaCoin mining is operational.
 
+## Deferred / on hold
+
+Scoped but intentionally **not** being worked on; do not pick these up without
+an explicit go-ahead from the operator.
+
+- **Record the coin price at payout time** (in `src/paymentProcessor.ts`, e.g.
+  snapshotting `priceFeed:prices` into the `:payments` history rows). The price
+  feed itself is shipped and live, but freezing a price into each payout record
+  for historical earnings reporting is on hold by operator decision — the
+  recorded value's accuracy and reconciliation semantics need to be settled
+  first. Listed under both "Real-time price feeds" and the price/profitability
+  focus area above for context, but parked here.
+
 ## Roadmap
 
 ### Near-term
@@ -152,7 +165,8 @@ and the stack as a whole.
   pluggable via `src/priceProviders.ts`) and stores prices in Redis under
   `priceFeed:prices`, served by the JSON API at `/api/prices`, shown as a
   live ticker on the stats page, and consumed by profit switching
-  (`profitSwitch.ts`). Remaining: record the coin price at payout time.
+  (`profitSwitch.ts`). Recording the coin price at payout time was scoped
+  but is **deferred** (see "Deferred / on hold" below).
 
 ### Long-term
 
@@ -306,7 +320,8 @@ Built on the real-time price feeds above:
   price ticker / chart.
 - Profit switching driven by live price × network-difficulty, with optional
   auto-exchange / auto-conversion hooks.
-- Record the coin price at payout time for historical earnings reporting.
+- ~~Record the coin price at payout time for historical earnings
+  reporting.~~ _(deferred / on hold — see "Deferred / on hold" below)._
 - **NiceHash integration** — use the NiceHash API for per-algorithm prices and
   the order book (another input to profit switching and the profitability
   view), and optionally place / track hashpower-rental orders. Pairs with the
