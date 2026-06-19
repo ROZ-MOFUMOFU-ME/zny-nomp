@@ -49,10 +49,19 @@ and the stack as a whole.
       by default (a stray `apiKey` value had caused intermittent HTTP 401). The
       feed also drives a JPY/other-fiat price ticker.
 - **Payments, admin & ops (2026-06-18/19)**:
-    - **New payment modes** — `solo`, `pps` (pay-per-share) and `dpps`
-      (dynamic PPS, with a realized-luck `rateScalar`) on top of the existing
-      `prop`/`pplnt`, selected per pool via `paymentMode`; PPS/D-PPS carry a
-      `minFloat` kill-switch. See `docs/payment-schemes.md`.
+    - **New payment modes** — on top of `prop`/`pplnt`, selected per pool via
+      `paymentMode`: `solo`, `pplns` (pay-per-last-N-shares, sliding window),
+      `pps` (pay-per-share), `dpps` (dynamic PPS, realized-luck `rateScalar`),
+      `fpps` (full PPS: subsidy + smoothed tx fees), `ppsplus` (PPS subsidy +
+      PPLNS-distributed fees), and `smpps`/`esmpps` (shared-maximum PPS, releases
+      capped at realized income — FIFO or equalized). Share-based modes carry a
+      `minFloat` kill-switch. All exposed in `/api/stats` and `/api/metrics`
+      (`nomp_pool_pps_*`, `nomp_pool_dpps_*`, `nomp_pool_smpps_*`), and the
+      configured mode is shown in the pool-start banner. The per-share rate /
+      PPLNS window are scaled by the algo multiplier so payouts are correct on
+      non-sha256 algos (yespower/yescrypt/lyra2). All verified end-to-end with
+      live mining; share-based modes still want a sustained testnet run before
+      mainnet. See `docs/payment-schemes.md`.
     - **Admin commands over HTTP** — manual `reloadpool` and `coinswitch` are
       now password-gated `POST /api/admin/<method>` calls relayed to the cluster
       master, replacing the removed `scripts/cli.ts`. The `scripts/` folder is

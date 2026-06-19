@@ -401,8 +401,8 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
     "paymentProcessing": {
         "minConf": 10, // Minimum number of confirmations for a block before processing payment.
         "enabled": true, // Enables payment processing.
-        "paymentMode": "prop", // prop | pplnt | solo | pps | dpps — see docs/payment-schemes.md
-        "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
+        "paymentMode": "prop", // prop | pplnt | pplns | solo | pps | dpps | fpps | ppsplus | smpps | esmpps — see docs/payment-schemes.md
+        "_comment_paymentMode": "prop, pplnt, pplns, solo, pps, dpps, fpps, ppsplus, smpps, esmpps",
         "paymentInterval": 120, // Payment interval in seconds.
         "minimumPayment": 0.1, // Minimum amount of coins to be paid out.
         "maxBlocksPerPayment": 3, // Maximum number of blocks to include in a single payment.
