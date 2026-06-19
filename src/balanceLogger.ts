@@ -27,7 +27,9 @@ export default function (this: any, logger: Logger) {
     const interval = Math.max(30, cfg.interval || 300) * 1000;
     // Rolling history window in seconds (0 keeps only the latest value).
     const historyRetention =
-        cfg.historyRetention != null ? Math.max(0, cfg.historyRetention) : 86400;
+        cfg.historyRetention != null
+            ? Math.max(0, cfg.historyRetention)
+            : 86400;
 
     const pools = Object.keys(poolConfigs)
         .map(function (coin) {
