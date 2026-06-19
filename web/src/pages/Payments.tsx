@@ -19,9 +19,19 @@ import {
 const MAX_ROWS = 100;
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-function blocksText(blocks: PaymentRow['blocks']): string {
-    if (Array.isArray(blocks)) return blocks.join(', ');
-    if (blocks == null) return '—';
+const shortTxid = (txid?: string): string =>
+    txid ? `${txid.slice(0, 12)}…` : '—';
+
+// Label for the "Blocks" cell. Block-based payouts (prop/pplnt/solo/pplns) carry
+// the paid block heights. Share-based payouts (pps/dpps/fpps/ppsplus/smpps/esmpps)
+// accrue per share and are not tied to a block, so `blocks` is an empty array —
+// fall back to the (shortened) payout tx hash so the cell, and its explorer link,
+// aren't blank.
+function blocksLabel(p: PaymentRow): string {
+    const blocks = p.blocks;
+    if (Array.isArray(blocks))
+        return blocks.length ? blocks.join(', ') : shortTxid(p.txid);
+    if (blocks == null) return shortTxid(p.txid);
     return String(blocks);
 }
 
@@ -123,7 +133,7 @@ export default function Payments() {
                                         const txUrl = p.txid
                                             ? explorerUrl(txTemplate, p.txid)
                                             : null;
-                                        const text = blocksText(p.blocks);
+                                        const text = blocksLabel(p);
                                         const recipients = Object.entries(
                                             p.amounts ?? {}
                                         );
