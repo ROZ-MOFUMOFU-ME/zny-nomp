@@ -110,9 +110,13 @@ is already in `coin:shares:roundCurrent`.
 - **Hybrid** (`ppsplus`): the block _subsidy_ is share-based (PPS accrual,
   float-backed) while the _tx-fee_ portion of each block is block-based
   (distributed PPLNS-style on maturity).
+- **Bounded share-based** (`smpps`, `esmpps`): per-share accrual like PPS, but
+  releases to balances are **capped at the pool's realized income**, so the pool
+  carries deferred _debt_ rather than an unbacked liability — the SMPPS-family
+  way of bounding PPS's bankruptcy risk.
 
 Refactor: replace the lone boolean near `111-113` with a normalized
-`paymentMode ∈ { prop(default), pplnt, pplns, solo, pps, dpps, fpps, ppsplus }`.
+`paymentMode ∈ { prop(default), pplnt, pplns, solo, pps, dpps, fpps, ppsplus, smpps, esmpps }`.
 
 ---
 
@@ -311,10 +315,51 @@ blockReward, feePercent, minFloat, n, maxLogLength, accrualInterval }`.
 
 ---
 
+## 5e. SMPPS / ESMPPS — shared-maximum PPS (bounded pool risk)
+
+> **Implemented** as `paymentMode: "smpps"` / `"esmpps"`. Per-share accrual like
+> PPS, but balances are released only up to the pool's realized income, so the
+> pool never credits more than it has earned (deferred debt, not unbacked
+> liability). Allocation math is pure/tested in `src/smppsLogic.ts`
+> (`test/smppsLogic.test.ts`). **Not mainnet-safe until a sustained testnet run.**
+
+```
+owed(worker)  += (blockReward / networkDiff) * (1 - feePercent/100) * shareDiff   (each cycle)
+budget        += matured block reward                                             (Step 3, the income)
+release        = allocate(outstanding owed, budget)  ->  credited to coin:balances
+```
+
+The key difference from PPS: PPS credits `coin:balances` unconditionally (the
+pool fronts variance and can go bankrupt). SMPPS credits an **owed ledger** and
+only **releases owed → balances up to `budget`** (income actually received), so
+credited balances ≤ income. The pool may owe a backlog when unlucky, but never
+pays out money it doesn't have.
+
+- **Accrual (`accrueSMPPS`, separate timer):** drains `coin:pps:shareBuffer`
+  into the owed ledger, then releases against `coin:smpps:stats.budget`.
+- **Income (`paymentProcessor.ts`, Step 3 `generate`):** each matured block's
+  reward is added to `budget` (the block reward is **not** credited to miners
+  directly — `percent = 0`, same as PPS routing it to the float). The funds
+  check still counts the full reward, so a block never sticks immature.
+- **Allocation strategies:**
+    - **SMPPS** — oldest debt first (FIFO `coin:smpps:debt` list; the boundary
+      batch is clipped). Recent shares wait when the pool is underfunded.
+    - **ESMPPS** — equalized (`coin:smpps:owed` hash): every miner is paid the
+      same fraction `min(1, budget/Σowed)` of their owed, so a shortfall is
+      shared evenly rather than by age.
+- **Kill-switch:** the `minFloat` float guard still pauses releases (the budget
+  is retained). The budget is decremented by the amount actually paid
+  (`hincrbyfloat`, not `hset`) so income arriving mid-cycle is never lost.
+- **Risk: LOW–MEDIUM** (bounded by income; the residual risk is just operating
+  with a standing debt). **Config:** `"paymentMode": "smpps"|"esmpps"` + `{smpps|
+esmpps}: { blockReward, feePercent, minFloat, accrualInterval }`. **Effort: M.**
+
+---
+
 ## 6. Config schema change
 
 `paymentProcessing.paymentMode` 'prop'|'pplnt' → add
-'solo'|'pplns'|'pps'|'dpps'|'fpps'|'ppsplus'. Update the `_comment_paymentMode`
+'solo'|'pplns'|'pps'|'dpps'|'fpps'|'ppsplus'|'smpps'|'esmpps'. Update the `_comment_paymentMode`
 in every `pool_configs/examples/*` (additive, valid JSON → `npm run check:config`
 passes). A runtime guard near the `paymentMode` parse warns on unknown modes
 (and warns if a share-based mode lacks `minFloat`). Per CLAUDE.md the keys are
@@ -330,7 +375,9 @@ unaffected.
     "pps":  { "blockReward": 50, "minFloat": 500, "feePercent": 1.0, "accrualInterval": 60 },     // pps only
     "dpps": { "blockReward": 50, "targetMargin": 0.02, "rateMin": 0.5, "smoothingWindow": 100, "minFloat": 500, "accrualInterval": 60 }, // dpps only
     "fpps": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "feeWindow": 100, "accrualInterval": 60 }, // fpps only
-    "ppsplus": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "n": 2, "maxLogLength": 100000, "accrualInterval": 60 } // ppsplus only
+    "ppsplus": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "n": 2, "maxLogLength": 100000, "accrualInterval": 60 }, // ppsplus only
+    "smpps": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "accrualInterval": 60 },   // smpps only
+    "esmpps": { "blockReward": 50, "feePercent": 1.0, "minFloat": 500, "accrualInterval": 60 }  // esmpps only
 }
 ```
 
@@ -338,14 +385,16 @@ unaffected.
 
 ## 7. Summary
 
-| Scheme | Model                             | New Redis keys                            | Pool risk                                | Effort | Prod-safe?                                               |
-| ------ | --------------------------------- | ----------------------------------------- | ---------------------------------------- | ------ | -------------------------------------------------------- |
-| Solo   | block-based                       | none (finder already stored)              | Low                                      | S      | Yes (after testnet keying check)                         |
-| PPLNS  | block-based, sliding window       | shares:pplnsWindow, shares:pplnsRound<h>  | Low (no float)                           | M      | After a sustained testnet run                            |
-| PPS    | share-based accrual               | pps:shareBuffer, pps:liability, pps:stats | High (fronts variance, bankruptcy)       | L      | No until float mgmt + monitoring + kill-switch + testnet |
-| D-PPS  | share-based + dynamic rate        | PPS keys + luck/rate fields               | Medium-High (bounded by rateMin)         | L      | No until PPS hardened                                    |
-| FPPS   | share-based (subsidy + fees)      | PPS keys + fee EMA fields                 | High (fronts variance, like PPS)         | M      | After a sustained testnet run                            |
-| PPS+   | hybrid (PPS subsidy + PPLNS fees) | PPS keys + PPLNS window keys              | Medium-High (only subsidy float-exposed) | M      | After a sustained testnet run                            |
+| Scheme | Model                                          | New Redis keys                            | Pool risk                                   | Effort | Prod-safe?                                               |
+| ------ | ---------------------------------------------- | ----------------------------------------- | ------------------------------------------- | ------ | -------------------------------------------------------- |
+| Solo   | block-based                                    | none (finder already stored)              | Low                                         | S      | Yes (after testnet keying check)                         |
+| PPLNS  | block-based, sliding window                    | shares:pplnsWindow, shares:pplnsRound<h>  | Low (no float)                              | M      | After a sustained testnet run                            |
+| PPS    | share-based accrual                            | pps:shareBuffer, pps:liability, pps:stats | High (fronts variance, bankruptcy)          | L      | No until float mgmt + monitoring + kill-switch + testnet |
+| D-PPS  | share-based + dynamic rate                     | PPS keys + luck/rate fields               | Medium-High (bounded by rateMin)            | L      | No until PPS hardened                                    |
+| FPPS   | share-based (subsidy + fees)                   | PPS keys + fee EMA fields                 | High (fronts variance, like PPS)            | M      | After a sustained testnet run                            |
+| PPS+   | hybrid (PPS subsidy + PPLNS fees)              | PPS keys + PPLNS window keys              | Medium-High (only subsidy float-exposed)    | M      | After a sustained testnet run                            |
+| SMPPS  | bounded share-based (income-capped, FIFO debt) | smpps:debt, smpps:stats                   | Low-Medium (capped at income; carries debt) | M      | After a sustained testnet run                            |
+| ESMPPS | bounded share-based (income-capped, equalized) | smpps:owed, smpps:stats                   | Low-Medium (capped at income; carries debt) | M      | After a sustained testnet run                            |
 
 (Existing: prop = block-based no risk; pplnt = block-based + time-weight, no risk.)
 

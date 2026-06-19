@@ -304,13 +304,14 @@ Monorepo consolidation is deferred; these are the active priorities.
 
 ### Miner experience
 
-- ~~Additional reward schemes (PPS, solo, PPLNS, FPPS, PPS+)~~ _(done — `solo`,
-  `pps`, `dpps` (dynamic PPS), `pplns` (pay-per-last-N-shares), `fpps` (full PPS:
-  subsidy + smoothed tx fees) and `ppsplus` (PPS subsidy + PPLNS-distributed
-  fees) are implemented on top of PROP/PPLNT, selected per pool via
-  `paymentMode`; see `docs/payment-schemes.md`. The share-based modes (pps/dpps/
-  fpps/ppsplus) and `pplns` still need a sustained testnet run before mainnet
-  use)._
+- ~~Additional reward schemes (PPS, solo, PPLNS, FPPS, PPS+, SMPPS/ESMPPS)~~
+  _(done — `solo`, `pps`, `dpps` (dynamic PPS), `pplns` (pay-per-last-N-shares),
+  `fpps` (full PPS: subsidy + smoothed tx fees), `ppsplus` (PPS subsidy + PPLNS
+  fees), and `smpps`/`esmpps` (shared-maximum PPS: per-share accrual capped at
+  the pool's realized income, FIFO or equalized) are implemented on top of
+  PROP/PPLNT, selected per pool via `paymentMode`; see `docs/payment-schemes.md`.
+  The share-based modes (pps/dpps/fpps/ppsplus/smpps/esmpps) and `pplns` still
+  need a sustained testnet run before mainnet use)._
 - Per-worker minimum-payout threshold and payout address configurable by the
   miner.
 - Richer hashrate-history graphs and custom worker labels.

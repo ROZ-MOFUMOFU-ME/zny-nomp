@@ -7,6 +7,7 @@ import {
     fppsEffectiveReward,
     ppsPlusFeePart
 } from './feeRewardLogic.ts';
+import { esmppsAllocate, smppsAllocate, parseDebtEntry } from './smppsLogic.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/src/util.ts';
@@ -129,7 +130,9 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             'pps',
             'dpps',
             'fpps',
-            'ppsplus'
+            'ppsplus',
+            'smpps',
+            'esmpps'
         ].indexOf(paymentMode) === -1
     ) {
         logger.warning(
@@ -274,11 +277,44 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             'ppsplus.minFloat is 0 — the float kill-switch is effectively off; set a safety floor to bound pool liability'
         );
     }
+    // smpps / esmpps - SHARED MAXIMUM PPS family. Miners accrue a PPS-style
+    // amount per share into an OWED ledger, but the pool only releases
+    // owed -> coin:balances up to the income it has actually earned (matured
+    // block rewards, tracked as coin:smpps:stats.budget). Credited balances
+    // therefore never exceed realized income, so the pool can carry deferred
+    // *debt* but never an unbacked liability — this bounds the bankruptcy risk
+    // of plain PPS. smpps pays oldest debt first (FIFO, coin:smpps:debt list);
+    // esmpps equalizes (every miner the same fraction of owed, coin:smpps:owed
+    // hash). See docs/payment-schemes.md and src/smppsLogic.ts.
+    var smppsEnabled = paymentMode === 'smpps';
+    var esmppsEnabled = paymentMode === 'esmpps';
+    var smppsFamilyConfig =
+        ((smppsEnabled || esmppsEnabled) &&
+            (processingConfig.smpps || processingConfig.esmpps)) ||
+        {};
+    var smppsBlockReward = parseFloat(smppsFamilyConfig.blockReward) || 0;
+    var smppsFeePercent = parseFloat(smppsFamilyConfig.feePercent) || 0;
+    var smppsMinFloat = parseFloat(smppsFamilyConfig.minFloat) || 0;
+    var smppsActive = smppsEnabled && smppsBlockReward > 0;
+    var esmppsActive = esmppsEnabled && smppsBlockReward > 0;
+    var smppsFamilyActive = smppsActive || esmppsActive;
+    if ((smppsEnabled || esmppsEnabled) && !smppsFamilyActive) {
+        logger.error(
+            logSystem,
+            logComponent,
+            'paymentMode "' +
+                paymentMode +
+                '" requires ' +
+                paymentMode +
+                '.blockReward > 0 — SMPPS accrual is DISABLED (behaving as prop) until configured'
+        );
+    }
     // Unified share-based accrual parameters. pps / dpps / fpps / ppsplus share
     // the accrual timer, the shareBuffer drain and the float kill-switch; only
     // the per-share rate basis differs (fixed (1 - feePercent) for pps/fpps/
     // ppsplus, dynamic rateScalar for dpps; fpps adds the smoothed fee to the
-    // reward basis; ppsplus accrues only the subsidy).
+    // reward basis; ppsplus accrues only the subsidy). smpps/esmpps accrue per
+    // share too but via a separate ledger path (accrueSMPPS), not this one.
     var accrualActive = ppsActive || dppsActive || fppsActive || ppsplusActive;
     var shareBlockReward = ppsActive
         ? ppsBlockReward
@@ -314,10 +350,13 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             : ppsplusActive
               ? ppsplusConfig
               : {};
-    // Whether a matured block's FULL reward is routed to the float (miners paid
-    // via accrual): true for pps/dpps/fpps. ppsplus distributes the fee portion
-    // to miners (only the subsidy backs the float), so it is NOT block-to-float.
-    var blockToFloat = ppsActive || dppsActive || fppsActive;
+    // Whether a matured block's FULL reward is NOT credited to miners directly
+    // in Step 3 (they are paid via accrual instead): true for pps/dpps/fpps
+    // (reward -> float) and for smpps/esmpps (reward -> income budget ledger).
+    // ppsplus distributes the fee portion to miners (only the subsidy backs the
+    // float), so it is NOT in this group.
+    var blockToFloat =
+        ppsActive || dppsActive || fppsActive || smppsFamilyActive;
     // Whether the PPLNS rolling window is maintained / consumed: pure pplns and
     // ppsplus (the latter uses it only to split tx fees).
     var pplnsWindowActive = pplnsEnabled || ppsplusActive;
@@ -1210,6 +1249,276 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         });
     }
 
+    // SMPPS-family accrual (smpps / esmpps). Separate from accruePPS: instead of
+    // crediting coin:balances directly, each cycle drains coin:pps:shareBuffer
+    // into an OWED ledger and then RELEASES owed -> coin:balances limited by the
+    // pool's realized income (coin:smpps:stats.budget, fed by matured blocks in
+    // Step 3). So balances never exceed income — the pool may carry deferred
+    // debt but never an unbacked liability. smpps releases oldest debt first
+    // (FIFO list coin:smpps:debt); esmpps equalizes (hash coin:smpps:owed).
+    function accrueSMPPS() {
+        daemon.cmd('getbalance', [], function (result: any) {
+            if (
+                !result ||
+                result.error ||
+                result[0].error ||
+                result[0].response == null
+            ) {
+                logger.error(
+                    logSystem,
+                    logComponent,
+                    'SMPPS accrual: getbalance failed ' +
+                        JSON.stringify(result && result[0] && result[0].error)
+                );
+                return;
+            }
+            var floatBalance = parseFloat(result[0].response) || 0;
+            var statsKey = coin + ':smpps:stats';
+            if (smppsMinFloat > 0 && floatBalance < smppsMinFloat) {
+                logger.warning(
+                    logSystem,
+                    logComponent,
+                    'SMPPS release PAUSED (kill-switch): float ' +
+                        floatBalance +
+                        ' < minFloat ' +
+                        smppsMinFloat
+                );
+                execCommands(redisClient, [
+                    ['hset', statsKey, 'paused', '1'],
+                    ['hset', statsKey, 'float', floatBalance.toFixed(8)]
+                ]).catch(function () {});
+                return;
+            }
+            Promise.all([
+                redisClient.hGet(coin + ':stats', 'networkDiff'),
+                redisClient.hGet(statsKey, 'budget')
+            ])
+                .then(function (reads: any) {
+                    var networkDiff = parseFloat(reads[0]) || 0;
+                    var budget = parseFloat(reads[1]) || 0;
+                    if (networkDiff <= 0) {
+                        logger.warning(
+                            logSystem,
+                            logComponent,
+                            'SMPPS accrual: networkDiff not cached yet, skipping cycle'
+                        );
+                        return;
+                    }
+                    var basePPS = smppsBlockReward / networkDiff;
+                    var rate = 1 - smppsFeePercent / 100;
+                    // Drain this cycle's shares (RENAME+HGETALL); "no such key"
+                    // just means no new shares — we still release budget against
+                    // any existing debt (backpay).
+                    redisClient
+                        .rename(
+                            coin + ':pps:shareBuffer',
+                            coin + ':smpps:draining'
+                        )
+                        .then(function () {
+                            return redisClient.hGetAll(
+                                coin + ':smpps:draining'
+                            );
+                        })
+                        .catch(function (err: any) {
+                            if (/no such key/i.test(String(err && err.message)))
+                                return {};
+                            throw err;
+                        })
+                        .then(function (buffer: any) {
+                            var newOwed: Record<string, number> = {};
+                            for (var w in buffer) {
+                                var d = parseFloat(buffer[w]) || 0;
+                                if (d <= 0) continue;
+                                var owed = basePPS * rate * d;
+                                if (owed > 0)
+                                    newOwed[w] = (newOwed[w] || 0) + owed;
+                            }
+                            if (esmppsActive) {
+                                return releaseEsmpps(
+                                    newOwed,
+                                    budget,
+                                    floatBalance,
+                                    statsKey
+                                );
+                            }
+                            return releaseSmpps(
+                                newOwed,
+                                budget,
+                                floatBalance,
+                                statsKey
+                            );
+                        })
+                        .catch(function (err: any) {
+                            logger.error(
+                                logSystem,
+                                logComponent,
+                                'SMPPS accrual error: ' +
+                                    JSON.stringify(err && err.message)
+                            );
+                        });
+                })
+                .catch(function (err: any) {
+                    logger.error(
+                        logSystem,
+                        logComponent,
+                        'SMPPS accrual: redis error reading stats ' +
+                            JSON.stringify(err && err.message)
+                    );
+                });
+        });
+    }
+
+    // ESMPPS release: merge new owed into the owed hash, then pay every miner the
+    // same fraction of their outstanding owed that the income budget allows.
+    function releaseEsmpps(
+        newOwed: Record<string, number>,
+        budget: number,
+        floatBalance: number,
+        statsKey: string
+    ) {
+        return redisClient.hGetAll(coin + ':smpps:owed').then(function (
+            prev: any
+        ) {
+            var owedMap: Record<string, number> = {};
+            for (var w in prev) {
+                var v = parseFloat(prev[w]) || 0;
+                if (v > 0) owedMap[w] = v;
+            }
+            for (var nw in newOwed)
+                owedMap[nw] = (owedMap[nw] || 0) + newOwed[nw];
+            var alloc = esmppsAllocate(owedMap, budget);
+            var cmds: Array<Array<string | number>> = [];
+            cmds.push(['del', coin + ':smpps:draining']);
+            cmds.push(['del', coin + ':smpps:owed']);
+            var totalPaid = 0;
+            for (var w2 in owedMap) {
+                var paid = alloc.paid[w2] || 0;
+                if (paid > 0) {
+                    cmds.push([
+                        'hincrbyfloat',
+                        coin + ':balances',
+                        w2,
+                        paid.toFixed(8)
+                    ]);
+                    totalPaid += paid;
+                }
+                var rem = owedMap[w2] - paid;
+                if (rem > 1e-12)
+                    cmds.push([
+                        'hset',
+                        coin + ':smpps:owed',
+                        w2,
+                        rem.toFixed(8)
+                    ]);
+            }
+            return finishSmppsRelease(
+                cmds,
+                totalPaid,
+                floatBalance,
+                statsKey,
+                'esmpps'
+            );
+        });
+    }
+
+    // SMPPS release: append new owed batches to the FIFO debt list, then pay it
+    // down oldest-first up to the income budget; rewrite the remaining debt.
+    function releaseSmpps(
+        newOwed: Record<string, number>,
+        budget: number,
+        floatBalance: number,
+        statsKey: string
+    ) {
+        return redisClient.lRange(coin + ':smpps:debt', 0, -1).then(function (
+            entries: any
+        ) {
+            var queue = (entries || [])
+                .map(parseDebtEntry)
+                .filter(Boolean) as Array<{ worker: string; owed: number }>;
+            for (var w in newOwed) queue.push({ worker: w, owed: newOwed[w] });
+            var alloc = smppsAllocate(queue, budget);
+            var cmds: Array<Array<string | number>> = [];
+            cmds.push(['del', coin + ':smpps:draining']);
+            var totalPaid = 0;
+            for (var pw in alloc.paid) {
+                var paid = alloc.paid[pw];
+                if (paid > 0) {
+                    cmds.push([
+                        'hincrbyfloat',
+                        coin + ':balances',
+                        pw,
+                        paid.toFixed(8)
+                    ]);
+                    totalPaid += paid;
+                }
+            }
+            cmds.push(['del', coin + ':smpps:debt']);
+            if (alloc.remaining.length > 0) {
+                cmds.push(
+                    (
+                        ['rpush', coin + ':smpps:debt'] as Array<
+                            string | number
+                        >
+                    ).concat(
+                        alloc.remaining.map(function (b) {
+                            return b.worker + ':' + b.owed.toFixed(8);
+                        })
+                    )
+                );
+            }
+            return finishSmppsRelease(
+                cmds,
+                totalPaid,
+                floatBalance,
+                statsKey,
+                'smpps'
+            );
+        });
+    }
+
+    // Shared tail for both SMPPS releases: decrement the budget by what was paid
+    // (hincrbyfloat, not hset, so income arriving mid-cycle in Step 3 is never
+    // overwritten), stamp stats, and run the MULTI.
+    function finishSmppsRelease(
+        cmds: Array<Array<string | number>>,
+        totalPaid: number,
+        floatBalance: number,
+        statsKey: string,
+        mode: string
+    ) {
+        if (totalPaid > 0) {
+            cmds.push([
+                'hincrbyfloat',
+                statsKey,
+                'budget',
+                (-totalPaid).toFixed(8)
+            ]);
+            cmds.push([
+                'hincrbyfloat',
+                statsKey,
+                'paidTotal',
+                totalPaid.toFixed(8)
+            ]);
+        }
+        cmds.push(['hset', statsKey, 'paused', '0']);
+        cmds.push(['hset', statsKey, 'mode', mode]);
+        cmds.push(['hset', statsKey, 'float', floatBalance.toFixed(8)]);
+        return execCommands(redisClient, cmds).then(function () {
+            if (totalPaid > 0) {
+                logger.debug(
+                    logSystem,
+                    logComponent,
+                    mode.toUpperCase() +
+                        ' released ' +
+                        totalPaid.toFixed(8) +
+                        ' from income budget (float ' +
+                        floatBalance +
+                        ')'
+                );
+            }
+        });
+    }
+
     // run shielding process every x minutes (walletInterval). Default is a
     // moderate 10 min: z_sendmany is slow/fee-bearing, so a 1-minute cadence
     // just spams tiny shields and the code below even warns when the interval is
@@ -1281,6 +1590,30 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 shareMinFloat +
                 ', every ' +
                 ppsAccrualMs / 1000 +
+                's)'
+        );
+    }
+
+    // SMPPS-family release timer — drains shares into the owed ledger and
+    // releases owed -> balances bounded by realized income. Default 60s; override
+    // with {smpps|esmpps}.accrualInterval (min 10s).
+    if (smppsFamilyActive) {
+        var smppsAccrualMs =
+            Math.max(parseInt(smppsFamilyConfig.accrualInterval) || 60, 10) *
+            1000;
+        setInterval(accrueSMPPS, smppsAccrualMs);
+        logger.debug(
+            logSystem,
+            logComponent,
+            (esmppsActive ? 'ESMPPS' : 'SMPPS') +
+                ' accrual enabled (blockReward ' +
+                smppsBlockReward +
+                ', fee ' +
+                smppsFeePercent +
+                '%, minFloat ' +
+                smppsMinFloat +
+                ', every ' +
+                smppsAccrualMs / 1000 +
                 's)'
         );
     }
@@ -2497,6 +2830,27 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                                                                     1
                                                                 )
                                                                 .exec()
+                                                                .catch(
+                                                                    function () {}
+                                                                );
+                                                        }
+
+                                                        // SMPPS income: the matured block reward is the pool's
+                                                        // realized income for the SMPPS family — add it to the
+                                                        // release budget (accrueSMPPS only ever credits balances up
+                                                        // to this). Once per matured round (leaves blocksPending
+                                                        // after payout, so never double-counted).
+                                                        if (
+                                                            smppsFamilyActive &&
+                                                            round.reward > 0
+                                                        ) {
+                                                            redisClient
+                                                                .hIncrByFloat(
+                                                                    coin +
+                                                                        ':smpps:stats',
+                                                                    'budget',
+                                                                    round.reward
+                                                                )
                                                                 .catch(
                                                                     function () {}
                                                                 );

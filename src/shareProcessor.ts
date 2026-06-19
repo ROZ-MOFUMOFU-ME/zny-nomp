@@ -14,17 +14,11 @@ value: a hash with..
 export default function (this: any, logger: Logger, poolConfig: any) {
     const redisConfig = poolConfig.redis;
     const coin = poolConfig.coin.name;
-    // PPS and D-PPS accrue per-share value continuously (drained by the payment
-    // processor on a timer, independent of block finds), so each valid share's
-    // difficulty is mirrored into a parallel buffer. roundCurrent stays
-    // exclusively for block-based round accounting (prop/pplnt/solo). Both
-    // share-based modes use the same shareBuffer; only the per-share rate differs
-    // (see docs/payment-schemes.md §4–5).
-    // Share-based accrual buffer: pps / dpps / fpps / ppsplus all credit miners
-    // per-share off a float (only the per-share rate basis differs), so each
-    // valid share's difficulty is mirrored into coin:pps:shareBuffer (drained by
-    // the payment processor on a timer). roundCurrent stays exclusively for
-    // block-based round accounting. See docs/payment-schemes.md.
+    // Share-based accrual buffer: pps / dpps / fpps / ppsplus / smpps / esmpps
+    // all accrue per-share value (drained by the payment processor on a timer,
+    // independent of block finds), so each valid share's difficulty is mirrored
+    // into coin:pps:shareBuffer. roundCurrent stays exclusively for block-based
+    // round accounting (prop/pplnt/solo/pplns). See docs/payment-schemes.md.
     const paymentMode =
         (poolConfig.paymentProcessing &&
             poolConfig.paymentProcessing.paymentMode) ||
@@ -33,7 +27,9 @@ export default function (this: any, logger: Logger, poolConfig: any) {
         paymentMode === 'pps' ||
         paymentMode === 'dpps' ||
         paymentMode === 'fpps' ||
-        paymentMode === 'ppsplus';
+        paymentMode === 'ppsplus' ||
+        paymentMode === 'smpps' ||
+        paymentMode === 'esmpps';
     // PPLNS keeps a rolling, capped log of recent shares ("worker:diff", newest
     // first) that spans round boundaries; on a block it is snapshotted into
     // coin:shares:pplnsRound<height>, and the payment processor pays each block
