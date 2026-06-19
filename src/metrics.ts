@@ -32,6 +32,12 @@ interface PoolStat {
         rateScalar?: number;
         realizedLuck?: number;
     };
+    smpps?: {
+        mode?: string;
+        budget?: number;
+        paidTotal?: number;
+        paused?: number;
+    };
     [key: string]: unknown;
 }
 
@@ -215,13 +221,15 @@ export function renderMetrics(stats?: MetricsStats | null): string {
             })
     );
 
-    // Share-based (pps / dpps) health — only for pools actually running a
-    // share-based mode. `float` is the spendable pool balance read at the last
-    // accrual; `paused`=1 means the minFloat kill-switch halted accrual (miners
-    // are NOT being credited — alert on this). Skipped for prop/pplnt/solo pools.
+    // Share-based accrual health — for pools running a pps-family mode (pps,
+    // dpps, fpps, ppsplus all accrue via the same coin:pps:stats path). `float`
+    // is the spendable pool balance read at the last accrual; `paused`=1 means
+    // the minFloat kill-switch halted accrual (miners are NOT being credited —
+    // alert on this). Skipped for prop/pplnt/solo/pplns pools.
+    const ppsModes = ['pps', 'dpps', 'fpps', 'ppsplus'];
     const ppsPools = poolNames.filter(function (p) {
         const pp = pools[p] && pools[p].pps;
-        return !!pp && (pp.mode === 'pps' || pp.mode === 'dpps');
+        return !!pp && ppsModes.indexOf(pp.mode || '') !== -1;
     });
     const ppsSamples = function (
         pick: (pp: NonNullable<PoolStat['pps']>) => number
@@ -295,6 +303,49 @@ export function renderMetrics(stats?: MetricsStats | null): string {
         'D-PPS smoothed realized luck (actualReward EMA / expectedReward EMA; < 1 = pool running underwater)',
         dppsSamples(function (pp) {
             return num(pp.realizedLuck);
+        })
+    );
+
+    // SMPPS family (smpps / esmpps): income-capped release. `budget` is realized
+    // income not yet released to miners; `paidTotal` is lifetime released;
+    // `paused`=1 means the minFloat kill-switch halted releases.
+    const smppsModes = ['smpps', 'esmpps'];
+    const smppsPools = poolNames.filter(function (p) {
+        const sp = pools[p] && pools[p].smpps;
+        return !!sp && smppsModes.indexOf(sp.mode || '') !== -1;
+    });
+    const smppsSamples = function (
+        pick: (sp: NonNullable<PoolStat['smpps']>) => number
+    ): MetricSample[] {
+        return smppsPools.map(function (p): MetricSample {
+            return {
+                labels: { pool: p },
+                value: pick(pools[p].smpps as NonNullable<PoolStat['smpps']>)
+            };
+        });
+    };
+    metric(
+        'nomp_pool_smpps_budget',
+        'gauge',
+        'SMPPS realized income not yet released to miners (release is capped at this), in coins',
+        smppsSamples(function (sp) {
+            return num(sp.budget);
+        })
+    );
+    metric(
+        'nomp_pool_smpps_paid_total',
+        'gauge',
+        'Lifetime total released to miners under SMPPS/ESMPPS, in coins',
+        smppsSamples(function (sp) {
+            return num(sp.paidTotal);
+        })
+    );
+    metric(
+        'nomp_pool_smpps_paused',
+        'gauge',
+        'SMPPS release paused by the minFloat kill-switch (1=paused, 0=running)',
+        smppsSamples(function (sp) {
+            return num(sp.paused);
         })
     );
 

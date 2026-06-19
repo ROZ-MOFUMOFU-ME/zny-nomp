@@ -82,3 +82,41 @@ test('renderMetrics is safe on empty/partial input', () => {
     // a block with no samples emits no HELP/TYPE noise
     assert.ok(!renderMetrics({}).includes('# TYPE'));
 });
+
+test('renderMetrics emits pps-family metrics for fpps/ppsplus, not just pps/dpps', () => {
+    const out = renderMetrics({
+        pools: {
+            za: { name: 'za', pps: { mode: 'fpps', float: 5, sharePPS: 0.3 } },
+            zb: {
+                name: 'zb',
+                pps: { mode: 'ppsplus', paused: 1, accruedTotal: 9 }
+            },
+            zc: { name: 'zc', pps: { mode: 'prop' } } // not share-based -> excluded
+        }
+    });
+    assert.ok(out.includes('nomp_pool_pps_float{pool="za"} 5'));
+    assert.ok(out.includes('nomp_pool_pps_share_value{pool="za"} 0.3'));
+    assert.ok(out.includes('nomp_pool_pps_paused{pool="zb"} 1'));
+    assert.ok(out.includes('nomp_pool_pps_accrued_total{pool="zb"} 9'));
+    // prop pool excluded from the pps-family metrics specifically
+    assert.ok(!out.includes('nomp_pool_pps_float{pool="zc"}'));
+});
+
+test('renderMetrics emits smpps/esmpps ledger metrics', () => {
+    const out = renderMetrics({
+        pools: {
+            sa: {
+                name: 'sa',
+                smpps: { mode: 'smpps', budget: 12, paidTotal: 100, paused: 0 }
+            },
+            sb: {
+                name: 'sb',
+                smpps: { mode: 'esmpps', budget: 0, paidTotal: 7, paused: 1 }
+            }
+        }
+    });
+    assert.ok(out.includes('nomp_pool_smpps_budget{pool="sa"} 12'));
+    assert.ok(out.includes('nomp_pool_smpps_paid_total{pool="sa"} 100'));
+    assert.ok(out.includes('nomp_pool_smpps_paused{pool="sb"} 1'));
+    assert.ok(out.includes('nomp_pool_smpps_paid_total{pool="sb"} 7'));
+});

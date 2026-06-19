@@ -463,7 +463,7 @@ export default function (
                 ).toString();
                 /* 13 commands per coin; the reply offsets (i + 0 .. i + 12)
                    below depend on this exact order */
-                var commandsPerCoin = 14;
+                var commandsPerCoin = 15;
 
                 var multi = client.client.multi();
                 client.coins.forEach(function (coin: any) {
@@ -489,7 +489,10 @@ export default function (
                         .hGetAll(coin + ':pps:stats')
                         // i+13: wallet balance snapshot ({balance,time}) from the
                         // optional balanceLog module; empty hash when disabled.
-                        .hGetAll(coin + ':walletBalance');
+                        .hGetAll(coin + ':walletBalance')
+                        // i+14: SMPPS-family ledger stats (budget/paidTotal/paused/
+                        // mode); empty hash for non-smpps/esmpps coins.
+                        .hGetAll(coin + ':smpps:stats');
                 });
 
                 multi
@@ -664,6 +667,23 @@ export default function (
                                     balanceReply.balance != null
                                         ? parseFloat(balanceReply.balance) || 0
                                         : null;
+                                // SMPPS family (smpps/esmpps): income-capped
+                                // release ledger. budget = realized income not
+                                // yet released; paidTotal = lifetime released;
+                                // paused = minFloat kill-switch. Zero/empty for
+                                // other modes.
+                                var smppsReply = replies[i + 14] || {};
+                                coinStats.smpps = {
+                                    mode:
+                                        (
+                                            poolConfigs[coinName]
+                                                .paymentProcessing || {}
+                                        ).paymentMode || 'prop',
+                                    budget: parseFloat(smppsReply.budget) || 0,
+                                    paidTotal:
+                                        parseFloat(smppsReply.paidTotal) || 0,
+                                    paused: smppsReply.paused === '1' ? 1 : 0
+                                };
                                 allCoinStats[coinStats.name] = coinStats;
                             }
                             // sort pools alphabetically
