@@ -84,6 +84,7 @@ export interface PoolEntry {
     maxRoundTime?: number;
     maxRoundTimeString?: string;
     poolStats?: PoolStatsInner;
+    walletBalance?: number | null;
     marketStats?: Record<string, unknown>;
     blocks?: PoolBlocks;
     workers?: Record<string, WorkerEntry>;

@@ -11,6 +11,7 @@ import PaymentProcessor from './paymentProcessor.ts';
 import Website from './website.ts';
 import ProfitSwitch from './profitSwitch.ts';
 import PriceFeed from './priceFeed.ts';
+import BalanceLogger from './balanceLogger.ts';
 import algos from 'stratum-pool/src/algoProperties.ts';
 import jsonMinify from 'node-json-minify';
 
@@ -130,6 +131,9 @@ async function init() {
             case 'priceFeed':
                 new (PriceFeed as any)(logger);
                 break;
+            case 'balanceLogger':
+                new (BalanceLogger as any)(logger);
+                break;
         }
         return;
     }
@@ -140,6 +144,7 @@ async function init() {
     startWebsite();
     startProfitSwitch();
     startPriceFeed();
+    startBalanceLogger();
     startCliListener();
 }
 
@@ -525,6 +530,44 @@ const spawnPoolWorkers = function () {
     }, 250);
 };
 
+// Shared command dispatcher used by both the CLI listener (profitSwitch's
+// coinswitch over the cliPort socket) and the website worker's admin API
+// (reloadpool / coinswitch via password-gated POST /api/admin).
+const dispatchCliCommand = function (
+    command: any,
+    params: any,
+    options: any,
+    reply: any
+) {
+    switch (command) {
+        case 'blocknotify':
+            Object.keys(cluster.workers as any).forEach(function (id: string) {
+                (cluster.workers as any)[id].send({
+                    type: 'blocknotify',
+                    coin: params[0],
+                    hash: params[1]
+                });
+            });
+            reply('Pool workers notified');
+            break;
+        case 'coinswitch':
+            processCoinSwitchCommand(params, options, reply);
+            break;
+        case 'reloadpool':
+            Object.keys(cluster.workers as any).forEach(function (id: string) {
+                (cluster.workers as any)[id].send({
+                    type: 'reloadpool',
+                    coin: params[0]
+                });
+            });
+            reply('reloaded pool ' + params[0]);
+            break;
+        default:
+            reply('unrecognized command "' + command + '"');
+            break;
+    }
+};
+
 const startCliListener = function () {
     const cliPort = portalConfig.cliPort;
 
@@ -533,42 +576,7 @@ const startCliListener = function () {
         .on('log', function (text: any) {
             logger.debug('Master', 'CLI', text);
         })
-        .on(
-            'command',
-            function (command: any, params: any, options: any, reply: any) {
-                switch (command) {
-                    case 'blocknotify':
-                        Object.keys(cluster.workers as any).forEach(function (
-                            id: string
-                        ) {
-                            (cluster.workers as any)[id].send({
-                                type: 'blocknotify',
-                                coin: params[0],
-                                hash: params[1]
-                            });
-                        });
-                        reply('Pool workers notified');
-                        break;
-                    case 'coinswitch':
-                        processCoinSwitchCommand(params, options, reply);
-                        break;
-                    case 'reloadpool':
-                        Object.keys(cluster.workers as any).forEach(function (
-                            id: string
-                        ) {
-                            (cluster.workers as any)[id].send({
-                                type: 'reloadpool',
-                                coin: params[0]
-                            });
-                        });
-                        reply('reloaded pool ' + params[0]);
-                        break;
-                    default:
-                        reply('unrecognized command "' + command + '"');
-                        break;
-                }
-            }
-        )
+        .on('command', dispatchCliCommand)
         .start();
 };
 
@@ -703,6 +711,19 @@ const startWebsite = function () {
         pools: JSON.stringify(poolConfigs),
         portalConfig: JSON.stringify(portalConfig)
     });
+    // Admin API (api.ts) relays reloadpool/coinswitch here; dispatch + reply back.
+    worker.on('message', function (msg: any) {
+        if (msg && msg.type === 'cliCommand') {
+            dispatchCliCommand(
+                msg.command,
+                msg.params || [],
+                msg.options || {},
+                function (reply: string) {
+                    worker.send({ type: 'cliReply', id: msg.id, reply: reply });
+                }
+            );
+        }
+    });
     worker.on('exit', function (_code: any, _signal: any) {
         logger.error(
             'Master',
@@ -756,6 +777,28 @@ const startPriceFeed = function () {
         );
         setTimeout(function () {
             startPriceFeed();
+        }, 2000);
+    });
+};
+
+const startBalanceLogger = function () {
+    if (!portalConfig.balanceLog || !portalConfig.balanceLog.enabled) {
+        return;
+    }
+
+    const worker = cluster.fork({
+        workerType: 'balanceLogger',
+        pools: JSON.stringify(poolConfigs),
+        portalConfig: JSON.stringify(portalConfig)
+    });
+    worker.on('exit', function (_code: any, _signal: any) {
+        logger.error(
+            'Master',
+            'BalanceLogger',
+            'Balance logger process died, spawning replacement...'
+        );
+        setTimeout(function () {
+            startBalanceLogger();
         }, 2000);
     });
 };

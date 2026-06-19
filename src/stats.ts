@@ -463,7 +463,7 @@ export default function (
                 ).toString();
                 /* 13 commands per coin; the reply offsets (i + 0 .. i + 12)
                    below depend on this exact order */
-                var commandsPerCoin = 13;
+                var commandsPerCoin = 14;
 
                 var multi = client.client.multi();
                 client.coins.forEach(function (coin: any) {
@@ -486,7 +486,10 @@ export default function (
                         .hGetAll(coin + ':shares:timesCurrent')
                         // i+12: PPS accrual stats (float/paused/accruedTotal/
                         // sharePPS); empty hash for non-PPS coins.
-                        .hGetAll(coin + ':pps:stats');
+                        .hGetAll(coin + ':pps:stats')
+                        // i+13: wallet balance snapshot ({balance,time}) from the
+                        // optional balanceLog module; empty hash when disabled.
+                        .hGetAll(coin + ':walletBalance');
                 });
 
                 multi
@@ -654,6 +657,13 @@ export default function (
                                     realizedLuck:
                                         parseFloat(ppsReply.realizedLuck) || 0
                                 };
+                                // i+13: latest wallet balance (optional balanceLog
+                                // module); null when balance logging is disabled.
+                                var balanceReply = replies[i + 13] || {};
+                                coinStats.walletBalance =
+                                    balanceReply.balance != null
+                                        ? parseFloat(balanceReply.balance) || 0
+                                        : null;
                                 allCoinStats[coinStats.name] = coinStats;
                             }
                             // sort pools alphabetically

@@ -398,6 +398,42 @@ export default function (
         }
     };
 
+    // Relay a CLI-style admin command (reloadpool/coinswitch) to the cluster
+    // master, which dispatches it to the pool workers (init.ts dispatchCliCommand),
+    // then wait for the master's reply so the HTTP response carries the result.
+    let cliReqSeq = 0;
+    const sendCliToMaster = function (
+        command: string,
+        params: any[],
+        options: any,
+        cb: (err: string | null, reply?: string) => void
+    ): void {
+        if (typeof process.send !== 'function') {
+            cb('master IPC unavailable');
+            return;
+        }
+        const id = ++cliReqSeq;
+        const onMsg = function (m: any) {
+            if (m && m.type === 'cliReply' && m.id === id) {
+                clearTimeout(timer);
+                process.off('message', onMsg);
+                cb(null, m.reply);
+            }
+        };
+        const timer = setTimeout(function () {
+            process.off('message', onMsg);
+            cb('timeout waiting for master');
+        }, 8000);
+        process.on('message', onMsg);
+        (process.send as any)({
+            type: 'cliCommand',
+            id: id,
+            command: command,
+            params: params,
+            options: options
+        });
+    };
+
     this.handleAdminApiRequest = function (
         req: Request,
         res: Response,
@@ -437,6 +473,41 @@ export default function (
                             })
                         );
                     });
+                return;
+            }
+            case 'reloadpool':
+            case 'coinswitch': {
+                // Operator commands relayed to the master (password already
+                // checked by the /api/admin route). Replaces scripts/cli.ts.
+                const method = req.params.method;
+                const coin = req.body && req.body.coin;
+                if (!coin) {
+                    res.status(400);
+                    res.end(JSON.stringify({ error: 'coin required' }));
+                    return;
+                }
+                const params =
+                    method === 'coinswitch' && req.body.switchKey
+                        ? [coin, req.body.switchKey]
+                        : [coin];
+                const options =
+                    method === 'coinswitch' && req.body.algorithm
+                        ? { algorithm: req.body.algorithm }
+                        : {};
+                res.header('Content-Type', 'application/json');
+                sendCliToMaster(
+                    method,
+                    params,
+                    options,
+                    function (err: string | null, reply?: string) {
+                        if (err) {
+                            res.status(504);
+                            res.end(JSON.stringify({ error: err }));
+                        } else {
+                            res.end(JSON.stringify({ result: reply }));
+                        }
+                    }
+                );
                 return;
             }
             default:

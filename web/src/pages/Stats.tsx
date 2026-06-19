@@ -397,6 +397,13 @@ export default function Stats() {
                                     label={t('stats_pool_share')}
                                     value={`${share} %`}
                                 />
+                                {pool.walletBalance != null && (
+                                    <Row
+                                        icon="fa-wallet"
+                                        label={t('stats_wallet_balance')}
+                                        value={`${toNum(pool.walletBalance).toFixed(8)} ${pool.symbol ?? ''}`}
+                                    />
+                                )}
                             </div>
                             <div className="card">
                                 <div className="mb-2 font-semibold text-accent3">

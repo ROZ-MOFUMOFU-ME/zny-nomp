@@ -30,9 +30,6 @@
     ],
     "main": "src/init.ts",
     "type": "module",
-    "bin": {
-        "block-notify": "./scripts/cli.ts"
-    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ROZ-MOFUMOFU-ME/zny-nomp.git"
@@ -45,7 +42,7 @@
         "format:check": "prettier --check .",
         "test": "node --import tsx src/init.ts",
         "test:unit": "node --test test/*.test.ts test/*.test.mjs",
-        "check:config": "node scripts/check-config.mjs",
+        "check:config": "node --test test/config.test.ts",
         "typecheck": "tsc --noEmit",
         "build": "npm --prefix web install --legacy-peer-deps && npm --prefix web run build",
         "web:dev": "npm --prefix web run dev"

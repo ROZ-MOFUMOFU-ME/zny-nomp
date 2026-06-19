@@ -122,5 +122,6 @@
             "BTC": { "coingecko": "bitcoin", "coinpaprika": "btc-bitcoin" },
             "MONA": { "coingecko": "monacoin", "coinpaprika": "mona-monacoin" }
         }
-    }
+    },
+    "balanceLog": { "enabled": false, "interval": 300, "historyRetention": 86400 }
 }

@@ -13,6 +13,7 @@ interface PoolStat {
     workerCount?: number;
     minerCount?: number;
     hashrate?: number;
+    walletBalance?: number | null;
     poolStats?: {
         networkHash?: number;
         networkDiff?: number;
@@ -195,6 +196,23 @@ export function renderMetrics(stats?: MetricsStats | null): string {
         poolSamples(function (c) {
             return num(c.blocks && c.blocks.confirmed);
         })
+    );
+    // Pool spendable wallet balance — only for pools running the optional
+    // balanceLog module (walletBalance is null/absent otherwise).
+    metric(
+        'nomp_pool_wallet_balance',
+        'gauge',
+        'Pool spendable wallet balance in coins (balanceLog module)',
+        poolNames
+            .filter(function (p) {
+                return pools[p] && pools[p].walletBalance != null;
+            })
+            .map(function (p): MetricSample {
+                return {
+                    labels: { pool: p },
+                    value: num(pools[p].walletBalance)
+                };
+            })
     );
 
     // Share-based (pps / dpps) health — only for pools actually running a
