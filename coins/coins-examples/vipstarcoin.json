@@ -21,6 +21,10 @@
         {
             "name": "ccminer",
             "url": "https://github.com/vips-web/github-pages/raw/master/download/ccminer.zip"
+        },
+        {
+            "name": "sgminer",
+            "url": "https://github.com/vips-web/github-pages/raw/master/download/sgminer.zip"
         }
     ],
 

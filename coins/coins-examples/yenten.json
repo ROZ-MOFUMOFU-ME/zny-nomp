@@ -13,8 +13,8 @@
     "noGetnetworkhashps": true,
 
     "explorer": {
-        "txURL": "http://ytn.ccore.online/transaction/",
-        "blockURL": "http://ytn.ccore.online/block/"
+        "txURL": "https://explorer.yentencoin.info/tx/",
+        "blockURL": "https://explorer.yentencoin.info/block/"
     },
     "miningTools": [
         {
