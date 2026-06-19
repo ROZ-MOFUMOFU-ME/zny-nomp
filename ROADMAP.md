@@ -16,7 +16,7 @@ and the stack as a whole.
   type-stripping; older Node also fails to load the ESM `@exodus/crypto`
   dependency with `ERR_REQUIRE_ESM`.
 - **TypeScript migration complete (all three repos, buildless)**: the portal
-  (`src/init.ts`, `scripts/cli.ts`, `src/*.ts`) and node-stratum-pool (`src/*.ts`,
+  (`src/init.ts` and the other `src/*.ts`) and node-stratum-pool (`src/*.ts`,
   main `src/index.ts`) are now TypeScript, run directly via Node's native
   type-stripping (Node 22.18+/24, no build step), and are type-checked with
   `tsc --noEmit`. node-multi-hashing's `index.js` stays JavaScript on purpose —
@@ -48,7 +48,26 @@ and the stack as a whole.
       (`5.8079e-7` → `0.00000058079`), and the CoinGecko provider runs keyless
       by default (a stray `apiKey` value had caused intermittent HTTP 401). The
       feed also drives a JPY/other-fiat price ticker.
-- CI green on GitHub Actions and CircleCI (Node 22/24).
+- **Payments, admin & ops (2026-06-18/19)**:
+    - **New payment modes** — `solo`, `pps` (pay-per-share) and `dpps`
+      (dynamic PPS, with a realized-luck `rateScalar`) on top of the existing
+      `prop`/`pplnt`, selected per pool via `paymentMode`; PPS/D-PPS carry a
+      `minFloat` kill-switch. See `docs/payment-schemes.md`.
+    - **Admin commands over HTTP** — manual `reloadpool` and `coinswitch` are
+      now password-gated `POST /api/admin/<method>` calls relayed to the cluster
+      master, replacing the removed `scripts/cli.ts`. The `scripts/` folder is
+      gone entirely: config validation moved to `test/config.test.ts` (run by
+      `check:config`/`test:unit`), and the old Python/systemd balance scripts
+      were replaced by the logger below.
+    - **Optional wallet-balance logger** — `src/balanceLogger.ts` (`balanceLog`
+      config block, default off) records each pool's daemon `getbalance` into
+      Redis, surfaced on the stats page, via `/api`, and as the Prometheus gauge
+      `nomp_pool_wallet_balance`.
+    - **Reverse-proxy guide** — `docs/reverse-proxy.md` (nginx: SSE-safe `/api`
+      buffering, optional direct static serving, TLS).
+- CI green on GitHub Actions (Node 22/24 + Redis); CircleCI was removed —
+  GitHub Actions covers lint/typecheck/prettier, the config-parse check and the
+  unit tests.
 - **Stable releases (2026-06-15)**: zny-nomp v1.4.0, node-stratum-pool v0.4.0,
   node-multi-hashing v1.2.0 — promoted from the `-beta.0` line; the git
   dependencies are pinned to those release commits in `package-lock.json`.
@@ -60,10 +79,17 @@ and the stack as a whole.
 - **Mining + payout verified**: BitZeny, Koto, Monacoin, Bellcoin,
   Sugarchain, KumaCoin.
 - **In progress** (pool_configs enabled but not production-ready):
-    - VIPSTARCOIN — verified end-to-end on regtest; mainnet config still has
-      placeholder address/RPC credentials and needs a payout run.
-    - Yenten — developer-fee coinbase output is implemented and source-verified
-      against yenten 6.1, but untested against a live mainnet daemon.
+    - VIPSTARCOIN — PoW now verified end-to-end on **mainnet** with
+      ccminer-htmlcoin (sha256d over the 181-byte header; the common vipsminer
+      can't mine it). The required Stratum fixes live on node-stratum-pool
+      `develop` and the running pool needs a restart to load them; a mainnet
+      payout run is still pending.
+    - Yenten — the developer-fee coinbase output (gbt-driven, issue #65) is now
+      **verified against a live mainnet daemon**. The deployed 6.0.4 enforced the
+      10% dev fee in consensus but didn't expose it via `getblocktemplate`, so the
+      daemon was rebuilt/swapped to the yenten-6 line (6.0.5), whose gbt returns
+      `developer{}`; the pool's coinbase now carries the dev-fee output. A
+      matured-block payout run is still pending.
     - Susucoin — the daemon now builds and runs and its pool_config is enabled
       (sha256d); pending an end-to-end payout verification.
 - **Recently fixed (Koto)**: blocks that carried shielded mempool transactions
@@ -108,10 +134,12 @@ and the stack as a whole.
 
 ### Near-term
 
-- Complete the VIPSTARCOIN mainnet config and verify a real payout.
+- Verify a VIPSTARCOIN mainnet payout — the PoW is resolved; land the
+  node-stratum-pool fixes from `develop` and restart the running pool.
 - Verify Susucoin end-to-end (mining + payout); the daemon now builds and the
   pool is enabled.
-- Verify Yenten dev-fee payouts on mainnet (height ≥ 2,030,000).
+- Complete a Yenten matured-block payout run (the dev-fee coinbase is now
+  verified live against the 6.0.5 daemon — see Current state).
 - Add a CI step that does more than boot `src/init.ts` (e.g. lint + a headless
   config-parse / Redis round-trip check).
 
@@ -262,8 +290,9 @@ Monorepo consolidation is deferred; these are the active priorities.
 
 ### Miner experience
 
-- Additional reward schemes (PPS, PPLNS, solo) on top of the current
-  PROP/PPLNT modes.
+- ~~Additional reward schemes (PPS, solo)~~ _(done — `solo`, `pps` and `dpps`
+  (dynamic PPS) are implemented on top of PROP/PPLNT, selected per pool via
+  `paymentMode`; see `docs/payment-schemes.md`)._ PPLNS is still open.
 - Per-worker minimum-payout threshold and payout address configurable by the
   miner.
 - Richer hashrate-history graphs and custom worker labels.
