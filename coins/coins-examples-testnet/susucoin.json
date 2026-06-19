@@ -2,12 +2,14 @@
     "name": "Susucoin_testnet",
     "symbol": "TUTU",
     "algorithm": "sha256d",
+
     "peerMagic": "f9beb9e9",
     "peerMagicTestnet": "0c120807",
+    "blockTime": 120,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-    "blockTime": 120,
     "version_mask": true,
     "testnet": {
         "bech32": "tutu",

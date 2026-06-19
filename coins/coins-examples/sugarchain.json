@@ -2,20 +2,15 @@
     "name": "Sugarchain",
     "symbol": "SUGAR",
     "algorithm": "yespowerSUGAR",
+
     "peerMagic": "9feb4b9d",
     "peerMagicTestnet": "b0119070",
+    "blockTime": 5,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-    "mainnet": {
-        "bech32": "sugar",
-        "bip32": {
-            "public": "0488b21e"
-        },
-        "pubKeyHash": "3f",
-        "scriptHash": "7d"
-    },
-    "blockTime": 5,
+
     "explorer": {
         "txURL": "https://sugarchain.org/explorer/#/transaction/",
         "blockURL": "https://sugarchain.org/explorer/#/block/"
@@ -25,5 +20,14 @@
             "name": "Sugarmaker",
             "url": "https://github.com/decryp2kanon/sugarmaker/releases"
         }
-    ]
+    ],
+
+    "mainnet": {
+        "bech32": "sugar",
+        "bip32": {
+            "public": "0488b21e"
+        },
+        "pubKeyHash": "3f",
+        "scriptHash": "7d"
+    }
 }

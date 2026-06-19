@@ -1,30 +1,21 @@
 {
     "enabled": true,
     "coin": "koto.json",
-    "BTCover17": false,
-    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
 
     "blockIdentifier": "",
     "_comment_blockIdentifier1": "a string embedded in the block to be mined. Used to identify the pool in Insight etc etc.",
     "_comment_blockIdentifire2": "If this value equals null string, website.stratumHost in 'config.json' is used.",
-
+    "BTCover17": false,
+    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
     "address": "",
-    "_comment_address": "a transparent address to send coinbase rewards to and to transfer to zAddress.",
-
     "zAddress": "",
-    "_comment_zAddress": "a private address used to send coins to tAddress.",
-
     "tAddress": "",
-    "_comment_tAddress": "transparent address used to send payments, make this a different address, otherwise payments will not send",
-
     "walletInterval": 2.5,
+    "urlInsight": "",
 
     "rewardRecipients": {
         "": 1.0
     },
-
-    "urlInsight": "",
-    "_comment_urlInsight": "for using non-default insight: e.g. https://koto-insight-testnet.poolof.work for testnet",
 
     "paymentProcessing": {
         "maxUnshieldAmount": 100.0,
@@ -105,5 +96,9 @@
         "host": "127.0.0.1",
         "port": 8433,
         "disableTransactions": true
-    }
+    },
+    "_comment_address": "a transparent address to send coinbase rewards to and to transfer to zAddress.",
+    "_comment_zAddress": "a private address used to send coins to tAddress.",
+    "_comment_tAddress": "transparent address used to send payments, make this a different address, otherwise payments will not send",
+    "_comment_urlInsight": "for using non-default insight: e.g. https://koto-insight-testnet.poolof.work for testnet"
 }

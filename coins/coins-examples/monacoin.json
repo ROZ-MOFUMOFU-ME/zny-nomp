@@ -2,20 +2,15 @@
     "name": "Monacoin",
     "symbol": "MONA",
     "algorithm": "lyra2re2",
+
     "peerMagic": "fbc0b6db",
     "peerMagicTestnet": "fbd2c8f",
+    "blockTime": 90,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-    "mainnet": {
-        "bech32": "mona",
-        "bip32": {
-            "public": "0488b21e"
-        },
-        "pubKeyHash": "32",
-        "scriptHash": "37"
-    },
-    "blockTime": 90,
+
     "explorer": {
         "txURL": "https://blockbook.electrum-mona.org/tx/",
         "blockURL": "https://blockbook.electrum-mona.org/block/",
@@ -30,5 +25,14 @@
             "name": "ccminer (GPU miner)",
             "url": "https://github.com/tpruvot/ccminer/releases"
         }
-    ]
+    ],
+
+    "mainnet": {
+        "bech32": "mona",
+        "bip32": {
+            "public": "0488b21e"
+        },
+        "pubKeyHash": "32",
+        "scriptHash": "37"
+    }
 }

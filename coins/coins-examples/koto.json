@@ -2,6 +2,31 @@
     "name": "Koto",
     "symbol": "KOTO",
     "algorithm": "yescryptR8G",
+
+    "peerMagic": "4b6f746f",
+    "peerMagicTestnet": "546f6b6f",
+    "txfee": 0.0001,
+    "blockTime": 60,
+
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true,
+
+    "explorer": {
+        "txURL": "https://insight.kotocoin.info/tx/",
+        "blockURL": "https://insight.kotocoin.info/block/"
+    },
+    "miningTools": [
+        {
+            "name": "kotominer (official CPU miner)",
+            "url": "https://github.com/KotoDevelopers/cpuminer-yescrypt/releases"
+        },
+        {
+            "name": "ccminer KlausT (GPU miner)",
+            "url": "https://onedrive.live.com/?authkey=%21AHk1hss4HZtCU60&id=C7ABE390AB1575E7%21825&cid=C7ABE390AB1575E7"
+        }
+    ],
+
     "requireShielding": true,
     "nSubsidySlowStartInterval": 43200,
     "nSubsidyHalvingInterval": 1051200,
@@ -18,26 +43,5 @@
             "last": 2123999
         }
     ],
-    "sapling": true,
-    "txfee": 0.0001,
-    "blockTime": 60,
-    "peerMagic": "4b6f746f",
-    "peerMagicTestnet": "546f6b6f",
-    "explorer": {
-        "txURL": "https://insight.kotocoin.info/tx/",
-        "blockURL": "https://insight.kotocoin.info/block/"
-    },
-    "miningTools": [
-        {
-            "name": "kotominer (official CPU miner)",
-            "url": "https://github.com/KotoDevelopers/cpuminer-yescrypt/releases"
-        },
-        {
-            "name": "ccminer KlausT (GPU miner)",
-            "url": "https://onedrive.live.com/?authkey=%21AHk1hss4HZtCU60&id=C7ABE390AB1575E7%21825&cid=C7ABE390AB1575E7"
-        }
-    ],
-    "getInfo": false,
-    "noNetworkInfo": false,
-    "noGetnetworkhashps": true
+    "sapling": true
 }

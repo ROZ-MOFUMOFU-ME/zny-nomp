@@ -2,14 +2,17 @@
     "name": "KumaCoin",
     "symbol": "KUMA",
     "algorithm": "quark",
+
     "peerMagic": "c3d4d2fe",
     "peerMagicTestnet": "cdf2c0ef",
-    "blockTime": 90,
     "txfee": 0.03,
+    "blockTime": 90,
+
     "getInfo": true,
     "noNetworkInfo": true,
     "noGetnetworkhashps": true,
     "subVersion": "/Antenna:{version}/",
+
     "explorer": {
         "txURL": "https://explorer.kuma.mofumofu.me/tx/",
         "blockURL": "https://explorer.kuma.mofumofu.me/block/"

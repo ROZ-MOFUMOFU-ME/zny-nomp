@@ -2,6 +2,21 @@
     "name": "Koto_testnet",
     "symbol": "TOKO",
     "algorithm": "yescryptR8G",
+
+    "peerMagic": "4b6f746f",
+    "peerMagicTestnet": "546f6b6f",
+    "txfee": 0.0001,
+    "blockTime": 60,
+
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true,
+
+    "explorer": {
+        "txURL": "https://test-koto.blockbook.ovh//tx/",
+        "blockURL": "https://test-koto.blockbook.ovh//block/"
+    },
+
     "requireShielding": true,
     "nSubsidySlowStartInterval": 43200,
     "nSubsidyHalvingInterval": 1051200,
@@ -17,16 +32,5 @@
             "start": 93500,
             "last": 2123999
         }
-    ],
-    "txfee": 0.0001,
-    "blockTime": 60,
-    "peerMagic": "4b6f746f",
-    "peerMagicTestnet": "546f6b6f",
-    "explorer": {
-        "txURL": "https://test-koto.blockbook.ovh//tx/",
-        "blockURL": "https://test-koto.blockbook.ovh//block/"
-    },
-    "getInfo": false,
-    "noNetworkInfo": false,
-    "noGetnetworkhashps": true
+    ]
 }

@@ -5,10 +5,9 @@
     "blockIdentifier": "",
     "_comment_blockIdentifier1": "a string embedded in the block to be mined. Used to identify the pool in Insight etc etc.",
     "_comment_blockIdentifire2": "If this value equals null string, website.stratumHost in 'config.json' is used.",
-
-    "address": "",
     "BTCover17": true,
     "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
+    "address": "",
 
     "rewardRecipients": {
         "": 1.0

@@ -2,13 +2,16 @@
     "name": "Bellcoin",
     "symbol": "BELL",
     "algorithm": "yespower",
+
     "peerMagic": "facebabe",
     "peerMagicTestnet": "0b110907",
+    "txfee": 0.0001,
+    "blockTime": 30,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-    "txfee": 0.0001,
-    "blockTime": 30,
+
     "explorer": {
         "txURL": "https://explorer.bellcoin.web4u.jp/tx/",
         "blockURL": "https://explorer.bellcoin.web4u.jp/block/"
@@ -19,6 +22,7 @@
             "url": "https://github.com/bellflower2015/cpuminer-opt/releases"
         }
     ],
+
     "mainnet": {
         "bech32": "bm",
         "bip32": {

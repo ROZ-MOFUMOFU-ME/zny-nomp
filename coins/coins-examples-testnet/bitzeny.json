@@ -2,10 +2,12 @@
     "name": "BitZeny_testnet",
     "symbol": "TZNY",
     "algorithm": "yescryptR8",
+
     "peerMagic": "daa5bef9",
     "peerMagicTestnet": "59454e59",
     "txfee": 0.0001,
     "blockTime": 90,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,

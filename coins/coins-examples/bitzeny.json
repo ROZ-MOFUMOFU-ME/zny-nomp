@@ -2,13 +2,16 @@
     "name": "BitZeny",
     "symbol": "ZNY",
     "algorithm": "yescryptR8",
+
     "peerMagic": "daa5bef9",
     "peerMagicTestnet": "59454e59",
+    "txfee": 0.0001,
+    "blockTime": 90,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-    "txfee": 0.0001,
-    "blockTime": 90,
+
     "explorer": {
         "txURL": "https://insight.bitzeny.jp/tx/",
         "blockURL": "https://insight.bitzeny.jp/block/"
@@ -31,6 +34,7 @@
             "url": "https://onedrive.live.com/?authkey=%21AHk1hss4HZtCU60&id=C7ABE390AB1575E7%21825&cid=C7ABE390AB1575E7"
         }
     ],
+
     "mainnet": {
         "bip32": {
             "public": "0488b21e"

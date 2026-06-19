@@ -2,17 +2,27 @@
     "name": "Susucoin",
     "symbol": "SUSU",
     "algorithm": "sha256d",
+
     "peerMagic": "f9beb9e9",
     "peerMagicTestnet": "0c120807",
+    "blockTime": 120,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-    "blockTime": 120,
     "version_mask": true,
+
     "explorer": {
         "txURL": "https://explorer.susu.mofumofu.me/tx/",
         "blockURL": "https://explorer.susu.mofumofu.me/block/"
     },
+    "miningTools": [
+        {
+            "name": "ccminer",
+            "url": "https://github.com/tpruvot/ccminer/releases"
+        }
+    ],
+
     "mainnet": {
         "bech32": "susu",
         "bip32": {
@@ -20,11 +30,5 @@
         },
         "pubKeyHash": "3f",
         "scriptHash": "05"
-    },
-    "miningTools": [
-        {
-            "name": "ccminer",
-            "url": "https://github.com/tpruvot/ccminer/releases"
-        }
-    ]
+    }
 }

@@ -2,10 +2,12 @@
     "name": "Bellcoin_testnet",
     "symbol": "TBELL",
     "algorithm": "yespower",
+
     "peerMagic": "facebabe",
     "peerMagicTestnet": "0b110907",
     "txfee": 0.0001,
     "blockTime": 30,
+
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,

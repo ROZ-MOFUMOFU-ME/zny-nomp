@@ -1,12 +1,13 @@
 {
     "enabled": true,
-    "_comment_enabled": "set true after: VIPS daemon running+synced, address/rpc credentials filled in",
     "coin": "vipstarcoin.json",
+
+    "blockIdentifier": "",
+    "_comment_blockIdentifier1": "a string embedded in the block to be mined. Used to identify the pool in Insight etc etc.",
+    "_comment_blockIdentifire2": "If this value equals null string, website.stratumHost in 'config.json' is used.",
     "BTCover17": false,
     "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
-
     "address": "VFILL_IN_POOL_ADDRESS_LEGACY_BASE58",
-    "_comment_address": "use a legacy base58 'V...' address (not bech32) owned by the daemon wallet",
 
     "rewardRecipients": {
         "": 1.0
@@ -83,5 +84,7 @@
         "host": "127.0.0.1",
         "port": 31915,
         "disableTransactions": true
-    }
+    },
+    "_comment_enabled": "set true after: VIPS daemon running+synced, address/rpc credentials filled in",
+    "_comment_address": "use a legacy base58 'V...' address (not bech32) owned by the daemon wallet"
 }

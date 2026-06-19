@@ -2,10 +2,16 @@
     "name": "Yenten",
     "symbol": "YTN",
     "algorithm": "yespowerR16",
+
     "peerMagic": "ad5aeb9f",
     "peerMagicTestnet": "9554e495",
     "txfee": 0.001,
     "blockTime": 120,
+
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true,
+
     "explorer": {
         "txURL": "http://ytn.ccore.online/transaction/",
         "blockURL": "http://ytn.ccore.online/block/"
@@ -20,9 +26,7 @@
             "url": "https://github.com/JayDDee/cpuminer-opt/releases"
         }
     ],
-    "getInfo": false,
-    "noNetworkInfo": false,
-    "noGetnetworkhashps": true,
+
     "mainnet": {
         "bip32": {
             "public": "0488b21e"

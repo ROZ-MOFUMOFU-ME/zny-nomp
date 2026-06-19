@@ -1,15 +1,21 @@
 {
     "enabled": true,
-    "coin": "ltncg.json",
+    "coin": "testnet/vipstarcoin.json",
 
-    "address": "",
+    "blockIdentifier": "",
+    "_comment_blockIdentifier1": "a string embedded in the block to be mined. Used to identify the pool in Insight etc etc.",
+    "_comment_blockIdentifire2": "If this value equals null string, website.stratumHost in 'config.json' is used.",
+    "BTCover17": false,
+    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
+    "address": "VFILL_IN_POOL_ADDRESS_LEGACY_BASE58",
 
     "rewardRecipients": {
         "": 1.0
     },
 
     "paymentProcessing": {
-        "minConf": 10,
+        "minConf": 503,
+        "_comment_minConf": "VIPS COINBASE_MATURITY is 500; keep a small margin",
         "enabled": true,
         "paymentMode": "prop",
         "_comment_paymentMode": "prop, pplnt, solo, pps, dpps",
@@ -29,12 +35,12 @@
             "minFloat": 0,
             "accrualInterval": 60
         },
-        "paymentInterval": 120,
-        "minimumPayment": 0.1,
+        "paymentInterval": 600,
+        "minimumPayment": 1,
         "maxBlocksPerPayment": 3,
         "daemon": {
             "host": "127.0.0.1",
-            "port": 9110,
+            "port": 31916,
             "user": "username",
             "password": "password"
         }
@@ -48,7 +54,7 @@
     },
 
     "ports": {
-        "3411": {
+        "3331": {
             "diff": 0.5,
             "tls": false,
             "varDiff": {
@@ -67,7 +73,7 @@
     "daemons": [
         {
             "host": "127.0.0.1",
-            "port": 9110,
+            "port": 31916,
             "user": "username",
             "password": "password"
         }
@@ -76,7 +82,9 @@
     "p2p": {
         "enabled": true,
         "host": "127.0.0.1",
-        "port": 9111,
+        "port": 31915,
         "disableTransactions": true
-    }
+    },
+    "_comment_enabled": "set true after: VIPS daemon running+synced, address/rpc credentials filled in",
+    "_comment_address": "use a legacy base58 'V...' address (not bech32) owned by the daemon wallet"
 }

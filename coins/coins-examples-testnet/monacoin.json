@@ -2,8 +2,19 @@
     "name": "Monacoin_testnet",
     "symbol": "TMONA",
     "algorithm": "lyra2re2",
+
     "peerMagic": "fbc0b6db",
     "peerMagicTestnet": "fbd2c8f",
+    "blockTime": 90,
+
+    "getInfo": false,
+    "noNetworkInfo": false,
+    "noGetnetworkhashps": true,
+
+    "explorer": {
+        "txURL": "https://testnet-blockbook.electrum-mona.org/tx/",
+        "blockURL": "https://testnet-blockbook.electrum-mona.org/block/"
+    },
     "testnet": {
         "bech32": "tmona",
         "bip32": {
@@ -11,13 +22,5 @@
         },
         "pubKeyHash": "6f",
         "scriptHash": "c4"
-    },
-    "blockTime": 90,
-    "explorer": {
-        "txURL": "https://testnet-blockbook.electrum-mona.org/tx/",
-        "blockURL": "https://testnet-blockbook.electrum-mona.org/block/"
-    },
-    "getInfo": false,
-    "noNetworkInfo": false,
-    "noGetnetworkhashps": true
+    }
 }
