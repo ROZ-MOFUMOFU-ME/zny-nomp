@@ -11,6 +11,7 @@ import { esmppsAllocate, smppsAllocate, parseDebtEntry } from './smppsLogic.ts';
 import async from 'async';
 import * as Stratum from 'stratum-pool';
 import * as StratumUtil from 'stratum-pool/src/util.ts';
+import algos from 'stratum-pool/src/algoProperties.ts';
 import type { Logger } from './logUtil.ts';
 
 // `util` is referenced (but never imported) by getProperAddress/handleAddress
@@ -372,6 +373,18 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
             : ppsplusActive
               ? 'PPS+'
               : 'PPS';
+    // PPS-family economics need the network difficulty on the SAME scale as
+    // shareData.difficulty (the stratum/vardiff scale = raw daemon difficulty x
+    // the algo multiplier). coin:stats.networkDiff caches the RAW daemon
+    // difficulty (getmininginfo), so the per-share rate must multiply it by the
+    // algo multiplier; otherwise basePPS over-credits by the multiplier — e.g.
+    // 65536x on yespower/yescrypt, where getmininginfo difficulty 0.000061 is
+    // really stratum difficulty ~4. multiplier-1 algos (sha256d, quark) are
+    // unaffected. Used by accruePPS / accrueSMPPS.
+    var algoMultiplier =
+        (algos[poolOptions.coin.algorithm] &&
+            algos[poolOptions.coin.algorithm].multiplier) ||
+        1;
 
     var requireShielding = poolOptions.coin.requireShielding === true;
     var fee = parseFloat(poolOptions.coin.txfee) || parseFloat(0.0004 as any);
@@ -1045,8 +1058,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                     var rewardBasis = fppsActive
                         ? fppsEffectiveReward(shareBlockReward, newFeeEma)
                         : shareBlockReward;
-                    // basePPS: full value of one difficulty unit of work, in coins.
-                    var basePPS = rewardBasis / networkDiff;
+                    // basePPS: full value of one difficulty unit of work, in
+                    // coins. networkDiff x algoMultiplier puts the cached raw
+                    // daemon difficulty onto the same (stratum) scale as the
+                    // accumulated shareDiff (see algoMultiplier note above).
+                    var basePPS = rewardBasis / (networkDiff * algoMultiplier);
                     // Per-share rate. pps/fpps/ppsplus: fixed (1 - feePercent).
                     // dpps: dynamic rateScalar from smoothed realized luck
                     // (actualReward EMA / expectedReward EMA), floored at rateMin
@@ -1304,7 +1320,11 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                         );
                         return;
                     }
-                    var basePPS = smppsBlockReward / networkDiff;
+                    // networkDiff x algoMultiplier → same scale as shareDiff
+                    // (see algoMultiplier note); without it basePPS over-credits
+                    // by the multiplier on yespower/yescrypt etc.
+                    var basePPS =
+                        smppsBlockReward / (networkDiff * algoMultiplier);
                     var rate = 1 - smppsFeePercent / 100;
                     // Drain this cycle's shares (RENAME+HGETALL); "no such key"
                     // just means no new shares — we still release budget against

@@ -149,6 +149,15 @@ sharePPS = (blockReward / networkDifficulty) * shareDifficulty
 
 paid regardless of blocks found.
 
+> **Difficulty scale (important):** `networkDifficulty` here must be on the same
+> scale as `shareDifficulty` — the stratum/vardiff scale, i.e. the raw daemon
+> `getmininginfo` difficulty **× the algo multiplier** (`algoProperties`). The
+> payment processor caches the raw daemon value in `coin:stats.networkDiff`, so
+> the accrual multiplies by the multiplier. Skipping this over-credits by the
+> multiplier on non-sha256 algos — e.g. 65536× on yespower/yescrypt, where a
+> daemon difficulty of 0.000061 is really stratum difficulty ~4. Applies to all
+> PPS-family modes (pps/dpps/fpps/ppsplus/smpps/esmpps).
+
 - **Why it breaks the model:** the waterfall is block-triggered; PPS owes miners
   continuously, before/independent of any block. Earnings cannot come from
   `shares:round<height>` (only exist on a block) — they must accrue from the
