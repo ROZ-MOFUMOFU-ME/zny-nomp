@@ -1866,7 +1866,15 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                 function (res: any) {
                     endRedisTimer();
                     var networkDiff = parseFloat(res[0]) || 0;
-                    var windowDiff = pplnsWindowN * networkDiff;
+                    // windowDiff must be on the same (stratum) scale as the
+                    // shareData.difficulty stored in the window log, i.e. raw
+                    // daemon networkDiff x the algo multiplier — same scaling as
+                    // the PPS basePPS. Without it the window is multiplier-times
+                    // too small on non-sha256 algos (e.g. 65536x on yespower),
+                    // collapsing to just the newest share and paying ~the whole
+                    // block to one miner.
+                    var windowDiff =
+                        pplnsWindowN * networkDiff * algoMultiplier;
                     var byHeight: any = {};
                     rounds.forEach(function (r: any, i: any) {
                         var entries = (res[i + 1] || [])

@@ -224,10 +224,15 @@ minFloat }`. **Risk: MEDIUM-HIGH** (auto-throttles on bad luck + `rateMin`
 > watched on a real multi-worker pool first.
 
 ```
-windowDiff = pplnsN * networkDiff
+windowDiff = pplnsN * networkDiff * algoMultiplier   // stratum scale (see §4 note)
 percent(worker) = Σ worker's diff in the last `windowDiff` of shares / windowDiff
 worker.reward   = postFeeBlockReward * percent(worker)
 ```
+
+`windowDiff` is scaled by the algo multiplier for the same reason as PPS (§4):
+the window-log diffs are on the stratum scale. Skipping it shrinks the window by
+the multiplier (e.g. 65536× on yespower), collapsing it to the single newest
+share. Applies to `pplns` and to `ppsplus`'s fee distribution.
 
 Each matured block is shared among the contributors to the **last N shares**
 before it, where the window N is a multiple of the network difficulty (a "score"
