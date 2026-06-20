@@ -1274,6 +1274,16 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                                     );
                                     round.category = 'kicked';
                                     return;
+                                } else if (tx.error || !tx.result) {
+                                    logger.error(
+                                        logSystem,
+                                        logComponent,
+                                        'Odd error with gettransaction ' +
+                                            round.txHash +
+                                            ' ' +
+                                            JSON.stringify(tx)
+                                    );
+                                    return;
                                 } else if (
                                     !tx.result.details ||
                                     (tx.result.details &&
@@ -1286,16 +1296,6 @@ function SetupForPool(logger, poolOptions, setupFinished) {
                                             round.txHash
                                     );
                                     round.category = 'kicked';
-                                    return;
-                                } else if (tx.error || !tx.result) {
-                                    logger.error(
-                                        logSystem,
-                                        logComponent,
-                                        'Odd error with gettransaction ' +
-                                            round.txHash +
-                                            ' ' +
-                                            JSON.stringify(tx)
-                                    );
                                     return;
                                 }
                                 // update confirmations for round
