@@ -13,7 +13,16 @@
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
-
+    "miningTools": [
+        {
+            "name": "ccminer-vips (recommended)",
+            "url": "https://github.com/ROZ-MOFUMOFU-ME/ccminer-vips/releases/"
+        },
+        {
+            "name": "ccminer (Official, but may be not work)",
+            "url": "https://github.com/vips-web/github-pages/raw/master/download/ccminer.zip"
+        }
+    ],
     "mainnet": {
         "bip32": {
             "public": "043587cf"

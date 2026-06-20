@@ -19,12 +19,12 @@
     },
     "miningTools": [
         {
-            "name": "ccminer (Official)",
-            "url": "https://github.com/vips-web/github-pages/raw/master/download/ccminer.zip"
-        },
-        {
             "name": "ccminer-vips (recommended)",
             "url": "https://github.com/ROZ-MOFUMOFU-ME/ccminer-vips/releases/"
+        },
+        {
+            "name": "ccminer (Official, but may be not work)",
+            "url": "https://github.com/vips-web/github-pages/raw/master/download/ccminer.zip"
         }
     ],
 
