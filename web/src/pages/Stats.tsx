@@ -63,10 +63,12 @@ function Row({
 
 function PoolBlocks({
     pool,
-    blockURL
+    blockURL,
+    minConf
 }: {
     pool: PoolEntry;
     blockURL?: string;
+    minConf?: number;
 }) {
     const { t } = useTranslation();
     const pending = pool.pending?.blocks ?? [];
@@ -84,7 +86,7 @@ function PoolBlocks({
             </span>
         ) : conf != null ? (
             <span className="font-semibold text-red-600">
-                {t('stats_conf_of_100', { conf })}
+                {t('stats_conf_of_total', { conf, total: minConf ?? 100 })}
             </span>
         ) : (
             <span className="font-semibold text-red-600">
@@ -482,7 +484,13 @@ export default function Stats() {
                             </div>
                         </div>
 
-                        <PoolBlocks pool={pool} blockURL={blockURL} />
+                        <PoolBlocks
+                            pool={pool}
+                            blockURL={blockURL}
+                            minConf={
+                                configQuery.data?.pools?.[pool.name]?.minConf
+                            }
+                        />
                         <FindersPie pool={pool} />
                     </section>
                 );

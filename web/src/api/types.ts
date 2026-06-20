@@ -174,6 +174,9 @@ export interface AppConfigPool {
         miningTools?: Array<MiningTool | string>;
     };
     ports?: Record<string, AppConfigPort>;
+    // Block maturity (confirmations required before payout). Used by the stats
+    // page as the "x / N" confirmations denominator. Falls back to 100 if unset.
+    minConf?: number;
 }
 
 export interface AppConfigNavLink {

@@ -101,7 +101,10 @@ export default function (
                             explorer: coin.explorer,
                             miningTools: coin.miningTools
                         },
-                        ports: pc.ports
+                        ports: pc.ports,
+                        // Block maturity (confirmations required before payout);
+                        // the stats UI uses it as the "x / N" confirmations denominator.
+                        minConf: pc.minConf
                     };
                 });
                 // Operator branding (site name / logo / home-hero copy) so a
