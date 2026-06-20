@@ -104,7 +104,7 @@ export default function (
                         ports: pc.ports,
                         // Block maturity (confirmations required before payout);
                         // the stats UI uses it as the "x / N" confirmations denominator.
-                        minConf: pc.minConf
+                        minConf: pc.paymentProcessing && pc.paymentProcessing.minConf
                     };
                 });
                 // Operator branding (site name / logo / home-hero copy) so a
