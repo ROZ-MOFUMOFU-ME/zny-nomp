@@ -707,11 +707,18 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     //send t_address balance to z_address
     function sendTToZ(callback: any, tBalance: any, minConf: any) {
         if (callback === true) return;
-        if (tBalance === (NaN as any)) {
+        // NB: `x === NaN` is ALWAYS false in JS, so the old guard never fired and
+        // a NaN balance (e.g. the daemon answers RPC with -28 "Rescanning..." so
+        // the balance never resolves to a number) flowed straight into z_sendmany
+        // as amount=NaN -> daemon error -3 "Amount is not a number". Guard for any
+        // non-finite balance and skip this cycle instead.
+        if (typeof tBalance !== 'number' || !isFinite(tBalance)) {
             logger.error(
                 logSystem,
                 logComponent,
-                'tBalance === NaN for sendTToZ'
+                'tBalance is not a finite number (' +
+                    tBalance +
+                    ') for sendTToZ - skipping (daemon warming up / rescanning?)'
             );
             return;
         }
@@ -770,11 +777,16 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     // send z_address balance to t_address
     function sendZToT(callback: any, zBalance: any, minConf: any) {
         if (callback === true) return;
-        if (zBalance === (NaN as any)) {
+        // Same broken `=== NaN` guard as sendTToZ: it never fired, so a non-finite
+        // z balance (daemon still rescanning -> RPC -28) reached z_sendmany as
+        // amount=NaN. Guard properly and skip.
+        if (typeof zBalance !== 'number' || !isFinite(zBalance)) {
             logger.error(
                 logSystem,
                 logComponent,
-                'zBalance === NaN for sendZToT'
+                'zBalance is not a finite number (' +
+                    zBalance +
+                    ') for sendZToT - skipping (daemon warming up / rescanning?)'
             );
             return;
         }
