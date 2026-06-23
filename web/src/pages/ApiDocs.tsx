@@ -43,7 +43,7 @@ export default function ApiDocs() {
                             <tr key={e.path}>
                                 <td className="whitespace-nowrap">
                                     <a href={e.path}>
-                                        <code className="rounded bg-black/5 px-1.5 py-0.5">
+                                        <code className="rounded bg-black/5 dark:bg-white/5 px-1.5 py-0.5">
                                             {e.path}
                                         </code>
                                     </a>

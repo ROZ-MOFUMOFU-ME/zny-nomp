@@ -12,11 +12,23 @@
     font-display: swap;
 }
 
-/* Design tokens (drive Tailwind color utilities: bg-accent, text-muted, …). */
+/* Manual (class-based) dark mode: `dark:` applies under an .dark ancestor,
+   and the no-flash script in index.html toggles `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens (drive Tailwind color utilities: bg-accent, text-muted, …).
+   These are the LIGHT values; the .dark block below overrides the same
+   variables so every semantic utility (bg-panel, bg-card, text-muted, …)
+   follows the active theme without per-element dark: variants. */
 @theme {
     --color-bg: #2d2d2d;
     --color-panel: #ebf4fa;
     --color-card: #f4f7fa;
+    --color-surface: #ffffff;
+    --color-line: rgba(0, 0, 0, 0.1);
+    --color-text: #222222;
+    --color-table-head: #dfe7ee;
+    --color-table-stripe: #f3f7fa;
     --color-muted: #6b7785;
     --color-nav: #b3b3b3;
     --color-navhover: #444444;
@@ -30,14 +42,41 @@
         -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Dark theme: override the same custom properties. Header/footer bars (bg-bg)
+   stay the darkest; panel is the page surface; card/surface lift slightly. */
+.dark {
+    --color-bg: #14171b;
+    --color-panel: #1b1f25;
+    --color-card: #23282f;
+    --color-surface: #1e232a;
+    --color-line: rgba(255, 255, 255, 0.12);
+    --color-text: #e4e7ea;
+    --color-table-head: #2b313b;
+    --color-table-stripe: #232831;
+    --color-muted: #9aa7b4;
+    --color-nav: #b3b3b3;
+    --color-navhover: #3a4049;
+    --color-accent: #1ec1d8;
+    --color-accent2: #c481ea;
+    --color-accent3: #1cc8a6;
+    --color-link: #54bce3;
+}
+
 @layer base {
     html,
     body {
         margin: 0;
     }
+    /* Drives native form controls + scrollbars to match the theme. */
+    html {
+        color-scheme: light;
+    }
+    html.dark {
+        color-scheme: dark;
+    }
     body {
         background: var(--color-bg);
-        color: #222222;
+        color: var(--color-text);
         font-family: var(--font-sans);
     }
     a {
@@ -52,7 +91,7 @@
 /* A few repeated building blocks; everything else uses utilities in the JSX. */
 @layer components {
     .card {
-        @apply rounded-lg border border-black/10 bg-[#f4f7fa] p-4;
+        @apply rounded-lg border border-line bg-card p-4;
     }
     .page-title {
         @apply mb-4 text-2xl font-bold;
@@ -61,7 +100,7 @@
         @apply inline-flex cursor-pointer items-center gap-2 rounded-md border-0 bg-accent px-4 py-2 text-white hover:brightness-95;
     }
     .field {
-        @apply rounded-md border border-black/15 px-3 py-2;
+        @apply rounded-md border border-line bg-surface px-3 py-2 text-[color:var(--color-text)];
     }
     .muted {
         @apply text-muted;
@@ -73,15 +112,39 @@
         @apply p-6 text-center text-danger;
     }
     .data-table {
-        @apply w-full border-collapse bg-white text-sm;
+        @apply w-full border-collapse bg-surface text-sm;
     }
     .data-table :is(th, td) {
-        @apply border border-black/10 px-2.5 py-1.5 text-left align-top;
+        @apply border border-line px-2.5 py-1.5 text-left align-top;
     }
     .data-table th {
-        @apply bg-[#dfe7ee] font-semibold;
+        @apply bg-table-head font-semibold;
     }
     .data-table tbody tr:nth-child(even) td {
-        @apply bg-[#f3f7fa];
+        @apply bg-table-stripe;
     }
+}
+
+/* recharts charts follow the theme: axis labels, grid lines, legend, and the
+   default tooltip (which ships with hardcoded light styles). CSS `fill`/`color`
+   override recharts' presentation attributes; inline tooltip styles need
+   !important. The data-series colors stay as passed (visible on any bg). */
+.recharts-cartesian-axis-tick-value {
+    fill: var(--color-muted);
+}
+.recharts-cartesian-grid line,
+.recharts-cartesian-axis line {
+    stroke: var(--color-line);
+}
+.recharts-legend-item-text {
+    color: var(--color-muted) !important;
+}
+.recharts-default-tooltip {
+    background-color: var(--color-surface) !important;
+    border-color: var(--color-line) !important;
+    border-radius: 6px;
+}
+.recharts-tooltip-label,
+.recharts-tooltip-item {
+    color: var(--color-text) !important;
 }

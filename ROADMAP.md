@@ -269,8 +269,12 @@ Monorepo consolidation is deferred; these are the active priorities.
   "No KYC"-style highlight badges, operator HTML sections, mining-server
   location cards with in-browser ping, and GA4 / custom analytics tags — no
   code changes needed to rebrand)._
-- **Mobile-friendly, responsive UI** plus a Progressive Web App (installable,
-  offline stats view, optional push notifications) and a dark mode.
+- ~~**Mobile-friendly, responsive UI** and **dark mode**~~ _(done — class-based
+  light/dark theme built on CSS-variable tokens, with a header toggle, OS
+  `prefers-color-scheme` default, persisted choice and a no-flash init; mobile
+  hamburger navigation and fluid layouts down to 320px)._ Still open: a
+  Progressive Web App (installable, offline stats view, optional push
+  notifications).
 - Documented public API (OpenAPI/Swagger) and optional WebSocket push for
   live stats instead of polling.
 - Accessibility (a11y) pass on the UI.

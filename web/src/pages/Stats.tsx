@@ -54,7 +54,7 @@ function Row({
 }) {
     return (
         <div className="whitespace-nowrap py-0.5 text-sm">
-            <i className={`fas ${icon} fa-fw text-black/40`} />{' '}
+            <i className={`fas ${icon} fa-fw text-muted`} />{' '}
             <span className="text-muted">{label}:</span>{' '}
             <span className="font-medium">{value}</span>
         </div>
@@ -96,11 +96,11 @@ function PoolBlocks({
         return (
             <div
                 key={(paid ? 'c' : 'p') + b.blockHash + b.height}
-                className="rounded-md bg-black/5 px-3 py-2 text-sm"
+                className="rounded-md bg-black/5 dark:bg-white/5 px-3 py-2 text-sm"
             >
                 <div className="flex flex-wrap items-center gap-x-3">
                     <span>
-                        <i className="fas fa-bars fa-fw text-black/40" />{' '}
+                        <i className="fas fa-bars fa-fw text-muted" />{' '}
                         <span className="text-muted">
                             {t('stats_block_label')}
                         </span>{' '}
@@ -120,7 +120,7 @@ function PoolBlocks({
                     <span className="ml-auto">{status}</span>
                 </div>
                 <div className="mt-1">
-                    <i className="fas fa-gavel fa-fw text-black/40" />{' '}
+                    <i className="fas fa-gavel fa-fw text-muted" />{' '}
                     <span className="text-muted">{t('stats_mined_by')}</span>{' '}
                     <Link to={`/workers/${b.worker.split('.')[0]}`}>
                         {b.worker}

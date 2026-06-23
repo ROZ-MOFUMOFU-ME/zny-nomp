@@ -124,6 +124,11 @@ npm run build          # outputs web/dist (use `npm run dev` for the Vite dev se
 
 The Docker image builds `web/` automatically during the image build.
 
+The SPA is **responsive** (fluid layouts down to 320px with a mobile hamburger
+nav) and ships **light/dark themes**: a header toggle persists the choice and
+otherwise follows the OS `prefers-color-scheme`, applied before first paint to
+avoid a flash. It also carries 21-language i18n (react-i18next).
+
 #### 2) Configuration
 
 ##### Portal config

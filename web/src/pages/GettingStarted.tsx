@@ -5,7 +5,8 @@ import { getConfig } from '../api/client.ts';
 import type { AppConfig, AppConfigPool, AppConfigPort } from '../api/types.ts';
 import { toNum } from '../lib/format.ts';
 
-const code = 'whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5';
+const code =
+    'whitespace-nowrap rounded bg-black/5 dark:bg-white/5 px-1.5 py-0.5';
 
 // /getting_started — step-by-step mining instructions. Reads GET /api/config so
 // the listed coins, stratum host and (auto-switching) ports always match the
@@ -98,7 +99,7 @@ export default function GettingStarted() {
                                     className={`rounded-lg border p-3 text-left transition ${
                                         isActive
                                             ? 'border-accent bg-accent/10'
-                                            : 'border-black/10 bg-card hover:border-accent/50'
+                                            : 'border-line bg-card hover:border-accent/50'
                                     }`}
                                 >
                                     <div className="font-semibold">
@@ -128,7 +129,7 @@ export default function GettingStarted() {
                             : ''}
                     </h2>
                     <div className="mb-3 max-w-md">
-                        <div className="flex justify-between border-b border-dashed border-black/10 py-1">
+                        <div className="flex justify-between border-b border-dashed border-line py-1">
                             <span className="text-muted">
                                 {t('gs_algorithm')}
                             </span>
@@ -216,7 +217,7 @@ export default function GettingStarted() {
                     <p className="muted mt-3">{t('gs_port_hint')}</p>
 
                     {miningTools.length > 0 && (
-                        <div className="mt-4 border-t border-black/10 pt-3">
+                        <div className="mt-4 border-t border-line pt-3">
                             <div className="mb-1 font-semibold">
                                 <i className="fas fa-download fa-fw text-accent" />{' '}
                                 {t('gs_mining_software')}

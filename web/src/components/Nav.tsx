@@ -132,7 +132,13 @@ function NavDropdown({ link }: { link: AppConfigNavLink }) {
     );
 }
 
-export default function Nav() {
+export default function Nav({
+    mobile = false,
+    onNavigate
+}: {
+    mobile?: boolean;
+    onNavigate?: () => void;
+}) {
     const { t } = useTranslation();
     const config = useQuery({ queryKey: ['config'], queryFn: getConfig });
     const showTabs = tabStatsEnabled(config.data);
@@ -141,7 +147,13 @@ export default function Nav() {
         (l) => l && l.label && (l.url || Array.isArray(l.children))
     );
     return (
-        <nav className="flex flex-wrap items-center gap-1 lg:ml-auto lg:min-w-0 lg:flex-nowrap lg:overflow-x-auto lg:[-ms-overflow-style:none] lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
+        <nav
+            className={
+                mobile
+                    ? 'flex flex-col gap-1'
+                    : 'hidden items-center gap-1 lg:ml-auto lg:flex lg:min-w-0 lg:overflow-x-auto lg:[-ms-overflow-style:none] lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden'
+            }
+        >
             {LINKS.filter((l) => l.key !== 'tab_stats' || showTabs).map((l) => {
                 const label = t(l.key, l.fallback);
                 return (
@@ -149,6 +161,7 @@ export default function Nav() {
                         key={l.to}
                         to={l.to}
                         title={label}
+                        onClick={onNavigate}
                         className={({ isActive }) =>
                             `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-2 text-sm hover:bg-navhover hover:text-white hover:no-underline ${
                                 isActive ? 'bg-navhover text-white' : 'text-nav'
@@ -170,6 +183,7 @@ export default function Nav() {
                         target="_blank"
                         rel="noreferrer"
                         title={l.label}
+                        onClick={onNavigate}
                         className={navClass}
                     >
                         <i

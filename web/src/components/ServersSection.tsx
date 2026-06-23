@@ -77,7 +77,7 @@ export default function ServersSection({
     // Config title overrides; otherwise the translated default.
     const title = servers.title || t('home_servers_title');
     return (
-        <section className="mb-5 rounded-xl bg-slate-500 px-5 py-4 text-white">
+        <section className="mb-5 rounded-xl bg-slate-500 dark:bg-slate-700 px-5 py-4 text-white">
             <div className="mb-3 text-xl font-bold">{title}</div>
             <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
                 {list.map((s, i) => {

@@ -108,7 +108,7 @@ function Stat({
 }) {
     return (
         <div className="whitespace-nowrap py-0.5 text-sm">
-            <i className={`fas ${icon} fa-fw text-black/40`} />{' '}
+            <i className={`fas ${icon} fa-fw text-muted`} />{' '}
             <span className="text-muted">{label}:</span>{' '}
             <span className="font-medium">{value}</span>
         </div>
@@ -236,14 +236,14 @@ export default function MinerStats() {
 
                 <div className="mt-3 flex flex-wrap gap-x-8 gap-y-1 text-sm">
                     <span>
-                        <i className="fas fa-chart-bar fa-fw text-black/40" />{' '}
+                        <i className="fas fa-chart-bar fa-fw text-muted" />{' '}
                         <span className="text-muted">{t('miner_shares')}:</span>{' '}
                         <span className="font-medium">
                             {toNum(data.totalShares).toFixed(2)}
                         </span>
                     </span>
                     <span>
-                        <i className="fas fa-hourglass-half fa-fw text-black/40" />{' '}
+                        <i className="fas fa-hourglass-half fa-fw text-muted" />{' '}
                         <span className="text-muted">
                             {t('miner_immature')}:
                         </span>{' '}
@@ -252,7 +252,7 @@ export default function MinerStats() {
                         </span>
                     </span>
                     <span>
-                        <i className="fas fa-wallet fa-fw text-black/40" />{' '}
+                        <i className="fas fa-wallet fa-fw text-muted" />{' '}
                         <span className="text-muted">
                             {t('miner_balance')}:
                         </span>{' '}
@@ -261,7 +261,7 @@ export default function MinerStats() {
                         </span>
                     </span>
                     <span>
-                        <i className="fas fa-money-bill fa-fw text-black/40" />{' '}
+                        <i className="fas fa-money-bill fa-fw text-muted" />{' '}
                         <span className="text-muted">{t('miner_paid')}:</span>{' '}
                         <span className="font-medium">
                             {formatAmount(data.paid)}

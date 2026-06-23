@@ -168,7 +168,7 @@ export default function Admin() {
                 Object.entries(pools).map(([poolKey, value]) => (
                     <div className="card mt-4" key={poolKey}>
                         <h2 className="mb-2 text-lg font-bold">{poolKey}</h2>
-                        <pre className="overflow-x-auto rounded-md bg-black/5 p-3 text-xs">
+                        <pre className="overflow-x-auto rounded-md bg-black/5 dark:bg-white/5 p-3 text-xs">
                             {JSON.stringify(value, null, 2)}
                         </pre>
                     </div>
