@@ -79,9 +79,9 @@ export default function Footer() {
                         <i className="fab fa-discord fa-fw" />
                     </a>
                     &nbsp;&nbsp;|&nbsp;&nbsp;
-                    {/* shields.io badge (auto-sized, self-colored) instead of
-                        the fixed-width ghbtns iframe, whose white content area
-                        showed as a box in dark mode. */}
+                    {/* shields.io "social" badge: the white GitHub-style star
+                        button, auto-sized to its content (no stray white box
+                        like the old fixed-width ghbtns iframe). */}
                     <a
                         href="https://github.com/ROZ-MOFUMOFU-ME/zny-nomp"
                         target="_blank"
@@ -90,7 +90,7 @@ export default function Footer() {
                         aria-label="Star zny-nomp on GitHub"
                     >
                         <img
-                            src="https://img.shields.io/github/stars/ROZ-MOFUMOFU-ME/zny-nomp?style=flat-square&logo=github&logoColor=white&label=Star&color=0eafc7"
+                            src="https://img.shields.io/github/stars/ROZ-MOFUMOFU-ME/zny-nomp?style=social"
                             alt="GitHub stars"
                             className="h-5"
                         />
