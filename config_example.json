@@ -32,6 +32,8 @@
             "tagline": "",
             "_comment_navLinks": "Extra header links (JSON array). Link = { label, url, icon }. Dropdown/toggle = { label, icon, children: [ { label, url, icon } ] }. Example: [ { \"label\": \"Map\", \"url\": \"https://example.com/map\", \"icon\": \"fas fa-map-marker-alt\" }, { \"label\": \"Pools\", \"icon\": \"fas fa-coins\", \"children\": [ { \"label\": \"KOTO\", \"url\": \"https://koto.example.com\" }, { \"label\": \"MONA\", \"url\": \"https://mona.example.com\" } ] } ]",
             "navLinks": [],
+            "showTabStats": true,
+            "_comment_showTabStats": "Show the 'Tab Stats' nav entry + /tbs page (a per-pool comparison table). Omit for auto (shown only when more than one pool is configured; hidden for a single coin). Set true/false to force.",
             "home": {
                 "logo": "",
                 "_comment_title": "Free-form hero heading (multi-coin). Leave empty to use the {{coin}} template below.",

@@ -247,6 +247,10 @@ export interface AppConfigBranding {
     tagline?: string;
     // Extra external links appended to the header nav.
     navLinks?: AppConfigNavLink[];
+    // Show the "Tab Stats" nav entry + /tbs page. Default (unset) is auto:
+    // shown only when more than one pool is configured, since the per-pool
+    // comparison table is redundant for a single coin. true/false overrides.
+    showTabStats?: boolean;
     home?: {
         // Hero logo, independent of the header/site logo above; falls back to
         // branding.logo when unset.

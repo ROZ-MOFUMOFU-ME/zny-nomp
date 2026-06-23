@@ -133,6 +133,10 @@ export default function (
                             favicon: brandCfg.favicon,
                             tagline: brandCfg.tagline,
                             navLinks: arr(brandCfg.navLinks),
+                            showTabStats:
+                                typeof brandCfg.showTabStats === 'boolean'
+                                    ? brandCfg.showTabStats
+                                    : undefined,
                             home: {
                                 logo: brandHome.logo,
                                 title: brandHome.title,

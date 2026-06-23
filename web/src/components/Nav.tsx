@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getConfig } from '../api/client.ts';
+import { tabStatsEnabled } from '../lib/features.ts';
 import type { AppConfigNavLink } from '../api/types.ts';
 
 const LINKS: Array<{
@@ -134,13 +135,14 @@ function NavDropdown({ link }: { link: AppConfigNavLink }) {
 export default function Nav() {
     const { t } = useTranslation();
     const config = useQuery({ queryKey: ['config'], queryFn: getConfig });
+    const showTabs = tabStatsEnabled(config.data);
     const navLinks = config.data?.branding?.navLinks;
     const extra = (Array.isArray(navLinks) ? navLinks : []).filter(
         (l) => l && l.label && (l.url || Array.isArray(l.children))
     );
     return (
         <nav className="flex flex-wrap items-center gap-1 lg:ml-auto lg:min-w-0 lg:flex-nowrap lg:overflow-x-auto lg:[-ms-overflow-style:none] lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
-            {LINKS.map((l) => {
+            {LINKS.filter((l) => l.key !== 'tab_stats' || showTabs).map((l) => {
                 const label = t(l.key, l.fallback);
                 return (
                     <NavLink

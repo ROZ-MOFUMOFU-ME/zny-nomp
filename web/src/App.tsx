@@ -13,6 +13,7 @@ import GettingStarted from './pages/GettingStarted.tsx';
 import ApiDocs from './pages/ApiDocs.tsx';
 import Admin from './pages/Admin.tsx';
 import { getConfig } from './api/client.ts';
+import { tabStatsEnabled } from './lib/features.ts';
 import type { AppConfigAnalyticsScript } from './api/types.ts';
 
 export default function App() {
@@ -97,7 +98,16 @@ export default function App() {
                     <Route path="/workers" element={<Workers />} />
                     <Route path="/workers/:address" element={<MinerStats />} />
                     <Route path="/payments" element={<Payments />} />
-                    <Route path="/tbs" element={<TabStats />} />
+                    <Route
+                        path="/tbs"
+                        element={
+                            tabStatsEnabled(config.data) ? (
+                                <TabStats />
+                            ) : (
+                                <Navigate to="/" replace />
+                            )
+                        }
+                    />
                     <Route path="/api" element={<ApiDocs />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="*" element={<Navigate to="/" replace />} />

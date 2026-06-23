@@ -541,6 +541,9 @@ without touching code. All fields are optional:
 - `siteName`, `logo` (header), `favicon` — plain paths or absolute CDN URLs.
 - `tagline`, and `navLinks[]` — extra header links; a link with `children[]`
   becomes a dropdown (e.g. a "Pools" menu linking to sibling-coin sites).
+- `showTabStats` — show the "Tab Stats" nav entry and `/tbs` per-pool
+  comparison page. When omitted it auto-hides for a single coin and appears
+  once more than one pool is configured; set `true`/`false` to force it.
 - `home`: a separate hero `logo`; the hero heading (`title` is free-form and
   wins over the `{{coin}}` template — use it for multi-coin pools, otherwise
   set `coin`); the payout / interval / fee / method facts; `highlights[]`

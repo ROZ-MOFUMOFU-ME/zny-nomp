@@ -263,7 +263,9 @@ Monorepo consolidation is deferred; these are the active priorities.
   and make adding new locales straightforward.
 - ~~Operator **branding & home customization**~~ _(done — `website.branding`
   in `config.json`, served via `/api/config`, drives the site name, separate
-  header/hero logos, favicon, dropdown-capable nav links, hero copy and
+  header/hero logos, favicon, dropdown-capable nav links, an auto/forced
+  Tab Stats nav toggle (`showTabStats`; hidden by default for a single coin),
+  hero copy and
   "No KYC"-style highlight badges, operator HTML sections, mining-server
   location cards with in-browser ping, and GA4 / custom analytics tags — no
   code changes needed to rebrand)._
