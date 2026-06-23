@@ -79,15 +79,22 @@ export default function Footer() {
                         <i className="fab fa-discord fa-fw" />
                     </a>
                     &nbsp;&nbsp;|&nbsp;&nbsp;
-                    <iframe
-                        src="https://ghbtns.com/github-btn.html?user=ROZ-MOFUMOFU-ME&repo=zny-nomp&type=star&count=true"
-                        frameBorder="0"
-                        scrolling="0"
-                        width="150"
-                        height="20"
-                        title="zny-nomp on GitHub"
-                        className="ml-1 inline-block align-middle"
-                    />
+                    {/* shields.io badge (auto-sized, self-colored) instead of
+                        the fixed-width ghbtns iframe, whose white content area
+                        showed as a box in dark mode. */}
+                    <a
+                        href="https://github.com/ROZ-MOFUMOFU-ME/zny-nomp"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-1 inline-flex align-middle"
+                        aria-label="Star zny-nomp on GitHub"
+                    >
+                        <img
+                            src="https://img.shields.io/github/stars/ROZ-MOFUMOFU-ME/zny-nomp?style=flat-square&logo=github&logoColor=white&label=Star&color=0eafc7"
+                            alt="GitHub stars"
+                            className="h-5"
+                        />
+                    </a>
                 </div>
             </div>
         </footer>
