@@ -11,19 +11,21 @@ export default function Header() {
     const logo = branding?.logo || '/logo.svg';
     const tagline = branding?.tagline;
     return (
-        <header className="flex flex-wrap items-center gap-2 bg-bg px-4 py-3 text-white lg:flex-nowrap">
-            <Link
-                to="/"
-                className="flex shrink-0 items-center gap-2 text-xl font-bold text-white hover:no-underline"
-            >
-                <img src={logo} alt="" className="h-7" />
-                {siteName}
-            </Link>
-            {tagline && (
-                <span className="shrink-0 text-sm text-nav">{tagline}</span>
-            )}
-            <Nav />
-            <LanguageSelect />
+        <header className="bg-bg text-white">
+            <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center gap-2 px-5 py-3 lg:flex-nowrap">
+                <Link
+                    to="/"
+                    className="flex shrink-0 items-center gap-2 text-xl font-bold text-white hover:no-underline"
+                >
+                    <img src={logo} alt="" className="h-7" />
+                    {siteName}
+                </Link>
+                {tagline && (
+                    <span className="shrink-0 text-sm text-nav">{tagline}</span>
+                )}
+                <Nav />
+                <LanguageSelect />
+            </div>
         </header>
     );
 }
