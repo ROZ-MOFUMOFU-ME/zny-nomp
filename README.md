@@ -351,13 +351,18 @@ Here is an example of the required fields:
 Optional per-coin fields the portal also recognizes (see the complete,
 CI-validated templates in `coins/coins-examples{,-testnet}/`):
 
-- `explorer` (`{ "txURL": ..., "blockURL": ... }`) — block-explorer links shown on the stats/blocks pages.
+- `explorer` (`{ "txURL": ..., "blockURL": ..., "address": ... }`) — block-explorer links shown on the stats/blocks pages; `address` also links a miner's address to the explorer on the worker stats page.
 - `mainnet` / `testnet` — address→script network params (`pubKeyHash`, `scriptHash`, `bech32`, `bip32.public` as **hex strings**); required for bech32/P2SH coins.
 - `getInfo` / `noNetworkInfo` / `noGetnetworkhashps` — daemon-compatibility flags for older wallets that lack `getnetworkinfo`/`getblockchaininfo`/`getnetworkhashps`.
 - `networkHashFromDiff` — for PoS/PoW **hybrid** coins (e.g. VIPSTARCOIN, KumaCoin) whose `getmininginfo.networkhashps` folds in the much harder PoS difficulty and reads orders of magnitude too high (VIPSTARCOIN showed 568 TH/s), breaking the pool's network-hashrate and Luck figures. When set, the PoW-only network hashrate is derived from the raw PoW difficulty (`networkDiff × 2³² ÷ blockTime`) instead of `networkhashps`. Leave it off for pure-PoW coins.
 - `txfee` — per-block transaction-fee reserve for payouts (default `0.0004`). Raise it to match an old wallet's real `paytxfee` so payouts don't stall on "Insufficient funds".
 - `subVersion` — template (e.g. `"/Antenna:{version}/"`) to reconstruct the daemon's P2P user-agent for getinfo-only wallets that don't return `subversion` (shown as the Daemon version on the stats page).
 - `miningTools` — an array of `{ "name": ..., "url": ... }` mining-software links surfaced on the Getting Started page when the coin is selected.
+
+The pool's address-ownership check needs no flag: it probes the daemon once and
+uses `getaddressinfo` on Bitcoin Core 0.17+ (where `validateaddress` no longer
+returns the `ismine`/wallet fields) or `validateaddress` on older daemons. This
+replaces the former `BTCover17` pool-config flag, which has been removed.
 
 For additional documentation how to configure coins and their different algorithms
 see [these instructions](//github.com/AoD-Technologies/cryptocurrency-stratum-pool#module-usage).

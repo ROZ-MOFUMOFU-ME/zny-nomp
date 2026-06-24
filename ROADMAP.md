@@ -74,6 +74,20 @@ and the stack as a whole.
       `nomp_pool_wallet_balance`.
     - **Reverse-proxy guide** — `docs/reverse-proxy.md` (nginx: SSE-safe `/api`
       buffering, optional direct static serving, TLS).
+- **Daemon-compat & explorer (2026-06-24)**:
+    - The pool address-ownership check **auto-detects** its RPC instead of a
+      flag: it probes the daemon once and uses `getaddressinfo` on Bitcoin
+      Core 0.17+ (where `validateaddress` dropped the `ismine`/wallet fields)
+      or `validateaddress` on older daemons. Detection is capability-based
+      (`-32601` method-not-found), not version-based, since these altcoin
+      forks don't map onto Bitcoin Core's version numbers. The former
+      `BTCover17` pool-config flag is removed; the same RPC now also backs the
+      `tAddress` ownership check, which previously hardcoded `validateaddress`
+      and so ignored the flag.
+    - **Per-coin explorer address links** — `coins/*.json` `explorer.address`
+      links a miner's address to the coin's block explorer on the worker stats
+      page (alongside the existing `txURL`/`blockURL`), exposed via
+      `GET /api/config`.
 - CI green on GitHub Actions (Node 22/24 + Redis); CircleCI was removed —
   GitHub Actions covers lint/typecheck/prettier, the config-parse check and the
   unit tests.
