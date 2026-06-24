@@ -455,9 +455,55 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     var paymentInterval: any;
     var disablePeymentProcessing = false;
 
+    // Bitcoin Core 0.17+ moved the wallet fields (ismine, etc.) off
+    // `validateaddress` onto the new `getaddressinfo` RPC. Rather than trust a
+    // hand-set per-pool flag (the old `BTCover17`), probe the daemon once for
+    // the method: it can never be misconfigured and self-heals if a coin's
+    // wallet crosses the 0.17 boundary. Detection is capability-based, not
+    // version-based, because these altcoin forks carry their own version
+    // numbers that do not map onto Bitcoin Core's. The resolved command is
+    // shared by validateAddress and validateTAddress (both need `ismine`).
+    var addressInfoCmd: string | null = null;
+
+    function resolveAddressInfoCmd(callback: any) {
+        if (addressInfoCmd !== null) return callback();
+        var probeAddress =
+            poolOptions.address != false
+                ? poolOptions.address
+                : poolOptions.tAddress;
+        if (!probeAddress) {
+            // Nothing transparent to probe with; validateAddress short-circuits
+            // when address is false, so the legacy default is harmless.
+            addressInfoCmd = 'validateaddress';
+            return callback();
+        }
+        daemon.cmd(
+            'getaddressinfo',
+            [probeAddress],
+            function (result: any) {
+                var err = result.error;
+                var methodMissing =
+                    !!err &&
+                    (err.code === -32601 ||
+                        /method not found/i.test(err.message || ''));
+                addressInfoCmd = methodMissing
+                    ? 'validateaddress'
+                    : 'getaddressinfo';
+                logger.debug(
+                    logSystem,
+                    logComponent,
+                    'Daemon address-info RPC auto-detected as `' +
+                        addressInfoCmd +
+                        '`'
+                );
+                callback();
+            },
+            true
+        );
+    }
+
     function validateAddress(callback: any) {
-        var cmd = 'validateaddress';
-        if (poolOptions.BTCover17) cmd = 'getaddressinfo';
+        var cmd = addressInfoCmd || 'validateaddress';
         if (poolOptions.address != false) {
             daemon.cmd(
                 cmd,
@@ -489,7 +535,7 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
     }
     function validateTAddress(callback: any) {
         daemon.cmd(
-            'validateaddress',
+            addressInfoCmd || 'validateaddress',
             [poolOptions.tAddress],
             function (result: any) {
                 if (result.error) {
@@ -595,14 +641,21 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
         setupFinished(true);
     }
 
-    if (requireShielding === true) {
-        async.parallel(
-            [validateAddress, validateTAddress, validateZAddress, getBalance],
-            asyncComplete
-        );
-    } else {
-        async.parallel([validateAddress, getBalance], asyncComplete);
-    }
+    resolveAddressInfoCmd(function () {
+        if (requireShielding === true) {
+            async.parallel(
+                [
+                    validateAddress,
+                    validateTAddress,
+                    validateZAddress,
+                    getBalance
+                ],
+                asyncComplete
+            );
+        } else {
+            async.parallel([validateAddress, getBalance], asyncComplete);
+        }
+    });
 
     //get t_address coinbalance
     function listUnspent(

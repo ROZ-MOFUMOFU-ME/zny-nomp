@@ -386,8 +386,6 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
     "_comment_blockIdentifire2": "If this value equals null string, website.stratumHost in 'config.json' is used.",
 
     "address": "", // Server wallet address for receiving and sending mining rewards.
-    "BTCover17": false, // Indicates whether the pool is using Bitcoin Core version 0.17 or higher.
-    "_comment_BTCover17": "If BTC 0.17 or higher, payment does not work please enable it",
 
     "zAddress": "", // (for KOTO) Server wallet private address used to send tAddress.
     "_comment_zAddress": "a private address used to send coins to tAddress.",
