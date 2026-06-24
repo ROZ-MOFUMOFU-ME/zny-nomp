@@ -13,7 +13,8 @@
 
     "explorer": {
         "txURL": "https://sugarchain.org/explorer/#/transaction/",
-        "blockURL": "https://sugarchain.org/explorer/#/block/"
+        "blockURL": "https://sugarchain.org/explorer/#/block/",
+        "address": "https://sugarchain.org/explorer/#/address/"
     },
     "miningTools": [
         {

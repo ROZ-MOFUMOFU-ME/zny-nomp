@@ -14,7 +14,8 @@
 
     "explorer": {
         "txURL": "https://explorer.bellcoin.web4u.jp/tx/",
-        "blockURL": "https://explorer.bellcoin.web4u.jp/block/"
+        "blockURL": "https://explorer.bellcoin.web4u.jp/block/",
+        "address": "https://explorer.bellcoin.web4u.jp/address/"
     },
     "miningTools": [
         {

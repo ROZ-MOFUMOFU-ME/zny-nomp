@@ -14,7 +14,8 @@
 
     "explorer": {
         "txURL": "https://insight.bitzeny.jp/tx/",
-        "blockURL": "https://insight.bitzeny.jp/block/"
+        "blockURL": "https://insight.bitzeny.jp/block/",
+        "address": "https://insight.bitzeny.jp/address/"
     },
     "miningTools": [
         {

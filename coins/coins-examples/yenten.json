@@ -14,7 +14,8 @@
 
     "explorer": {
         "txURL": "https://explorer.yentencoin.info/tx/",
-        "blockURL": "https://explorer.yentencoin.info/block/"
+        "blockURL": "https://explorer.yentencoin.info/block/",
+        "address": "https://explorer.yentencoin.info/address/"
     },
     "miningTools": [
         {

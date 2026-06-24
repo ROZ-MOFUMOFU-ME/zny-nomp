@@ -14,7 +14,8 @@
 
     "explorer": {
         "txURL": "https://explorer.susu.mofumofu.me/tx/",
-        "blockURL": "https://explorer.susu.mofumofu.me/block/"
+        "blockURL": "https://explorer.susu.mofumofu.me/block/",
+        "address": "https://explorer.susu.mofumofu.me/address/"
     },
     "miningTools": [
         {
