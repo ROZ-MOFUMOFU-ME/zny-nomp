@@ -829,6 +829,10 @@ export default function (
                     );
 
                     var _blocktime = coinStats.blockTime || 90;
+                    // networkHash is already PoW-correct at the source
+                    // (paymentProcessor.cacheNetworkStats derives it from the
+                    // raw PoW difficulty for coins with coin.networkHashFromDiff,
+                    // e.g. VIPSTARCOIN / KumaCoin); read it as-is.
                     var _networkHashRate = parseFloat(
                         coinStats.poolStats.networkHash
                     );

@@ -83,8 +83,8 @@ and the stack as a whole.
 - **Example configs completed**: `coins/coins-examples{,-testnet}/` and
   `pool_configs/examples/` carry full per-coin templates — address/network
   params (`mainnet`/`testnet`), the `getInfo`/`noNetworkInfo`/`noGetnetworkhashps`
-  daemon-capability flags, and distinct stratum ports — and are JSON-validated
-  in CI (`check:config`).
+  daemon-capability flags, the `networkHashFromDiff` PoS/PoW-hybrid hashrate flag,
+  and distinct stratum ports — and are JSON-validated in CI (`check:config`).
 - **Mining + payout verified**: BitZeny, Koto, Monacoin, Bellcoin,
   Sugarchain, KumaCoin.
 - **In progress** (pool_configs enabled but not production-ready):

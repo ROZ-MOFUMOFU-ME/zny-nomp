@@ -12,10 +12,13 @@
     "getInfo": false,
     "noNetworkInfo": false,
     "noGetnetworkhashps": true,
+    "networkHashFromDiff": true,
+    "_comment_networkHashFromDiff": "PoS/PoW hybrid: the daemon's networkhashps folds in the (far harder) PoS difficulty and reads absurdly high (e.g. 568 TH/s), which breaks pool Luck. Derive the PoW-only network hashrate from the raw PoW difficulty (networkDiff * 2^32 / blockTime) instead.",
 
     "explorer": {
         "txURL": "https://insight.nezirin.net/tx/",
-        "blockURL": "https://insight.nezirin.net/block/"
+        "blockURL": "https://insight.nezirin.net/block/",
+        "address": "https://insight.nezirin.net/address/"
     },
     "miningTools": [
         {

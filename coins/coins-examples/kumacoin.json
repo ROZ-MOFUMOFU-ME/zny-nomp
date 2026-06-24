@@ -11,11 +11,14 @@
     "getInfo": true,
     "noNetworkInfo": true,
     "noGetnetworkhashps": true,
+    "networkHashFromDiff": true,
+    "_comment_networkHashFromDiff": "PoS/PoW hybrid: the daemon's networkhashps folds in the (far harder) PoS difficulty and reads far too high, which breaks pool Luck. Derive the PoW-only network hashrate from the raw PoW difficulty (networkDiff * 2^32 / blockTime) instead.",
     "subVersion": "/Antenna:{version}/",
 
     "explorer": {
         "txURL": "https://explorer.kuma.mofumofu.me/tx/",
-        "blockURL": "https://explorer.kuma.mofumofu.me/block/"
+        "blockURL": "https://explorer.kuma.mofumofu.me/block/",
+        "address": "https://explorer.kuma.mofumofu.me/address/"
     },
     "miningTools": [
         {

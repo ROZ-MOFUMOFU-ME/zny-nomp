@@ -354,6 +354,7 @@ CI-validated templates in `coins/coins-examples{,-testnet}/`):
 - `explorer` (`{ "txURL": ..., "blockURL": ... }`) — block-explorer links shown on the stats/blocks pages.
 - `mainnet` / `testnet` — address→script network params (`pubKeyHash`, `scriptHash`, `bech32`, `bip32.public` as **hex strings**); required for bech32/P2SH coins.
 - `getInfo` / `noNetworkInfo` / `noGetnetworkhashps` — daemon-compatibility flags for older wallets that lack `getnetworkinfo`/`getblockchaininfo`/`getnetworkhashps`.
+- `networkHashFromDiff` — for PoS/PoW **hybrid** coins (e.g. VIPSTARCOIN, KumaCoin) whose `getmininginfo.networkhashps` folds in the much harder PoS difficulty and reads orders of magnitude too high (VIPSTARCOIN showed 568 TH/s), breaking the pool's network-hashrate and Luck figures. When set, the PoW-only network hashrate is derived from the raw PoW difficulty (`networkDiff × 2³² ÷ blockTime`) instead of `networkhashps`. Leave it off for pure-PoW coins.
 - `txfee` — per-block transaction-fee reserve for payouts (default `0.0004`). Raise it to match an old wallet's real `paytxfee` so payouts don't stall on "Insufficient funds".
 - `subVersion` — template (e.g. `"/Antenna:{version}/"`) to reconstruct the daemon's P2P user-agent for getinfo-only wallets that don't return `subversion` (shown as the Daemon version on the stats page).
 - `miningTools` — an array of `{ "name": ..., "url": ... }` mining-software links surfaced on the Getting Started page when the coin is selected.

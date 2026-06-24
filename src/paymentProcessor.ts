@@ -872,25 +872,40 @@ function SetupForPool(logger: Logger, poolOptions: any, setupFinished: any) {
                     result[0].response.blocks
                 ]);
             }
-            if (
-                result[0].response.difficulty !== null &&
-                typeof result[0].response.difficulty == 'object'
-            ) {
+            // Raw PoW network difficulty: PoS/PoW hybrid daemons return
+            // difficulty as an object {proof-of-work, proof-of-stake}; take the
+            // PoW value. Pure-PoW daemons return a scalar.
+            var _networkDiff =
+                result[0].response.difficulty !== null
+                    ? typeof result[0].response.difficulty == 'object'
+                        ? result[0].response.difficulty['proof-of-work']
+                        : result[0].response.difficulty
+                    : null;
+            if (_networkDiff !== null) {
                 finalRedisCommands.push([
                     'hset',
                     coin + ':stats',
                     'networkDiff',
-                    result[0].response.difficulty['proof-of-work']
-                ]);
-            } else if (result[0].response.difficulty !== null) {
-                finalRedisCommands.push([
-                    'hset',
-                    coin + ':stats',
-                    'networkDiff',
-                    result[0].response.difficulty
+                    _networkDiff
                 ]);
             }
-            if (result[0].response.networkhashps !== null) {
+            // networkHash source of truth. On PoS/PoW hybrid coins the daemon's
+            // networkhashps folds in the (far harder) PoS difficulty and reads
+            // orders of magnitude too high (e.g. VIPSTARCOIN ~568 TH/s), which
+            // breaks pool Luck and the network-hashrate gauge. When the coin
+            // opts in via coin.networkHashFromDiff, derive the PoW-only network
+            // hashrate from the raw PoW difficulty instead:
+            //   networkHash = rawPoWDiff * 2^32 / blockTime
+            // (algo-multiplier independent). Pure-PoW coins are untouched.
+            if (poolOptions.coin.networkHashFromDiff && _networkDiff !== null) {
+                var _blockTime = poolOptions.coin.blockTime || 90;
+                finalRedisCommands.push([
+                    'hset',
+                    coin + ':stats',
+                    'networkHash',
+                    (parseFloat(_networkDiff) * Math.pow(2, 32)) / _blockTime
+                ]);
+            } else if (result[0].response.networkhashps !== null) {
                 finalRedisCommands.push([
                     'hset',
                     coin + ':stats',
