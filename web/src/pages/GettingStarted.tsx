@@ -325,15 +325,13 @@ export default function GettingStarted() {
                 </div>
             )}
 
-            <div className="card">
-                <h2 className="mb-3 text-lg font-bold">
-                    <i className="fas fa-shuffle fa-fw text-accent2" />{' '}
-                    {t('gs_switching_ports')}
-                </h2>
-                <p className="muted mb-3">{t('gs_switching_desc')}</p>
-                {switchEntries.length === 0 ? (
-                    <div className="muted">{t('gs_no_switching_ports')}</div>
-                ) : (
+            {switchEntries.length > 0 && (
+                <div className="card">
+                    <h2 className="mb-3 text-lg font-bold">
+                        <i className="fas fa-shuffle fa-fw text-accent2" />{' '}
+                        {t('gs_switching_ports')}
+                    </h2>
+                    <p className="muted mb-3">{t('gs_switching_desc')}</p>
                     <div className="overflow-x-auto">
                         <table className="data-table">
                             <thead>
@@ -366,8 +364,8 @@ export default function GettingStarted() {
                             </tbody>
                         </table>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

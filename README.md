@@ -423,10 +423,11 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
         }
     },
 
+    "_comment_tlsOptions": "Per-port TLS for stratum/getwork. NOTE: most miners only speak plaintext stratum+tcp:// / http getwork, so keep your MAIN ports tls:false and (optionally) offer TLS on EXTRA ports only. serverKey=privkey, serverCert=fullchain (order matters). The pool user must be able to READ the cert — Let's Encrypt's archive is root-only, so use a deploy hook. Full setup: docs/stratum-tls.md.",
     "tlsOptions": {
         "enabled": false, // Enables TLS/SSL; set to true to secure connections.
-        "serverKey": "", // Path to the server key file.
-        "serverCert": "", // Path to the server certificate file.
+        "serverKey": "", // Path to the server private key (privkey.pem).
+        "serverCert": "", // Path to the server certificate chain (fullchain.pem).
         "ca": "" // Path to the certificate authority file.
     },
 
@@ -451,6 +452,24 @@ ie: Miner 1 mines at 0.1 difficulty and finds 10 shares, the pool sees it as 1 s
                 "targetTime": 15,
                 "retargetTime": 60,
                 "variancePercent": 30
+            }
+        }
+    },
+
+    "_comment_getwork": "(Option) HTTP getwork bridge for getwork-only miners (e.g. the official VIPSTARCOIN/HTMLCOIN ccminer that can't build the qtum stratum job). Only qtum-family coins need it; leave enabled:false otherwise. Same per-port shape as stratum 'ports' (diff/tls/varDiff); keep each getwork port matched to a stratum port. Most miners only support plaintext http getwork — see docs/stratum-tls.md before enabling TLS.",
+    "getwork": {
+        "enabled": false, // (Option) Off unless the coin needs getwork (qtum-family, e.g. vipstar).
+        "ports": {
+            "3036": {
+                "diff": 0.5,
+                "tls": false, // Most getwork miners only support plaintext http.
+                "varDiff": {
+                    "minDiff": 0.00,
+                    "maxDiff": 16,
+                    "targetTime": 15,
+                    "retargetTime": 60,
+                    "variancePercent": 30
+                }
             }
         }
     },
