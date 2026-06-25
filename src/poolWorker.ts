@@ -285,15 +285,22 @@ export default function (this: any, logger: Logger) {
                 // handle the share
                 handlers.share(isValidShare, isValidBlock, data);
 
-                // send to master for pplnt time tracking
-                process.send!({
-                    type: 'shareTrack',
-                    thread: parseInt(forkId as string) + 1,
-                    coin: poolOptions.coin.name,
-                    isValidShare: isValidShare,
-                    isValidBlock: isValidBlock,
-                    data: data
-                });
+                // send to master for pplnt time tracking — only the pplnt payment mode
+                // uses per-worker share times, so skip the IPC + Redis writes + logs for
+                // every other mode (prop/solo/pps/...).
+                if (
+                    poolOptions.paymentProcessing &&
+                    poolOptions.paymentProcessing.paymentMode === 'pplnt'
+                ) {
+                    process.send!({
+                        type: 'shareTrack',
+                        thread: parseInt(forkId as string) + 1,
+                        coin: poolOptions.coin.name,
+                        isValidShare: isValidShare,
+                        isValidBlock: isValidBlock,
+                        data: data
+                    });
+                }
             }
         )
             .on('difficultyUpdate', function (workerName: any, diff: any) {

@@ -334,7 +334,14 @@ const spawnPoolWorkers = function () {
                 'No daemons configured so a pool cannot be started for this coin.'
             );
             delete poolConfigs[coin];
-        } else if (!connection) {
+        } else if (
+            !connection &&
+            pcfg.paymentProcessing &&
+            pcfg.paymentProcessing.paymentMode === 'pplnt'
+        ) {
+            // PPLNT (time-weighted payout) is the only mode where the master tracks
+            // per-worker share times in Redis. Only open that connection if some pool
+            // actually uses pplnt — otherwise the whole shareTrack path stays idle.
             redisConfig = pcfg.redis;
             connection = createRedisClient(redisConfig, function (err: any) {
                 logger.error(
@@ -418,7 +425,10 @@ const spawnPoolWorkers = function () {
                         });
                         break;
                     case 'shareTrack':
-                        // pplnt time share tracking of workers
+                        // pplnt time share tracking of workers. Pool workers only emit
+                        // shareTrack for pplnt pools, and `connection` only exists when a
+                        // pplnt pool is configured — guard so this is a no-op otherwise.
+                        if (!connection) break;
                         if (msg.isValidShare && !msg.isValidBlock) {
                             const now = Date.now();
                             let lastShareTime = now;

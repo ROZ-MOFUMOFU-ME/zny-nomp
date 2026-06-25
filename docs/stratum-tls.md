@@ -33,26 +33,26 @@ Two things in each `pool_configs/<coin>.json`:
 
 1. **`tlsOptions`** — the key/cert the pool reads (shared by every TLS port in that pool):
 
-   ```json
-   "tlsOptions": {
-       "enabled": true,
-       "serverKey":  "/home/POOL_USER/zny-nomp/certs/privkey.pem",
-       "serverCert": "/home/POOL_USER/zny-nomp/certs/fullchain.pem",
-       "ca": ""
-   }
-   ```
+    ```json
+    "tlsOptions": {
+        "enabled": true,
+        "serverKey":  "/home/POOL_USER/zny-nomp/certs/privkey.pem",
+        "serverCert": "/home/POOL_USER/zny-nomp/certs/fullchain.pem",
+        "ca": ""
+    }
+    ```
 
-   > **Order matters.** `serverKey` is the **private key** (`privkey.pem`) and `serverCert`
-   > is the **certificate chain** (`fullchain.pem`). Swapping the two makes the TLS
-   > handshake fail.
+    > **Order matters.** `serverKey` is the **private key** (`privkey.pem`) and `serverCert`
+    > is the **certificate chain** (`fullchain.pem`). Swapping the two makes the TLS
+    > handshake fail.
 
 2. **`tls: true`** on each port that should be encrypted:
 
-   ```json
-   "ports": {
-       "3031": { "diff": 0.5, "tls": true, "varDiff": { "minDiff": 0.0, "maxDiff": 16, "targetTime": 15, "retargetTime": 60, "variancePercent": 30 } }
-   }
-   ```
+    ```json
+    "ports": {
+        "3031": { "diff": 0.5, "tls": true, "varDiff": { "minDiff": 0.0, "maxDiff": 16, "targetTime": 15, "retargetTime": 60, "variancePercent": 30 } }
+    }
+    ```
 
 A port with `tls: true` is served via `tls.createServer`. **If the key/cert is missing or
 unreadable, the pool refuses to open that port** (and logs an error) instead of silently
