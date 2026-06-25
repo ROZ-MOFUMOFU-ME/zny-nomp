@@ -14,6 +14,14 @@
                     if (t === 'dark')
                         document.documentElement.classList.add('dark');
                 } catch (e) {}
+                // Set <html lang> before first paint so Chrome doesn't briefly offer to
+                // auto-translate the page; the app keeps it in sync after boot.
+                try {
+                    document.documentElement.lang =
+                        localStorage.getItem('lang') ||
+                        navigator.language ||
+                        'en';
+                } catch (e) {}
             })();
         </script>
         <link rel="icon" href="/favicon.ico" />
