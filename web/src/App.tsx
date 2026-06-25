@@ -84,6 +84,17 @@ export default function App() {
             });
         return () => els.forEach((el) => el.remove());
     }, [scriptsKey]);
+
+    // Wait for /api/config before painting the chrome, so the operator's branding
+    // (site name, logo, theme) shows immediately instead of flashing the defaults first.
+    if (config.isLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-panel">
+                <i className="fas fa-spinner fa-spin text-2xl text-muted" />
+            </div>
+        );
+    }
+
     return (
         <div className="flex min-h-screen flex-col bg-panel">
             <Header />
