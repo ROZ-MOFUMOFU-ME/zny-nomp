@@ -16,8 +16,7 @@
             "invalidPercent": 50,
             "checkThreshold": 500,
             "purgeInterval": 300
-        },
-        "redis": { "host": "127.0.0.1", "port": 6379, "password": "" }
+        }
     },
     "website": {
         "enabled": true,
@@ -56,7 +55,8 @@
         "adminCenter": { "enabled": false, "password": "password" },
         "tlsOptions": { "enabled": false, "cert": "", "key": "" }
     },
-    "redis": { "host": "127.0.0.1", "port": 6379 },
+    "_comment_redis": "Single Redis config for the whole portal (master, website, and every pool). Pools inherit this unless a pool_config overrides it with its own 'redis'. password is optional (leave \"\" for none); env REDIS_HOST / REDIS_PORT / REDIS_PASSWORD override it.",
+    "redis": { "host": "127.0.0.1", "port": 6379, "password": "" },
     "switching": {
         "switch1": {
             "enabled": false,

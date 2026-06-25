@@ -283,6 +283,10 @@ const buildPoolConfigs = function () {
             }
         }
 
+        // Single source of truth for Redis: a pool inherits portalConfig.redis unless it
+        // (or defaultPoolConfigs) overrides it, so operators configure redis in one place.
+        if (!poolOptions.redis) poolOptions.redis = portalConfig.redis;
+
         if (!poolOptions.blockIdentifier || poolOptions.blockIdentifier == '')
             if (portalConfig.website && portalConfig.website.stratumHost)
                 poolOptions.blockIdentifier = portalConfig.website.stratumHost;
