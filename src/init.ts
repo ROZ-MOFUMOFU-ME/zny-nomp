@@ -436,7 +436,6 @@ const spawnPoolWorkers = function () {
                         if (msg.isValidShare && !msg.isValidBlock) {
                             const now = Date.now();
                             let lastShareTime = now;
-                            const _lastStartTime = now;
                             const workerAddress = msg.data.worker.split('.')[0];
 
                             // if needed, initialize PPLNT objects for coin
@@ -469,8 +468,6 @@ const spawnPoolWorkers = function () {
                             ) {
                                 lastShareTime =
                                     _lastShareTimes[msg.coin][workerAddress];
-                                const _lastStartTime =
-                                    _lastStartTimes[msg.coin][workerAddress];
                             }
 
                             const redisCommands = [];
@@ -480,7 +477,6 @@ const spawnPoolWorkers = function () {
                                 Math.max(now - lastShareTime, 0) / 1000,
                                 4
                             );
-                            //var timeChangeTotal = roundTo(Math.max(now - lastStartTime, 0) / 1000, 4);
                             if (timeChangeSec < 900) {
                                 // loyal miner keeps mining :)
                                 redisCommands.push([
@@ -489,7 +485,6 @@ const spawnPoolWorkers = function () {
                                     workerAddress,
                                     timeChangeSec
                                 ]);
-                                //logger.debug('PPLNT', msg.coin, 'Thread '+msg.thread, workerAddress+':{totalTimeSec:'+timeChangeTotal+', timeChangeSec:'+timeChangeSec+'}');
                                 execCommands(connection, redisCommands).catch(
                                     function (err: any) {
                                         logger.error(
@@ -503,7 +498,7 @@ const spawnPoolWorkers = function () {
                                 );
                             } else {
                                 // they just re-joined the pool
-                                _lastStartTimes[workerAddress] = now;
+                                _lastStartTimes[msg.coin][workerAddress] = now;
                                 logger.debug(
                                     'PPLNT',
                                     msg.coin,

@@ -256,8 +256,6 @@ export default function (this: any, logger: Logger) {
                             logSubCat,
                             'Share was found with diff higher than 1.000.000.000!'
                         );
-                        //} else if(data.shareDiff > 1000000) {
-                        //    logger.debug(logSystem, logComponent, logSubCat, 'Share was found with diff higher than 1.000.000!');
                     }
                     logger.debug(
                         logSystem,
