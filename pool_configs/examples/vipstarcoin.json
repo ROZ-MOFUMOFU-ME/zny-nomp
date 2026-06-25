@@ -104,12 +104,12 @@
     "getwork": {
         "enabled": true,
         "ports": {
-            "3340": {
-                "diff": 1,
+            "3336": {
+                "diff": 0.5,
                 "tls": false,
                 "varDiff": {
-                    "minDiff": 0.5,
-                    "maxDiff": 1000,
+                    "minDiff": 0.0,
+                    "maxDiff": 16,
                     "targetTime": 15,
                     "retargetTime": 60,
                     "variancePercent": 30
@@ -117,7 +117,7 @@
             }
         }
     },
-    "_comment_getwork": "HTTP getwork endpoint for getwork-only miners (e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which mines via solo http getwork but cannot build the qtum stratum job and is rejected on the stratum ports). enabled=false (or omit the block) to disable — only qtum-family coins (vipstar) need getwork. Mirrors the stratum side: multiple ports, each with its own diff / tls / varDiff (tls uses tlsOptions above). Miners connect with -o http://HOST:3340. Runs on one fork; open the port(s) in the firewall.",
+    "_comment_getwork": "HTTP getwork endpoint for getwork-only miners (e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which mines via solo http getwork but cannot build the qtum stratum job and is rejected on the stratum ports). enabled=false (or omit the block) to disable — only qtum-family coins (vipstar) need getwork. Mirrors the stratum side: one entry per port with its own diff / tls / varDiff. Keep the getwork ports' diff/varDiff matched to the corresponding stratum ports (here 3336 mirrors stratum 3331). tls=true uses tlsOptions, but note the stratum server currently listens plain-TCP regardless, and letsencrypt certs may be unreadable by the pool user — use http unless you serve a readable cert. Miners connect with -o http://HOST:3336. Runs on one fork; open the port(s) in the firewall.",
 
     "poolId": "main",
     "_comment_poolId": "use it for region identification: eu, us, asia or keep default if you have one stratum instance for one coin",
