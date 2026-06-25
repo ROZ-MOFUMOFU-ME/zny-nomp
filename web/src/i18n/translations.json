@@ -177,7 +177,9 @@
         "home_servers_title": "Mining Servers Information",
         "home_servers_ping": "Your Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "en-US": {
         "getting_started": "Getting Started",
@@ -357,7 +359,9 @@
         "home_servers_title": "Mining Servers Information",
         "home_servers_ping": "Your Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "ja": {
         "getting_started": "始め方",
@@ -537,7 +541,9 @@
         "home_servers_title": "マイニングサーバー情報",
         "home_servers_ping": "あなたのPing",
         "gs_getwork_title": "getwork（getwork専用マイナー向け）",
-        "gs_getwork_desc": "HTTP getwork しか使えないマイナー向けです（qtum の stratum ジョブを組めず stratum ポートでは弾かれる公式 ccminer など）。下記 URL にマイナーを接続してください。"
+        "gs_getwork_desc": "getwork 専用マイナー向けです（HTTP getwork でしか掘れず stratum ポートでは弾かれる公式 VIPSTARCOIN/HTMLCOIN ccminer など）。ポートを選び、下記 URL にマイナーを接続してください。",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "例: ccminer-x64 -a html -o http://HOST:PORT -u ウォレット.worker -p x"
     },
     "zh": {
         "getting_started": "开始",
@@ -717,7 +723,9 @@
         "home_servers_title": "矿池服务器信息",
         "home_servers_ping": "您的Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "zh-TW": {
         "getting_started": "開始",
@@ -897,7 +905,9 @@
         "home_servers_title": "礦池伺服器資訊",
         "home_servers_ping": "您的Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "zh-HK": {
         "getting_started": "開始",
@@ -1077,7 +1087,9 @@
         "home_servers_title": "礦池伺服器資訊",
         "home_servers_ping": "您的Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "fr": {
         "getting_started": "Démarrer",
@@ -1256,7 +1268,9 @@
         "home_servers_title": "Informations sur les serveurs de minage",
         "home_servers_ping": "Votre ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "es": {
         "getting_started": "Inicio",
@@ -1435,7 +1449,9 @@
         "home_servers_title": "Información de servidores de minería",
         "home_servers_ping": "Tu ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "de": {
         "getting_started": "Starten",
@@ -1614,7 +1630,9 @@
         "home_servers_title": "Mining-Server-Informationen",
         "home_servers_ping": "Dein Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "ru": {
         "getting_started": "Начало работы",
@@ -1793,7 +1811,9 @@
         "home_servers_title": "Информация о майнинг-серверах",
         "home_servers_ping": "Ваш пинг",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "hi": {
         "getting_started": "शुरू करें",
@@ -1972,7 +1992,9 @@
         "home_servers_title": "माइनिंग सर्वर जानकारी",
         "home_servers_ping": "आपका पिंग",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "ar": {
         "getting_started": "البدء",
@@ -2151,7 +2173,9 @@
         "home_servers_title": "معلومات خوادم التعدين",
         "home_servers_ping": "البنج الخاص بك",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "pt": {
         "getting_started": "Início",
@@ -2330,7 +2354,9 @@
         "home_servers_title": "Informações dos servidores de mineração",
         "home_servers_ping": "Seu ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "it": {
         "getting_started": "Inizio",
@@ -2509,7 +2535,9 @@
         "home_servers_title": "Informazioni sui server di mining",
         "home_servers_ping": "Il tuo ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "tl": {
         "getting_started": "Simula",
@@ -2688,7 +2716,9 @@
         "home_servers_title": "Impormasyon ng Mining Servers",
         "home_servers_ping": "Iyong Ping",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "id": {
         "getting_started": "Mulai",
@@ -2867,7 +2897,9 @@
         "home_servers_title": "Informasi Server Mining",
         "home_servers_ping": "Ping Anda",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "ms": {
         "getting_started": "Mula",
@@ -3046,7 +3078,9 @@
         "home_servers_title": "Maklumat Pelayan Perlombongan",
         "home_servers_ping": "Ping Anda",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "ko": {
         "getting_started": "시작하기",
@@ -3225,7 +3259,9 @@
         "home_servers_title": "마이닝 서버 정보",
         "home_servers_ping": "내 핑",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "vi": {
         "getting_started": "Bắt đầu",
@@ -3404,7 +3440,9 @@
         "home_servers_title": "Thông tin máy chủ đào",
         "home_servers_ping": "Ping của bạn",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     },
     "tr": {
         "getting_started": "Başlarken",
@@ -3583,6 +3621,8 @@
         "home_servers_title": "Madencilik Sunucu Bilgileri",
         "home_servers_ping": "Pinginiz",
         "gs_getwork_title": "getwork (getwork-only miners)",
-        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
+        "gs_getwork_desc": "For getwork-only miners — e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which can only mine via HTTP getwork and is rejected on the stratum ports. Pick a port and point your miner at the URL below.",
+        "gs_getwork_url": "getwork URL",
+        "gs_getwork_cmd_hint": "Example: ccminer-x64 -a html -o http://HOST:PORT -u WALLET.worker -p x"
     }
 }

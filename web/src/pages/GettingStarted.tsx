@@ -216,25 +216,90 @@ export default function GettingStarted() {
                     )}
                     <p className="muted mt-3">{t('gs_port_hint')}</p>
 
-                    {selectedPool.getwork?.port != null && (
-                        <div className="mt-4 border-t border-line pt-3">
-                            <div className="mb-1 font-semibold">
-                                <i className="fas fa-plug fa-fw text-accent" />{' '}
-                                {t('gs_getwork_title')}
+                    {selectedPool.getwork?.ports &&
+                        Object.keys(selectedPool.getwork.ports).length > 0 && (
+                            <div className="mt-4 border-t border-line pt-3">
+                                <div className="mb-1 font-semibold">
+                                    <i className="fas fa-plug fa-fw text-accent" />{' '}
+                                    {t('gs_getwork_title')}
+                                </div>
+                                <p className="muted mb-2">
+                                    {t('gs_getwork_desc')}
+                                </p>
+                                <div className="overflow-x-auto">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>{t('gs_port')}</th>
+                                                <th>{t('gs_getwork_url')}</th>
+                                                <th className="text-right">
+                                                    {t('gs_difficulty')}
+                                                </th>
+                                                <th className="whitespace-nowrap">
+                                                    {t('gs_vardiff')}
+                                                </th>
+                                                <th className="text-center">
+                                                    {t('gs_tls')}
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(
+                                                selectedPool.getwork.ports
+                                            ).map(([port, raw]) => {
+                                                const p = (raw ??
+                                                    {}) as AppConfigPort;
+                                                const vd = p.varDiff;
+                                                const hasVd =
+                                                    vd != null &&
+                                                    vd.minDiff != null &&
+                                                    vd.maxDiff != null;
+                                                const scheme = p.tls
+                                                    ? 'https'
+                                                    : 'http';
+                                                return (
+                                                    <tr key={port}>
+                                                        <td className="whitespace-nowrap">
+                                                            {port}
+                                                        </td>
+                                                        <td>
+                                                            <code
+                                                                className={code}
+                                                            >
+                                                                {scheme}://
+                                                                {host}:{port}
+                                                            </code>
+                                                        </td>
+                                                        <td className="text-right">
+                                                            {p.diff != null
+                                                                ? toNum(p.diff)
+                                                                : '—'}
+                                                        </td>
+                                                        <td className="whitespace-nowrap">
+                                                            {hasVd
+                                                                ? `${toNum(vd.minDiff)} – ${toNum(vd.maxDiff)}`
+                                                                : '—'}
+                                                        </td>
+                                                        <td className="text-center">
+                                                            {p.tls ? (
+                                                                <i className="fas fa-lock text-green-600" />
+                                                            ) : (
+                                                                <span className="text-muted">
+                                                                    —
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className="muted mt-3">
+                                    {t('gs_getwork_cmd_hint')}
+                                </p>
                             </div>
-                            <p className="muted mb-2">{t('gs_getwork_desc')}</p>
-                            <code className={code}>
-                                http://{host}:{selectedPool.getwork.port}
-                            </code>
-                            <div className="mt-2">
-                                <code className={code}>
-                                    ccminer-x64 -a html -o http://{host}:
-                                    {selectedPool.getwork.port} -u WALLET.worker
-                                    -p x
-                                </code>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
                     {miningTools.length > 0 && (
                         <div className="mt-4 border-t border-line pt-3">

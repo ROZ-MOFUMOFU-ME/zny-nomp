@@ -102,10 +102,22 @@
     },
 
     "getwork": {
-        "port": 3340,
-        "diff": 1
+        "enabled": true,
+        "ports": {
+            "3340": {
+                "diff": 1,
+                "tls": false,
+                "varDiff": {
+                    "minDiff": 0.5,
+                    "maxDiff": 1000,
+                    "targetTime": 15,
+                    "retargetTime": 60,
+                    "variancePercent": 30
+                }
+            }
+        }
     },
-    "_comment_getwork": "Optional HTTP getwork endpoint for getwork-only miners (e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which mines fine via solo http getwork but cannot build the qtum stratum job and is rejected on the stratum ports). They connect with -o http://HOST:3340. Stratum miners ignore this. Remove the whole getwork block to disable. Runs on one fork only; the port must be opened in the firewall. diff = fixed share difficulty handed to getwork miners (no vardiff).",
+    "_comment_getwork": "HTTP getwork endpoint for getwork-only miners (e.g. the official VIPSTARCOIN/HTMLCOIN ccminer, which mines via solo http getwork but cannot build the qtum stratum job and is rejected on the stratum ports). enabled=false (or omit the block) to disable — only qtum-family coins (vipstar) need getwork. Mirrors the stratum side: multiple ports, each with its own diff / tls / varDiff (tls uses tlsOptions above). Miners connect with -o http://HOST:3340. Runs on one fork; open the port(s) in the firewall.",
 
     "poolId": "main",
     "_comment_poolId": "use it for region identification: eu, us, asia or keep default if you have one stratum instance for one coin",

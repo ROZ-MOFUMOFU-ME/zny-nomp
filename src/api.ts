@@ -103,10 +103,22 @@ export default function (
                         },
                         ports: pc.ports,
                         // Optional HTTP getwork endpoint (for getwork-only miners such as the
-                        // official ccminer). Only the port is public; share difficulty is internal.
+                        // official ccminer). Exposed like stratum ports: a per-port map of
+                        // { diff, tls } so the UI can render the same table. Only present when
+                        // enabled. (A single-port shorthand { port, diff } is normalized too.)
                         getwork:
-                            pc.getwork && pc.getwork.port
-                                ? { port: pc.getwork.port }
+                            pc.getwork && pc.getwork.enabled
+                                ? {
+                                      ports:
+                                          pc.getwork.ports ||
+                                          (pc.getwork.port
+                                              ? {
+                                                    [pc.getwork.port]: {
+                                                        diff: pc.getwork.diff
+                                                    }
+                                                }
+                                              : {})
+                                  }
                                 : undefined,
                         // Block maturity (confirmations required before payout);
                         // the stats UI uses it as the "x / N" confirmations denominator.
