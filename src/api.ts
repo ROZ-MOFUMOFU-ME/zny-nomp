@@ -102,6 +102,12 @@ export default function (
                             miningTools: coin.miningTools
                         },
                         ports: pc.ports,
+                        // Optional HTTP getwork endpoint (for getwork-only miners such as the
+                        // official ccminer). Only the port is public; share difficulty is internal.
+                        getwork:
+                            pc.getwork && pc.getwork.port
+                                ? { port: pc.getwork.port }
+                                : undefined,
                         // Block maturity (confirmations required before payout);
                         // the stats UI uses it as the "x / N" confirmations denominator.
                         minConf:

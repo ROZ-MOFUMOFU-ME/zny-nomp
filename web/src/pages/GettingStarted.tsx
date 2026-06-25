@@ -216,6 +216,26 @@ export default function GettingStarted() {
                     )}
                     <p className="muted mt-3">{t('gs_port_hint')}</p>
 
+                    {selectedPool.getwork?.port != null && (
+                        <div className="mt-4 border-t border-line pt-3">
+                            <div className="mb-1 font-semibold">
+                                <i className="fas fa-plug fa-fw text-accent" />{' '}
+                                {t('gs_getwork_title')}
+                            </div>
+                            <p className="muted mb-2">{t('gs_getwork_desc')}</p>
+                            <code className={code}>
+                                http://{host}:{selectedPool.getwork.port}
+                            </code>
+                            <div className="mt-2">
+                                <code className={code}>
+                                    ccminer-x64 -a html -o http://{host}:
+                                    {selectedPool.getwork.port} -u WALLET.worker
+                                    -p x
+                                </code>
+                            </div>
+                        </div>
+                    )}
+
                     {miningTools.length > 0 && (
                         <div className="mt-4 border-t border-line pt-3">
                             <div className="mb-1 font-semibold">

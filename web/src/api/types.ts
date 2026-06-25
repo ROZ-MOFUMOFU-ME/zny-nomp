@@ -174,6 +174,9 @@ export interface AppConfigPool {
         miningTools?: Array<MiningTool | string>;
     };
     ports?: Record<string, AppConfigPort>;
+    // Optional HTTP getwork endpoint for getwork-only miners (e.g. the official ccminer
+    // that can't build the qtum stratum job). Connect with -o http://host:port.
+    getwork?: { port?: number };
     // Block maturity (confirmations required before payout). Used by the stats
     // page as the "x / N" confirmations denominator. Falls back to 100 if unset.
     minConf?: number;

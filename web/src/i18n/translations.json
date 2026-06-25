@@ -175,7 +175,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "View on block explorer",
         "home_servers_title": "Mining Servers Information",
-        "home_servers_ping": "Your Ping"
+        "home_servers_ping": "Your Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "en-US": {
         "getting_started": "Getting Started",
@@ -353,7 +355,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "View on block explorer",
         "home_servers_title": "Mining Servers Information",
-        "home_servers_ping": "Your Ping"
+        "home_servers_ping": "Your Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "ja": {
         "getting_started": "始め方",
@@ -531,7 +535,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "ブロックエクスプローラーで表示",
         "home_servers_title": "マイニングサーバー情報",
-        "home_servers_ping": "あなたのPing"
+        "home_servers_ping": "あなたのPing",
+        "gs_getwork_title": "getwork（getwork専用マイナー向け）",
+        "gs_getwork_desc": "HTTP getwork しか使えないマイナー向けです（qtum の stratum ジョブを組めず stratum ポートでは弾かれる公式 ccminer など）。下記 URL にマイナーを接続してください。"
     },
     "zh": {
         "getting_started": "开始",
@@ -709,7 +715,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "在区块浏览器中查看",
         "home_servers_title": "矿池服务器信息",
-        "home_servers_ping": "您的Ping"
+        "home_servers_ping": "您的Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "zh-TW": {
         "getting_started": "開始",
@@ -887,7 +895,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "在區塊瀏覽器中檢視",
         "home_servers_title": "礦池伺服器資訊",
-        "home_servers_ping": "您的Ping"
+        "home_servers_ping": "您的Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "zh-HK": {
         "getting_started": "開始",
@@ -1065,7 +1075,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "在區塊瀏覽器中查看",
         "home_servers_title": "礦池伺服器資訊",
-        "home_servers_ping": "您的Ping"
+        "home_servers_ping": "您的Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "fr": {
         "getting_started": "Démarrer",
@@ -1242,7 +1254,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Voir sur l'explorateur de blocs",
         "home_servers_title": "Informations sur les serveurs de minage",
-        "home_servers_ping": "Votre ping"
+        "home_servers_ping": "Votre ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "es": {
         "getting_started": "Inicio",
@@ -1419,7 +1433,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Ver en el explorador de bloques",
         "home_servers_title": "Información de servidores de minería",
-        "home_servers_ping": "Tu ping"
+        "home_servers_ping": "Tu ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "de": {
         "getting_started": "Starten",
@@ -1596,7 +1612,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Im Block-Explorer ansehen",
         "home_servers_title": "Mining-Server-Informationen",
-        "home_servers_ping": "Dein Ping"
+        "home_servers_ping": "Dein Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "ru": {
         "getting_started": "Начало работы",
@@ -1773,7 +1791,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Открыть в блок-эксплорере",
         "home_servers_title": "Информация о майнинг-серверах",
-        "home_servers_ping": "Ваш пинг"
+        "home_servers_ping": "Ваш пинг",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "hi": {
         "getting_started": "शुरू करें",
@@ -1950,7 +1970,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "ब्लॉक एक्सप्लोरर में देखें",
         "home_servers_title": "माइनिंग सर्वर जानकारी",
-        "home_servers_ping": "आपका पिंग"
+        "home_servers_ping": "आपका पिंग",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "ar": {
         "getting_started": "البدء",
@@ -2127,7 +2149,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "عرض في مستكشف الكتل",
         "home_servers_title": "معلومات خوادم التعدين",
-        "home_servers_ping": "البنج الخاص بك"
+        "home_servers_ping": "البنج الخاص بك",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "pt": {
         "getting_started": "Início",
@@ -2304,7 +2328,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Ver no explorador de blocos",
         "home_servers_title": "Informações dos servidores de mineração",
-        "home_servers_ping": "Seu ping"
+        "home_servers_ping": "Seu ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "it": {
         "getting_started": "Inizio",
@@ -2481,7 +2507,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Vedi sull'explorer dei blocchi",
         "home_servers_title": "Informazioni sui server di mining",
-        "home_servers_ping": "Il tuo ping"
+        "home_servers_ping": "Il tuo ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "tl": {
         "getting_started": "Simula",
@@ -2658,7 +2686,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Tingnan sa block explorer",
         "home_servers_title": "Impormasyon ng Mining Servers",
-        "home_servers_ping": "Iyong Ping"
+        "home_servers_ping": "Iyong Ping",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "id": {
         "getting_started": "Mulai",
@@ -2835,7 +2865,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Lihat di block explorer",
         "home_servers_title": "Informasi Server Mining",
-        "home_servers_ping": "Ping Anda"
+        "home_servers_ping": "Ping Anda",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "ms": {
         "getting_started": "Mula",
@@ -3012,7 +3044,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Lihat di block explorer",
         "home_servers_title": "Maklumat Pelayan Perlombongan",
-        "home_servers_ping": "Ping Anda"
+        "home_servers_ping": "Ping Anda",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "ko": {
         "getting_started": "시작하기",
@@ -3189,7 +3223,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "블록 탐색기에서 보기",
         "home_servers_title": "마이닝 서버 정보",
-        "home_servers_ping": "내 핑"
+        "home_servers_ping": "내 핑",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "vi": {
         "getting_started": "Bắt đầu",
@@ -3366,7 +3402,9 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Xem trên trình duyệt khối",
         "home_servers_title": "Thông tin máy chủ đào",
-        "home_servers_ping": "Ping của bạn"
+        "home_servers_ping": "Ping của bạn",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     },
     "tr": {
         "getting_started": "Başlarken",
@@ -3543,6 +3581,8 @@
         "gs_tls": "TLS",
         "miner_view_on_explorer": "Blok gezgininde görüntüle",
         "home_servers_title": "Madencilik Sunucu Bilgileri",
-        "home_servers_ping": "Pinginiz"
+        "home_servers_ping": "Pinginiz",
+        "gs_getwork_title": "getwork (getwork-only miners)",
+        "gs_getwork_desc": "For miners that can only use HTTP getwork — e.g. the official ccminer that cannot build the qtum stratum job and is rejected on the stratum ports. Point the miner at the URL below."
     }
 }
