@@ -755,7 +755,8 @@ export default function (logger, portalConfig, poolConfigs) {
                         coinStats.workers
                     ).length;
                     portalStats.global.workers += coinStats.workerCount;
-
+                    // Add this pool's hashrate to the global total.
+                    portalStats.global.hashrate += coinStats.hashrate;
                     /* algorithm specific global stats */
                     var algo = coinStats.algorithm;
                     if (!portalStats.algos.hasOwnProperty(algo)) {
